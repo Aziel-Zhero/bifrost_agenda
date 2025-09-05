@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -11,7 +12,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Client } from "@/types";
 
 export const columns: ColumnDef<Client>[] = [
@@ -29,19 +29,7 @@ export const columns: ColumnDef<Client>[] = [
       );
     },
     cell: ({ row }) => {
-      const client = row.original;
-      return (
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src={client.avatarUrl} alt={client.name} data-ai-hint="person" />
-            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="font-medium">{client.name}</span>
-            <span className="text-sm text-muted-foreground">{client.email}</span>
-          </div>
-        </div>
-      );
+      return <span>{row.original.name}</span>;
     },
   },
   {

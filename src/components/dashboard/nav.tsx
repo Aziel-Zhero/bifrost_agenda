@@ -1,8 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Home,
   LayoutDashboard,
   CalendarDays,
   Users,
@@ -20,10 +22,11 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/meus-clientes", label: "Meus Clientes", icon: Contact },
-  { href: "/dashboard/clientes", label: "Clientes", icon: Users },
+  { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/dashboard/clientes", label: "Lista de Clientes Geral", icon: Users },
+  { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Relatórios", icon: BookText },
 ];
 
