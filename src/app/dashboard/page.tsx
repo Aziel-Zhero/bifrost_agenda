@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import {
+  isSameDay,
+  isSameWeek,
+  isSameMonth,
+  startOfDay,
+} from "date-fns";
 import {
   Card,
   CardContent,
@@ -8,26 +14,47 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { appointments } from "@/lib/mock-data";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { cn } from "@/lib/utils";
 
+type Period = "day" | "week" | "month";
+
 export default function DashboardRedirectPage() {
-  const [today, setToday] = useState(new Date());
+  const [period, setPeriod] = useState<Period>("day");
+  const today = useMemo(() => new Date(), []);
 
-  useEffect(() => {
-    // This will only run on the client, after initial hydration
-    setToday(new Date());
-  }, []);
+  const filteredAppointments = useMemo(() => {
+    const now = new Date();
+    let checkFunction: (date: Date) => boolean;
 
-  const todayAppointments = appointments.filter(
-    (appt) =>
-      appt.dateTime.getDate() === today.getDate() &&
-      appt.dateTime.getMonth() === today.getMonth() &&
-      appt.dateTime.getFullYear() === today.getFullYear()
-  );
+    switch (period) {
+      case "week":
+        checkFunction = (date) => isSameWeek(date, now, { weekStartsOn: 1 });
+        break;
+      case "month":
+        checkFunction = (date) => isSameMonth(date, now);
+        break;
+      case "day":
+      default:
+        checkFunction = (date) => isSameDay(date, now);
+        break;
+    }
+    
+    return appointments
+      .filter((appt) => checkFunction(appt.dateTime))
+      .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+  }, [period]);
 
   const statusVariant: Record<AppointmentStatus, string> = {
     Agendado: "bg-blue-100 text-blue-800",
@@ -36,66 +63,81 @@ export default function DashboardRedirectPage() {
     Bloqueado: "bg-gray-200 text-gray-800",
   };
 
+  const getPeriodTitle = () => {
+    switch (period) {
+      case 'day':
+        return `Agendamentos para hoje, ${today.toLocaleDateString("pt-BR", { dateStyle: "long" })}`;
+      case 'week':
+        return "Agendamentos da semana";
+      case 'month':
+        return "Agendamentos do mês";
+      default:
+        return "Agendamentos";
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Home - Make-off do Dia</h1>
-          <p className="text-muted-foreground">
-            Acompanhe os agendamentos de hoje:{" "}
-            {today.toLocaleDateString("pt-BR", {
-              dateStyle: "long",
-            })}
-          </p>
+          <h1 className="text-2xl font-bold">Make-off do Período</h1>
+          <p className="text-muted-foreground">{getPeriodTitle()}</p>
         </div>
+        <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">
+          <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+            <TabsTrigger value="day">Hoje</TabsTrigger>
+            <TabsTrigger value="week">Semana</TabsTrigger>
+            <TabsTrigger value="month">Mês</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {todayAppointments.length > 0 ? (
-          todayAppointments
-            .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime())
-            .map((appt: Appointment) => (
-              <Card key={appt.id} className="overflow-hidden">
-                <CardHeader className="flex flex-row items-center gap-4 p-4">
-                  {appt.status !== 'Bloqueado' && (
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={appt.clientAvatarUrl} alt={appt.clientName} data-ai-hint="person" />
-                      <AvatarFallback>{appt.clientName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className="flex-1">
-                    <CardTitle className="text-base font-bold">
-                      {appt.clientName}
-                    </CardTitle>
-                    <CardDescription className="text-sm">
+      
+      <Card>
+        <CardContent className="pt-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Horário</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Serviço</TableHead>
+                 {period === 'day' && <TableHead>Observações</TableHead>}
+                <TableHead className="text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAppointments.length > 0 ? (
+                filteredAppointments.map((appt) => (
+                  <TableRow key={appt.id}>
+                    <TableCell className="font-medium">
                       {appt.dateTime.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-muted-foreground mb-3">{appt.notes}</p>
-                   <Badge
-                      variant="outline"
-                      className={cn("w-full justify-center border-none text-xs", statusVariant[appt.status])}
-                    >
-                      {appt.status}
-                    </Badge>
-                </CardContent>
-              </Card>
-            ))
-        ) : (
-          <div className="col-span-full text-center text-muted-foreground py-20">
-             <Card className="max-w-md mx-auto">
-              <CardContent className="p-10">
-                <p className="text-lg">Nenhum agendamento para hoje.</p>
-                <p>Aproveite o dia para planejar a semana!</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
+                    </TableCell>
+                    <TableCell>{appt.clientName}</TableCell>
+                    <TableCell>{appt.notes}</TableCell>
+                     {period === 'day' && <TableCell>{appt.notes}</TableCell>}
+                    <TableCell className="text-right">
+                       <Badge
+                        variant="outline"
+                        className={cn("border-none text-xs", statusVariant[appt.status])}
+                      >
+                        {appt.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={period === 'day' ? 5 : 4} className="h-24 text-center">
+                    Nenhum agendamento para este período.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

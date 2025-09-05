@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  Search,
   User,
   LogOut,
   Settings,
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Nav, { menuItems } from "./nav";
@@ -34,12 +32,10 @@ export default function Header() {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
-      <div className="hidden md:flex">
+      <div className="hidden items-center gap-6 md:flex">
         <Logo />
-      </div>
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         <Nav />
-      </nav>
+      </div>
 
       <Sheet>
         <SheetTrigger asChild>
@@ -49,17 +45,17 @@ export default function Header() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left">
-          <nav className="grid gap-6 text-lg font-medium">
-            <div className="mb-4">
+           <div className="mb-4">
               <Logo />
             </div>
+          <nav className="grid gap-6 text-lg font-medium">
             {menuItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                  pathname === item.href && "text-primary bg-muted"
+                  pathname === item.href && "bg-muted text-primary"
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -70,17 +66,7 @@ export default function Header() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <form className="ml-auto flex-1 sm:flex-initial">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar..."
-              className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
-            />
-          </div>
-        </form>
+      <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Toggle notifications</span>
