@@ -1,4 +1,4 @@
-import { PlusCircle } from "lucide-react";
+import { Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,10 +18,16 @@ export default function RelatoriosPage() {
             Visualize todos os clientes cadastrados no sistema.
           </p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Cliente
-        </Button>
+        <div className="flex gap-2">
+            <Button variant="outline">
+                <Upload className="mr-2 h-4 w-4" />
+                Importar
+            </Button>
+            <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+            </Button>
+        </div>
       </div>
 
       <Card>
