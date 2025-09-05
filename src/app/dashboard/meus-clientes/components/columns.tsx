@@ -1,8 +1,8 @@
-
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,18 +35,32 @@ export const columns: ColumnDef<Client>[] = [
   {
     accessorKey: "whatsapp",
     header: "WhatsApp",
+    cell: ({ row }) => {
+      return (
+        <div className="flex items-center gap-2">
+          <FaWhatsapp className="text-green-500" />
+          {row.original.whatsapp}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "telegram",
     header: "Telegram",
     cell: ({ row }) => {
-      return row.original.telegram || "N/A";
+      const telegram = row.original.telegram;
+      if (!telegram) return "N/A";
+      return (
+        <div className="flex items-center gap-2">
+          <FaTelegram className="text-blue-500" />
+          {telegram}
+        </div>
+      );
     },
   },
   {
     id: "actions",
     cell: ({ row }) => {
-      const client = row.original;
       return (
         <div className="text-right">
           <DropdownMenu>
