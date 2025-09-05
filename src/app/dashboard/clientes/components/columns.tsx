@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { Client } from "@/types";
 
 export const columns: ColumnDef<Client>[] = [
@@ -32,8 +32,10 @@ export const columns: ColumnDef<Client>[] = [
       const client = row.original;
       return (
         <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src={client.avatarUrl} alt={client.name} data-ai-hint="person" />
+          <Avatar className="h-9 w-9">
+            <div className="flex h-full w-full items-center justify-center rounded-full bg-muted">
+                <User className="h-5 w-5 text-muted-foreground" />
+            </div>
             <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
