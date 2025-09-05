@@ -115,6 +115,24 @@ export const appointments: Appointment[] = [
     status: "Bloqueado",
     admin: "Sistema",
   },
+    {
+    id: "appt-7",
+    clientName: "Carla Dias",
+    clientAvatarUrl: "https://picsum.photos/id/1013/100/100",
+    dateTime: new Date(new Date(new Date().setDate(new Date().getDate() - 5)).setHours(14, 0, 0, 0)),
+    notes: "Maquiagem",
+    status: "Realizado",
+    admin: "Admin Master",
+  },
+   {
+    id: "appt-8",
+    clientName: "Carla Dias",
+    clientAvatarUrl: "https://picsum.photos/id/1013/100/100",
+    dateTime: new Date(new Date(new Date().setDate(new Date().getDate() - 10)).setHours(14, 0, 0, 0)),
+    notes: "Penteado",
+    status: "Realizado",
+    admin: "Admin Master",
+  },
 ];
 
 export const recentAppointments = appointments.filter(a => a.status === 'Agendado' || a.status === 'Realizado').slice(0, 5);
@@ -133,7 +151,7 @@ export const kpiData = [
     change: "-1.5%",
   },
   {
-    title: "Clientes Ativos",
+    title: "Clientes",
     value: "57",
     icon: Users,
     change: "+5",
