@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { appointments } from "@/lib/mock-data";
+import { appointments as mockAppointments } from "@/lib/mock-data";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import NewAppointmentWizard from './components/new-appointment-wizard';
@@ -30,6 +30,7 @@ import { ptBR } from 'date-fns/locale';
 
 export default function AgendaPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [isFormOpen, setFormOpen] = useState(false);
   const { toast } = useToast();
 
@@ -45,14 +46,28 @@ export default function AgendaPage() {
     Bloqueado: "bg-gray-200 text-gray-800",
   };
   
-  const handleAppointmentSuccess = (details: { clientName: string; date: string; time: string; }) => {
+  const handleAppointmentSuccess = (details: { clientName: string; date: string; time: string; serviceName: string; }) => {
+    const [day, month, year] = details.date.split('/');
+    const [hours, minutes] = details.time.split(':');
+    const newAppointmentDate = new Date(+year, +month - 1, +day, +hours, +minutes);
+
+    const newAppointment: Appointment = {
+      id: `appt-${Date.now()}`,
+      clientName: details.clientName,
+      clientAvatarUrl: '', // Or a default one
+      dateTime: newAppointmentDate,
+      notes: details.serviceName,
+      status: 'Agendado',
+      admin: 'Admin Master', // Assuming current user
+    };
+
+    setAppointments(prev => [...prev, newAppointment]);
     setFormOpen(false);
     toast({
       title: "Agendamento Criado!",
       description: `Cliente ${details.clientName} agendado para ${details.date} às ${details.time} com sucesso!`,
       className: 'bg-green-100 border-green-300 text-green-800'
     });
-    // Here you would typically refetch or update your appointments state
   };
 
 

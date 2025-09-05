@@ -45,7 +45,7 @@ type FormData = {
 };
 
 interface NewAppointmentWizardProps {
-    onFinish: (details: {clientName: string; date: string; time: string;}) => void;
+    onFinish: (details: {clientName: string; date: string; time: string; serviceName: string;}) => void;
 }
 
 
@@ -121,11 +121,12 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
 
   const handleSubmit = () => {
     const summary = getSummary();
-    if(summary.clientName && summary.date && summary.time) {
+    if(summary.clientName && summary.date && summary.time && summary.serviceName) {
         onFinish({
             clientName: summary.clientName,
             date: summary.date,
-            time: summary.time
+            time: summary.time,
+            serviceName: summary.serviceName,
         });
     }
   };
@@ -339,5 +340,3 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
     </div>
   );
 }
-
-    
