@@ -135,8 +135,6 @@ export const appointments: Appointment[] = [
   },
 ];
 
-export const recentAppointments = appointments.filter(a => a.status === 'Agendado' || a.status === 'Realizado').slice(0, 5);
-
 export const kpiData = [
   {
     title: "Total Agendamentos (Mês)",
@@ -165,11 +163,16 @@ export const kpiData = [
 ];
 
 export const chartData = [
-  { name: "Admin 1", total: Math.floor(Math.random() * 50) + 10 },
-  { name: "Admin 2", total: Math.floor(Math.random() * 50) + 10 },
-  { name: "Admin 3", total: Math.floor(Math.random() * 50) + 10 },
-  { name: "Admin 4", total: Math.floor(Math.random() * 50) + 10 },
-  { name: "Admin 5", total: Math.floor(Math.random() * 50) + 10 },
-  { name: "Admin 6", total: Math.floor(Math.random() * 50) + 10 },
-  { name: "Admin 7", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Jan", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Fev", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Mar", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Abr", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Mai", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Jun", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Jul", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Ago", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Set", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Out", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Nov", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Dez", total: Math.floor(Math.random() * 50) + 10 },
 ];

@@ -67,7 +67,7 @@ export default function DashboardPage() {
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>Visão Geral</CardTitle>
-            <CardDescription>Produtividade por Admin no último mês.</CardDescription>
+            <CardDescription>Sua produtividade nos últimos meses.</CardDescription>
           </CardHeader>
           <CardContent>
             <OverviewChart />
