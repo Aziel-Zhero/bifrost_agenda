@@ -58,7 +58,7 @@ export default function MeusClientesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="telegram">Telegram</Label>
-                <Input id="telegram" placeholder="@usuario" />
+                <Input id="telegram" placeholder="ID ou Telefone" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

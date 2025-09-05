@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, User } from "lucide-react";
 import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,12 @@ export const columns: ColumnDef<Client>[] = [
       );
     },
     cell: ({ row }) => {
-      return <span>{row.original.name}</span>;
+      return (
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4 text-muted-foreground" />
+          <span>{row.original.name}</span>
+        </div>
+      );
     },
   },
   {
