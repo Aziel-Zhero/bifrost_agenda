@@ -1,48 +1,32 @@
-import CancellationInsights from "@/components/dashboard/cancellation-insights";
+import { PlusCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { clients } from "@/lib/mock-data";
+import { columns } from "../clientes/components/columns";
+import { DataTable } from "../clientes/components/data-table";
 
 export default function RelatoriosPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Relatórios e Insights</h1>
+          <h1 className="text-2xl font-bold">Relatório de Clientes</h1>
           <p className="text-muted-foreground">
-            Analise dados e extraia informações valiosas.
+            Visualize todos os clientes cadastrados no sistema.
           </p>
         </div>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Adicionar Cliente
+        </Button>
       </div>
 
-      <CancellationInsights />
-
       <Card>
-        <CardHeader>
-          <CardTitle>Exportar Relatórios</CardTitle>
-          <CardDescription>
-            Gere relatórios completos em diversos formatos.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4">
-          <Button variant="outline">
-            <FileDown className="mr-2 h-4 w-4" />
-            Relatório Diário (PDF)
-          </Button>
-          <Button variant="outline">
-            <FileDown className="mr-2 h-4 w-4" />
-            Relatório Mensal (CSV)
-          </Button>
-          <Button variant="outline">
-            <FileDown className="mr-2 h-4 w-4" />
-            Histórico por Cliente (Excel)
-          </Button>
+        <CardContent className="pt-6">
+          <DataTable columns={columns} data={clients} />
         </CardContent>
       </Card>
     </div>
