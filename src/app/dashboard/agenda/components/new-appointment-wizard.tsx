@@ -51,7 +51,7 @@ interface NewAppointmentWizardProps {
 
 export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Partial<FormData>>({
+  const [formData, setFormData] = useState<FormData>({
     clientType: 'existing',
     date: new Date(),
     newClientName: '',
@@ -91,6 +91,7 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
   };
 
   const handleFieldChange = (field: keyof FormData, value: any) => {
+    let finalValue = value;
     if (field === 'newClientWhatsapp') {
       const onlyNums = value.replace(/\D/g, '');
       let masked = '';
@@ -103,9 +104,9 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
       if (onlyNums.length > 7) {
         masked += `-${onlyNums.substring(7,11)}`;
       }
-      value = masked;
+      finalValue = masked;
     }
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: finalValue }));
   };
   
   const getSummary = () => {
@@ -121,6 +122,12 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
 
   const handleSubmit = () => {
     const summary = getSummary();
+    if (formData.clientType === 'new' && (!formData.newClientName || !formData.newClientWhatsapp)) {
+        // Simple validation, should be improved with a toast or inline message
+        console.error("New client details are missing");
+        return;
+    }
+
     if(summary.clientName && summary.date && summary.time && summary.serviceName) {
         onFinish({
             clientName: summary.clientName,
@@ -215,7 +222,7 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
                       <SelectContent>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
-                            {client.name}
+                            {client.name} - {client.whatsapp}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -298,24 +305,24 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
                     <h4 className="font-semibold">Confirme os Detalhes</h4>
                      <div className="text-left bg-muted p-4 rounded-md space-y-3">
                         <div className="flex items-center gap-2">
-                           <User className="text-muted-foreground" /> 
+                           <User className="text-muted-foreground h-5 w-5" /> 
                            <p><strong>Cliente:</strong> {getSummary().clientName}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                           <Tag className="text-muted-foreground" />
+                           <Tag className="text-muted-foreground h-5 w-5" />
                            <p><strong>Serviço:</strong> {getSummary().serviceName}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                           <CalendarIcon className="text-muted-foreground" />
+                           <CalendarIcon className="text-muted-foreground h-5 w-5" />
                            <p><strong>Data:</strong> {getSummary().date}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Clock className="text-muted-foreground" />
+                            <Clock className="text-muted-foreground h-5 w-5" />
                            <p><strong>Hora:</strong> {getSummary().time}</p>
                         </div>
                         {formData.notes && (
                              <div className="flex items-start gap-2">
-                                <Pencil className="text-muted-foreground mt-1" />
+                                <Pencil className="text-muted-foreground mt-1 h-5 w-5" />
                                 <p><strong>Observações:</strong> {formData.notes}</p>
                              </div>
                         )}
