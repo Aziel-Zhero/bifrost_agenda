@@ -6,8 +6,17 @@ import { ArrowUpDown, User } from "lucide-react";
 import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-import type { AppointmentReport } from "@/types";
+import type { AppointmentReport, AppointmentStatus } from "@/types";
+
+const statusVariant: Record<AppointmentStatus, string> = {
+  Agendado: "bg-yellow-100 text-yellow-800",
+  Realizado: "bg-green-100 text-green-800",
+  Cancelado: "bg-red-100 text-red-800",
+  Bloqueado: "bg-gray-200 text-gray-800",
+};
 
 export const columns: ColumnDef<AppointmentReport>[] = [
   {
@@ -72,5 +81,17 @@ export const columns: ColumnDef<AppointmentReport>[] = [
   {
     accessorKey: "admin",
     header: "Agendado por"
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+         <Badge variant="outline" className={cn('border-none text-xs', statusVariant[status])}>
+            {status}
+        </Badge>
+      );
+    },
   },
 ];
