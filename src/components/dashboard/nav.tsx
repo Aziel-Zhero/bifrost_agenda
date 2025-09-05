@@ -18,7 +18,7 @@ export const menuItems = [
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/dashboard/servicos", label: "Serviços", icon: ClipboardList },
   { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
-  { href: "/dashboard/relatorios", label: "Relatórios", icon: BookText },
+  { href: "/dashboard/relatorios", label: "Histórico", icon: BookText },
 ];
 
 export default function Nav() {

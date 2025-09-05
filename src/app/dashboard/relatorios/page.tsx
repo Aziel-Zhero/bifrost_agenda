@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Download, Calendar as CalendarIcon } from "lucide-react";
+import { Download, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -39,14 +39,17 @@ export default function RelatoriosPage() {
   
   const filteredAppointments = appointmentReports.filter(appt => {
     if (!dateRange || (!dateRange.from && !dateRange.to)) return true;
-    if (dateRange.from && dateRange.to) {
-        return appt.dateTime >= dateRange.from && appt.dateTime <= dateRange.to;
+    const from = dateRange.from ? new Date(dateRange.from.setHours(0, 0, 0, 0)) : null;
+    const to = dateRange.to ? new Date(dateRange.to.setHours(23, 59, 59, 999)) : null;
+    
+    if (from && to) {
+        return appt.dateTime >= from && appt.dateTime <= to;
     }
-    if (dateRange.from) {
-        return appt.dateTime >= dateRange.from;
+    if (from) {
+        return appt.dateTime >= from;
     }
-    if (dateRange.to) {
-        return appt.dateTime <= dateRange.to;
+    if (to) {
+        return appt.dateTime <= to;
     }
     return true;
   });
@@ -55,9 +58,9 @@ export default function RelatoriosPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Relatório de Agendamentos</h1>
+          <h1 className="text-2xl font-bold">Histórico de Agendamentos</h1>
           <p className="text-muted-foreground">
-            Visualize todos os agendamentos cadastrados no sistema.
+            Visualize e filtre todos os agendamentos do sistema.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +70,7 @@ export default function RelatoriosPage() {
                 id="date"
                 variant={"outline"}
                 className={cn(
-                  "w-[300px] justify-start text-left font-normal",
+                  "w-full sm:w-[300px] justify-start text-left font-normal",
                   !dateRange && "text-muted-foreground"
                 )}
               >
@@ -99,12 +102,8 @@ export default function RelatoriosPage() {
             </PopoverContent>
           </Popover>
           <Button variant="outline">
-              <Upload className="mr-2 h-4 w-4" />
-              Importar
-          </Button>
-          <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
-              Exportar
+              Exportar Histórico
           </Button>
         </div>
       </div>

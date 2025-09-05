@@ -16,11 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { recentAppointments, kpiData, appointments } from "@/lib/mock-data";
-import { cn } from "@/lib/utils";
-import type { AppointmentStatus } from "@/types";
+import { kpiData, appointments } from "@/lib/mock-data";
 import { User } from "lucide-react";
 
 type ClientRanking = {
@@ -29,12 +25,6 @@ type ClientRanking = {
 };
 
 export default function DashboardPage() {
-  const statusVariant: Record<AppointmentStatus, string> = {
-    Agendado: "bg-blue-100 text-blue-800",
-    Realizado: "bg-green-100 text-green-800",
-    Cancelado: "bg-red-100 text-red-800",
-    Bloqueado: "bg-gray-200 text-gray-800",
-  };
 
   const getTopClients = (): ClientRanking[] => {
     const clientCounts = appointments
@@ -84,52 +74,10 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         <div className="flex flex-col gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Agendamentos Recentes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentAppointments.map((appointment) => (
-                      <TableRow key={appointment.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-                                <User className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{appointment.clientName}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {appointment.dateTime.toLocaleDateString("pt-BR")}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant="outline"
-                            className={cn("border-none", statusVariant[appointment.status])}
-                          >
-                            {appointment.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
              <Card>
               <CardHeader>
                 <CardTitle>Top 5 Clientes</CardTitle>
-                <CardDescription>Quem mais marcou presença.</CardDescription>
+                <CardDescription>Quem mais marcou presença até o momento.</CardDescription>
               </CardHeader>
               <CardContent>
                  <Table>
