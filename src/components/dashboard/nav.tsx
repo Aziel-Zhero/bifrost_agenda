@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -11,17 +10,9 @@ import {
   BookText,
   Contact,
 } from "lucide-react";
-import {
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
-import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
-const menuItems = [
+export const menuItems = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/meus-clientes", label: "Meus Clientes", icon: Contact },
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
@@ -35,32 +26,20 @@ export default function Nav() {
 
   return (
     <>
-      <SidebarHeader>
-        <Logo />
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref legacyBehavior>
-                <SidebarMenuButton
-                  as="a"
-                  isActive={pathname === item.href}
-                  className={cn(
-                    pathname === item.href && "bg-sidebar-accent text-sidebar-accent-foreground"
-                  )}
-                  tooltip={{
-                    children: item.label,
-                  }}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarContent>
+      {menuItems.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={cn(
+            "transition-colors hover:text-foreground",
+            pathname === item.href
+              ? "text-foreground"
+              : "text-muted-foreground"
+          )}
+        >
+          {item.label}
+        </Link>
+      ))}
     </>
   );
 }
