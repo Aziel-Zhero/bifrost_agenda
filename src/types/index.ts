@@ -5,6 +5,7 @@ export type Client = {
   telegram?: string;
   avatarUrl: string;
   email: string;
+  admin: string;
 };
 
 export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloqueado';

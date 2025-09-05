@@ -14,6 +14,7 @@ export const clients: Client[] = [
     telegram: "@anasilva",
     avatarUrl: "https://picsum.photos/id/1011/100/100",
     email: "ana.silva@example.com",
+    admin: "Admin Master",
   },
   {
     id: "2",
@@ -22,6 +23,7 @@ export const clients: Client[] = [
     telegram: "@brunocosta",
     avatarUrl: "https://picsum.photos/id/1012/100/100",
     email: "bruno.costa@example.com",
+    admin: "Admin Comum",
   },
   {
     id: "3",
@@ -29,6 +31,7 @@ export const clients: Client[] = [
     whatsapp: "+55 31 99876-5432",
     avatarUrl: "https://picsum.photos/id/1013/100/100",
     email: "carla.dias@example.com",
+    admin: "Admin Master",
   },
   {
     id: "4",
@@ -37,6 +40,7 @@ export const clients: Client[] = [
     telegram: "@danielfarias",
     avatarUrl: "https://picsum.photos/id/1014/100/100",
     email: "daniel.farias@example.com",
+    admin: "Admin Comum",
   },
    {
     id: "5",
@@ -44,6 +48,7 @@ export const clients: Client[] = [
     whatsapp: "+55 81 91234-8765",
     avatarUrl: "https://picsum.photos/id/1027/100/100",
     email: "elisa.martins@example.com",
+    admin: "Admin Master",
   },
 ];
 

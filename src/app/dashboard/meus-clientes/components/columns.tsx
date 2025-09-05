@@ -49,8 +49,11 @@ export const columns: ColumnDef<Client>[] = [
     header: "WhatsApp",
   },
   {
-    accessorKey: "admin",
-    header: "Usuário Designado"
+    accessorKey: "telegram",
+    header: "Telegram",
+    cell: ({ row }) => {
+      return row.original.telegram || "N/A";
+    },
   },
   {
     id: "actions",

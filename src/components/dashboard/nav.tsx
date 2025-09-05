@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Users,
   BookText,
+  Contact,
 } from "lucide-react";
 import {
   SidebarHeader,
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/dashboard/meus-clientes", label: "Meus Clientes", icon: Contact },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
   { href: "/dashboard/relatorios", label: "Relatórios", icon: BookText },
 ];

@@ -9,16 +9,21 @@ import {
 } from "@/components/ui/card";
 import { clients } from "@/lib/mock-data";
 import { columns } from "./components/columns";
-import { DataTable } from "./components/data-table";
+import { DataTable } from "@/app/dashboard/clientes/components/data-table";
 
-export default function ClientesPage() {
+// Mocking current user
+const currentUser = "Admin Master";
+
+export default function MeusClientesPage() {
+  const myClients = clients.filter(client => client.admin === currentUser);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Todos os Clientes</h1>
+          <h1 className="text-2xl font-bold">Meus Clientes</h1>
           <p className="text-muted-foreground">
-            Visualize todos os clientes cadastrados no sistema.
+            Gerencie os clientes que são designados a você.
           </p>
         </div>
         <Button>
@@ -29,7 +34,7 @@ export default function ClientesPage() {
 
       <Card>
         <CardContent className="pt-6">
-          <DataTable columns={columns} data={clients} />
+          <DataTable columns={columns} data={myClients} />
         </CardContent>
       </Card>
     </div>
