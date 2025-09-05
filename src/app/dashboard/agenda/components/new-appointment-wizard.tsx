@@ -53,6 +53,9 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
   const [formData, setFormData] = useState<Partial<FormData>>({
     clientType: 'existing',
     date: new Date(),
+    newClientName: '',
+    newClientWhatsapp: '',
+    notes: '',
   });
 
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -125,7 +128,13 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
                   onValueChange={(value: 'new' | 'existing') => {
                       handleFieldChange("clientType", value);
                       // Reset other fields when changing type
-                      setFormData(prev => ({ clientType: value, date: prev.date }));
+                      setFormData(prev => ({ 
+                        clientType: value, 
+                        date: prev.date,
+                        newClientName: '',
+                        newClientWhatsapp: '',
+                        notes: '',
+                      }));
                   }}
                   className="flex gap-8"
                 >
@@ -242,7 +251,7 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
                     <Textarea 
                         placeholder="Ex: Cliente tem preferência por café..."
                         onChange={e => handleFieldChange('notes', e.target.value)}
-                        value={formData.notes || ''}
+                        value={formData.notes}
                     />
                 </div>
             )}
