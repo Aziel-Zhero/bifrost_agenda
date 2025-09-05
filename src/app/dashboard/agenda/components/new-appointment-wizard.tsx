@@ -19,6 +19,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { clients, services } from "@/lib/mock-data";
 import { ptBR } from 'date-fns/locale';
+import { User, Calendar as CalendarIcon, Clock, Tag, Pencil } from "lucide-react";
 
 const steps = [
   { id: 1, name: "Tipo de Cliente" },
@@ -55,15 +56,29 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
     date: new Date(),
     newClientName: '',
     newClientWhatsapp: '',
+    existingClientId: '',
+    serviceId: '',
+    time: '',
     notes: '',
   });
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
+  const isNextDisabled = () => {
+    const stepId = steps[currentStep].id;
+    if (stepId === 2) {
+      if (formData.clientType === 'new') {
+        return !formData.newClientName || !formData.newClientWhatsapp || formData.newClientWhatsapp.replace(/\D/g, '').length < 11;
+      }
+      return !formData.existingClientId;
+    }
+    if (stepId === 3) return !formData.serviceId;
+    if (stepId === 4) return !formData.date;
+    if (stepId === 5) return !formData.time;
+    return false;
+  };
+
   const handleNext = () => {
-    // If on the first step, and we're selecting an existing client,
-    // we need to show the client selector next.
-    // The "Detalhes do Cliente" step should have two variants.
     if (currentStep < steps.length - 1) {
        setCurrentStep(currentStep + 1);
     }
@@ -76,6 +91,20 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
   };
 
   const handleFieldChange = (field: keyof FormData, value: any) => {
+    if (field === 'newClientWhatsapp') {
+      const onlyNums = value.replace(/\D/g, '');
+      let masked = '';
+      if (onlyNums.length > 0) {
+        masked = `(${onlyNums.substring(0,2)}`;
+      }
+      if (onlyNums.length > 2) {
+        masked += `) ${onlyNums.substring(2,7)}`;
+      }
+      if (onlyNums.length > 7) {
+        masked += `-${onlyNums.substring(7,11)}`;
+      }
+      value = masked;
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
   
@@ -129,11 +158,11 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
                       handleFieldChange("clientType", value);
                       // Reset other fields when changing type
                       setFormData(prev => ({ 
+                        ...prev,
                         clientType: value, 
-                        date: prev.date,
                         newClientName: '',
                         newClientWhatsapp: '',
-                        notes: '',
+                        existingClientId: '',
                       }));
                   }}
                   className="flex gap-8"
@@ -164,7 +193,13 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="newClientWhatsapp">WhatsApp</Label>
-                      <Input id="newClientWhatsapp" placeholder="(99) 99999-9999" value={formData.newClientWhatsapp} onChange={e => handleFieldChange('newClientWhatsapp', e.target.value)} />
+                      <Input 
+                        id="newClientWhatsapp" 
+                        placeholder="(99) 99999-9999" 
+                        value={formData.newClientWhatsapp} 
+                        onChange={e => handleFieldChange('newClientWhatsapp', e.target.value)} 
+                        maxLength={15}
+                      />
                     </div>
                   </>
                 ) : (
@@ -260,12 +295,29 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
             {currentStepInfo.id === 7 && (
                 <div className="space-y-4 text-center">
                     <h4 className="font-semibold">Confirme os Detalhes</h4>
-                    <div className="text-left bg-muted p-4 rounded-md space-y-2">
-                        <p><strong>Cliente:</strong> {getSummary().clientName}</p>
-                        <p><strong>Serviço:</strong> {getSummary().serviceName}</p>
-                        <p><strong>Data:</strong> {getSummary().date}</p>
-                        <p><strong>Hora:</strong> {getSummary().time}</p>
-                        {formData.notes && <p><strong>Observações:</strong> {formData.notes}</p>}
+                     <div className="text-left bg-muted p-4 rounded-md space-y-3">
+                        <div className="flex items-center gap-2">
+                           <User className="text-muted-foreground" /> 
+                           <p><strong>Cliente:</strong> {getSummary().clientName}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <Tag className="text-muted-foreground" />
+                           <p><strong>Serviço:</strong> {getSummary().serviceName}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <CalendarIcon className="text-muted-foreground" />
+                           <p><strong>Data:</strong> {getSummary().date}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="text-muted-foreground" />
+                           <p><strong>Hora:</strong> {getSummary().time}</p>
+                        </div>
+                        {formData.notes && (
+                             <div className="flex items-start gap-2">
+                                <Pencil className="text-muted-foreground mt-1" />
+                                <p><strong>Observações:</strong> {formData.notes}</p>
+                             </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -279,7 +331,7 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
           Voltar
         </Button>
         {currentStep < steps.length - 1 ? (
-          <Button onClick={handleNext}>Próximo</Button>
+          <Button onClick={handleNext} disabled={isNextDisabled()}>Próximo</Button>
         ) : (
           <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">Finalizar Agendamento</Button>
         )}
@@ -287,3 +339,5 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
     </div>
   );
 }
+
+    
