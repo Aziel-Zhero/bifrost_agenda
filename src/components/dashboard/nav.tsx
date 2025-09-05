@@ -9,6 +9,7 @@ import {
   Users,
   BookText,
   Contact,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export const menuItems = [
   { href: "/dashboard/meus-clientes", label: "Meus Clientes", icon: Contact },
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/dashboard/clientes", label: "Lista de Clientes Geral", icon: Users },
+  { href: "/dashboard/servicos", label: "Serviços", icon: ClipboardList },
   { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Relatórios", icon: BookText },
 ];

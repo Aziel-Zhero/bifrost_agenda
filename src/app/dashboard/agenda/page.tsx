@@ -20,23 +20,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { appointments, clients } from "@/lib/mock-data";
+import { appointments } from "@/lib/mock-data";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { cn } from "@/lib/utils";
+import NewAppointmentWizard from './components/new-appointment-wizard';
+import { Toaster } from "@/components/ui/toaster"
+import { useToast } from "@/hooks/use-toast"
+import { ptBR } from 'date-fns/locale';
 
 export default function AgendaPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isFormOpen, setFormOpen] = useState(false);
+  const { toast } = useToast();
 
   const selectedDayAppointments = appointments.filter(
     (appt) =>
@@ -49,8 +44,20 @@ export default function AgendaPage() {
     Cancelado: "bg-red-100 text-red-800",
     Bloqueado: "bg-gray-200 text-gray-800",
   };
+  
+  const handleAppointmentSuccess = (details: { clientName: string; date: string; time: string; }) => {
+    setFormOpen(false);
+    toast({
+      title: "Agendamento Criado!",
+      description: `Cliente ${details.clientName} agendado para ${details.date} às ${details.time} com sucesso!`,
+    });
+    // Here you would typically refetch or update your appointments state
+  };
+
 
   return (
+    <>
+    <Toaster />
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Agenda</h1>
@@ -61,37 +68,11 @@ export default function AgendaPage() {
               Novo Agendamento
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[650px]">
             <DialogHeader>
               <DialogTitle>Novo Agendamento</DialogTitle>
             </DialogHeader>
-            <form className="space-y-4">
-               <div className="space-y-2">
-                <Label htmlFor="client">Cliente</Label>
-                <Select>
-                  <SelectTrigger id="client">
-                    <SelectValue placeholder="Selecione um cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date">Data e Hora</Label>
-                <Input id="date" type="datetime-local" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Textarea id="notes" placeholder="Adicione observações sobre o agendamento" />
-              </div>
-              <div className="flex justify-end gap-2">
-                 <Button type="button" variant="ghost" onClick={() => setFormOpen(false)}>Cancelar</Button>
-                 <Button type="submit" className="bg-accent hover:bg-accent/90">Salvar</Button>
-              </div>
-            </form>
+            <NewAppointmentWizard onFinish={handleAppointmentSuccess} />
           </DialogContent>
         </Dialog>
       </div>
@@ -104,6 +85,7 @@ export default function AgendaPage() {
               selected={date}
               onSelect={setDate}
               className="w-full"
+              locale={ptBR}
               classNames={{
                 day_selected:
                   "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
@@ -153,5 +135,6 @@ export default function AgendaPage() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

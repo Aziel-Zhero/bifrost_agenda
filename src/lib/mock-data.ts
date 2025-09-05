@@ -1,4 +1,4 @@
-import type { Appointment, Client } from "@/types";
+import type { Appointment, Client, Service } from "@/types";
 import {
   CalendarClock,
   Ban,
@@ -52,13 +52,21 @@ export const clients: Client[] = [
   },
 ];
 
+export const services: Service[] = [
+    { id: 'serv-1', name: 'Maquiagem para Casamento', duration: '2 horas', price: 450.00 },
+    { id: 'serv-2', name: 'Maquiagem para Festa de 15 anos', duration: '1 hora 30 min', price: 300.00 },
+    { id: 'serv-3', name: 'Maquiagem Social', duration: '1 hora', price: 200.00 },
+    { id: 'serv-4', name: 'Penteado', duration: '1 hora', price: 150.00 },
+    { id: 'serv-5', name: 'Design de Sobrancelhas', duration: '30 min', price: 50.00 },
+];
+
 export const appointments: Appointment[] = [
   {
     id: "appt-1",
     clientName: "Ana Silva",
     clientAvatarUrl: "https://picsum.photos/id/1011/100/100",
     dateTime: new Date(new Date().setHours(9, 0, 0, 0)),
-    notes: "Reunião de alinhamento.",
+    notes: "Maquiagem para Casamento",
     status: "Agendado",
     admin: "Admin Master",
   },
@@ -67,7 +75,7 @@ export const appointments: Appointment[] = [
     clientName: "Bruno Costa",
     clientAvatarUrl: "https://picsum.photos/id/1012/100/100",
     dateTime: new Date(new Date().setHours(11, 30, 0, 0)),
-    notes: "Apresentação do projeto.",
+    notes: "Maquiagem Social",
     status: "Agendado",
     admin: "Admin Comum",
   },
@@ -76,7 +84,7 @@ export const appointments: Appointment[] = [
     clientName: "Carla Dias",
     clientAvatarUrl: "https://picsum.photos/id/1013/100/100",
     dateTime: new Date(new Date().setHours(14, 0, 0, 0)),
-    notes: "Discussão de contrato.",
+    notes: "Penteado",
     status: "Realizado",
     admin: "Admin Master",
   },
@@ -94,7 +102,7 @@ export const appointments: Appointment[] = [
     clientName: "Elisa Martins",
     clientAvatarUrl: "https://picsum.photos/id/1027/100/100",
     dateTime: new Date(new Date(new Date().setDate(new Date().getDate() + 1)).setHours(10, 0, 0, 0)),
-    notes: "Sessão de fotos.",
+    notes: "Design de Sobrancelhas",
     status: "Agendado",
     admin: "Admin Master",
   },

@@ -19,3 +19,10 @@ export type Appointment = {
   status: AppointmentStatus;
   admin: string;
 };
+
+export type Service = {
+  id: string;
+  name: string;
+  duration: string; // e.g., "30 min", "1 hora"
+  price: number;
+};
