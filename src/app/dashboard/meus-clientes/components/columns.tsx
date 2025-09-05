@@ -58,11 +58,6 @@ export const columns: ColumnDef<Client>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(client.id)}
-              >
-                Copiar ID do cliente
-              </DropdownMenuItem>
               <DropdownMenuItem>Editar</DropdownMenuItem>
               <DropdownMenuItem className="text-destructive">
                 Excluir
