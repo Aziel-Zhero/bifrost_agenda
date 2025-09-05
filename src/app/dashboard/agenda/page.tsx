@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState } from "react";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -12,7 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,7 @@ export default function AgendaPage() {
     toast({
       title: "Agendamento Criado!",
       description: `Cliente ${details.clientName} agendado para ${details.date} às ${details.time} com sucesso!`,
+      className: 'bg-green-100 border-green-300 text-green-800'
     });
     // Here you would typically refetch or update your appointments state
   };
@@ -68,7 +69,7 @@ export default function AgendaPage() {
               Novo Agendamento
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[650px]">
+          <DialogContent className="sm:max-w-[750px]">
             <DialogHeader>
               <DialogTitle>Novo Agendamento</DialogTitle>
             </DialogHeader>
@@ -111,10 +112,9 @@ export default function AgendaPage() {
                 .map((appt: Appointment) => (
                   <div key={appt.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10">
-                         <AvatarImage src={appt.clientAvatarUrl} alt={appt.clientName} data-ai-hint="person" />
-                        <AvatarFallback>{appt.clientName.charAt(0)}</AvatarFallback>
-                      </Avatar>
+                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                       </div>
                       <div>
                         <p className="font-semibold">{appt.clientName}</p>
                         <p className="text-sm text-muted-foreground">{appt.dateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {appt.notes}</p>
