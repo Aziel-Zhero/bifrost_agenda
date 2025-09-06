@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -7,6 +8,8 @@ import {
   LogOut,
   Settings,
   PanelLeft,
+  User,
+  Building,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -85,9 +88,17 @@ export default function Header() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Configurações
+               <DropdownMenuItem asChild>
+                <Link href="/dashboard/perfil">
+                  <User className="mr-2 h-4 w-4" />
+                  Meu Perfil
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                 <Link href="/dashboard/perfil-studio">
+                    <Building className="mr-2 h-4 w-4" />
+                    Perfil do Studio
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>

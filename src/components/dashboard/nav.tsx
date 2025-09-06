@@ -10,8 +10,6 @@ import {
   BookText,
   Contact,
   ClipboardList,
-  User,
-  Building,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,8 +20,6 @@ export const menuItems = [
   { href: "/dashboard/servicos", label: "Serviços", icon: ClipboardList },
   { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Histórico", icon: BookText },
-  { href: "/dashboard/perfil", label: "Perfil", icon: User },
-  { href: "/dashboard/perfil-studio", label: "Perfil Studio", icon: Building },
 ];
 
 export default function Nav() {
