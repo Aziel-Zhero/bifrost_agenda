@@ -60,19 +60,30 @@ export default function PerfilStudioPage() {
     const filename = `${studioName.replace(/\s/g, '')}_${today}.csv`;
     
     // Mocked dashboard data for export
-    const dashboardData = {
-        gains: "R$ 8500,00",
-        cancellations: "15",
-        totalClients: "48",
-        newClients: "22"
+    const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const monthlyData = months.slice(0, new Date().getMonth() + 1).map(month => ({
+        month,
+        gains: (Math.random() * 2000 + 7000).toFixed(2),
+        cancellations: Math.floor(Math.random() * 5 + 10),
+        totalClients: Math.floor(Math.random() * 10 + 40),
+        newClients: Math.floor(Math.random() * 5 + 15)
+    }));
+
+    const totals = {
+        gains: monthlyData.reduce((sum, data) => sum + parseFloat(data.gains), 0).toFixed(2),
+        cancellations: monthlyData.reduce((sum, data) => sum + data.cancellations, 0),
+        totalClients: monthlyData.reduce((sum, data) => sum + data.totalClients, 0),
+        newClients: monthlyData.reduce((sum, data) => sum + data.newClients, 0)
     };
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "Metrica,Valor\n"
-      + `Ganhos Totais (Ano),${dashboardData.gains}\n`
-      + `Cancelamentos (Ano),${dashboardData.cancellations}\n`
-      + `Clientes Atendidos (Ano),${dashboardData.totalClients}\n`
-      + `Novos Clientes (Ano),${dashboardData.newClients}\n`;
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + "Mês,Ganhos (R$),Cancelamentos,Clientes Atendidos,Novos Clientes\n";
+    
+    monthlyData.forEach(data => {
+        csvContent += `${data.month},${data.gains},${data.cancellations},${data.totalClients},${data.newClients}\n`;
+    });
+
+    csvContent += `Total,${totals.gains},${totals.cancellations},${totals.totalClients},${totals.newClients}\n`;
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -207,7 +218,7 @@ export default function PerfilStudioPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Exportar Relatório Atual?</AlertDialogTitle>
             <AlertDialogDescription>
-               Recomendamos exportar os dados atuais para manter um histórico. O arquivo CSV conterá os dados de desempenho consolidados de janeiro até a data atual do ano corrente.
+               Recomendamos exportar os dados atuais para manter um histórico. O arquivo CSV conterá os dados de desempenho mensais, de janeiro até a data atual, com um total consolidado no final.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
