@@ -116,7 +116,7 @@ export default function AgendaGeralPage() {
             head_cell: 'flex-1 text-muted-foreground rounded-md w-full font-normal text-[0.8rem] capitalize py-2 border-b border-r',
             row: 'flex w-full',
             cell: cn(
-              "h-28 w-full text-left text-sm p-0 relative border-b border-r",
+              "h-24 sm:h-28 w-full text-left text-sm p-0 relative border-b border-r",
                "[&:nth-child(7n)]:border-r-0"
             ),
             day: 'h-full w-full focus-within:relative focus-within:z-20',
