@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,17 +19,34 @@ import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 
 export default function PerfilStudioPage() {
   const { toast } = useToast();
+  const [isEditingGoals, setIsEditingGoals] = useState(false);
+  const [goals, setGoals] = useState({
+    monthlyGoal: "500",
+    clientsGoal: "32",
+    newClientsGoal: "25",
+  });
+
+  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setGoals(prev => ({...prev, [id]: value}));
+  }
 
   const handleSaveGoals = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    // Here you would typically handle the form submission,
-    // e.g., send the data to your backend.
+    // Here you would typically handle the complex dialog/export logic.
+    // For now, we just show a success toast and exit edit mode.
     toast({
       title: "Sucesso!",
       description: "Suas metas foram salvas.",
       className: 'bg-green-100 border-green-300 text-green-800'
     });
+    setIsEditingGoals(false);
   };
+  
+  const handleCancelEdit = () => {
+    // Here you might want to reset `goals` to their original state if they were fetched
+    setIsEditingGoals(false);
+  }
 
   return (
     <div className="flex flex-col gap-8 mx-auto max-w-2xl">
@@ -65,19 +83,26 @@ export default function PerfilStudioPage() {
           <CardContent className="space-y-4">
               <div className="space-y-2">
                   <Label htmlFor="monthlyGoal">Meta de Ganhos (R$)</Label>
-                  <Input id="monthlyGoal" type="number" placeholder="Ex: 5000" />
+                  <Input id="monthlyGoal" type="number" value={goals.monthlyGoal} onChange={handleGoalChange} disabled={!isEditingGoals} />
               </div>
               <div className="space-y-2">
                   <Label htmlFor="clientsGoal">Meta de Clientes Atendidos</Label>
-                  <Input id="clientsGoal" type="number" placeholder="Ex: 50" />
+                  <Input id="clientsGoal" type="number" value={goals.clientsGoal} onChange={handleGoalChange} disabled={!isEditingGoals} />
               </div>
                <div className="space-y-2">
                   <Label htmlFor="newClientsGoal">Meta de Novos Clientes</Label>
-                  <Input id="newClientsGoal" type="number" placeholder="Ex: 10" />
+                  <Input id="newClientsGoal" type="number" value={goals.newClientsGoal} onChange={handleGoalChange} disabled={!isEditingGoals} />
               </div>
           </CardContent>
-           <CardFooter className="flex justify-end">
-              <Button onClick={handleSaveGoals}>Salvar Metas</Button>
+           <CardFooter className="flex justify-end gap-2">
+                {!isEditingGoals ? (
+                    <Button onClick={() => setIsEditingGoals(true)}>Alterar Metas</Button>
+                ) : (
+                    <>
+                        <Button variant="ghost" onClick={handleCancelEdit}>Cancelar</Button>
+                        <Button onClick={handleSaveGoals}>Salvar Metas</Button>
+                    </>
+                )}
           </CardFooter>
         </Card>
 
