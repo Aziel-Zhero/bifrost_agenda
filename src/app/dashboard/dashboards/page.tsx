@@ -25,7 +25,7 @@ import type { Client } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
@@ -62,9 +62,24 @@ export default function DashboardPage() {
 
   const kpiData: Kpi[] = useMemo(() => {
     const completedInPeriod = filteredAppointments.filter(a => a.status === 'Realizado');
+    
+    // Previous period for comparison
+    const prevMonthDate = subMonths(dateRange?.from || new Date(), 1);
+    const prevMonthStart = startOfMonth(prevMonthDate);
+    const prevMonthEnd = endOfMonth(prevMonthDate);
+    
+    const prevMonthAppointments = appointments.filter(appt => 
+      isWithinInterval(appt.dateTime, { start: prevMonthStart, end: prevMonthEnd }) && appt.status === 'Realizado'
+    );
+
     const totalGains = completedInPeriod.reduce((sum, appt) => {
       const service = services.find(s => s.id === appt.serviceId);
       return sum + (service?.price || 0);
+    }, 0);
+
+    const prevMonthGains = prevMonthAppointments.reduce((sum, appt) => {
+        const service = services.find(s => s.id === appt.serviceId);
+        return sum + (service?.price || 0);
     }, 0);
 
     const totalCancellations = filteredAppointments.filter(a => a.status === 'Cancelado').length;
@@ -72,31 +87,40 @@ export default function DashboardPage() {
     const uniqueClientNames = new Set(appointments.map(a => a.clientName));
     const totalClients = uniqueClientNames.size;
 
+    const calculateChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? "+100%" : "0%";
+        const percentageChange = ((current - previous) / previous) * 100;
+        return `${percentageChange > 0 ? '+' : ''}${percentageChange.toFixed(0)}%`;
+    }
+
     return [
       {
         title: "Ganhos (Período)",
         value: `R$ ${totalGains.toFixed(2)}`,
         icon: kpiIcons.gains,
+        change: calculateChange(totalGains, prevMonthGains),
       },
       {
         title: "Cancelamentos",
         value: `${totalCancellations}`,
         icon: kpiIcons.cancellations,
+        change: "+5%", // Mocked data
       },
       {
         title: "Clientes",
         value: `${totalClients}`,
         icon: kpiIcons.clients,
+        change: "+2%", // Mocked data
       },
       {
         title: "Novos Clientes (Mês)",
         value: "8",
         icon: kpiIcons.newClients,
-        change: "+20%",
+        change: "+20%", // Mocked data
       },
     ]
 
-  }, [filteredAppointments]);
+  }, [filteredAppointments, dateRange]);
 
 
   const getTopClients = (): ClientRanking[] => {
