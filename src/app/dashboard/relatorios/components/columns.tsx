@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils";
 import type { AppointmentReport, AppointmentStatus } from "@/types";
 
 const statusVariant: Record<AppointmentStatus, string> = {
-  Agendado: "bg-yellow-100 text-yellow-800",
-  Realizado: "bg-green-100 text-green-800",
-  Cancelado: "bg-red-100 text-red-800",
-  Bloqueado: "bg-gray-200 text-gray-800",
+  Agendado: "status-agendado",
+  Realizado: "status-realizado",
+  Cancelado: "status-cancelado",
+  Bloqueado: "status-bloqueado",
 };
 
 export const columns: ColumnDef<AppointmentReport>[] = [

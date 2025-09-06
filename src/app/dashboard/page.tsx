@@ -57,10 +57,10 @@ export default function DashboardRedirectPage() {
   }, [period]);
 
   const statusVariant: Record<AppointmentStatus, string> = {
-    Agendado: "bg-blue-100 text-blue-800",
-    Realizado: "bg-green-100 text-green-800",
-    Cancelado: "bg-red-100 text-red-800",
-    Bloqueado: "bg-gray-200 text-gray-800",
+    Agendado: "status-agendado",
+    Realizado: "status-realizado",
+    Cancelado: "status-cancelado",
+    Bloqueado: "status-bloqueado",
   };
 
   const getPeriodTitle = () => {
