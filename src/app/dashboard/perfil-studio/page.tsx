@@ -61,18 +61,18 @@ export default function PerfilStudioPage() {
     
     // Mocked dashboard data for export
     const dashboardData = {
-        gains: "1250.00",
-        cancellations: "2",
+        gains: "R$ 8500,00",
+        cancellations: "15",
         totalClients: "48",
-        newClients: "8"
+        newClients: "22"
     };
 
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Metrica,Valor\n"
-      + `Ganhos,R$ ${dashboardData.gains}\n`
-      + `Cancelamentos,${dashboardData.cancellations}\n`
-      + `Clientes Totais,${dashboardData.totalClients}\n`
-      + `Novos Clientes,${dashboardData.newClients}\n`;
+      + `Ganhos Totais (Ano),${dashboardData.gains}\n`
+      + `Cancelamentos (Ano),${dashboardData.cancellations}\n`
+      + `Clientes Atendidos (Ano),${dashboardData.totalClients}\n`
+      + `Novos Clientes (Ano),${dashboardData.newClients}\n`;
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -207,7 +207,7 @@ export default function PerfilStudioPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Exportar Relatório Atual?</AlertDialogTitle>
             <AlertDialogDescription>
-              Isso salvará um arquivo CSV com os dados calculados até o momento, antes de aplicar as novas metas. É recomendado para manter um histórico.
+               Recomendamos exportar os dados atuais para manter um histórico. O arquivo CSV conterá os dados de desempenho consolidados de janeiro até a data atual do ano corrente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
