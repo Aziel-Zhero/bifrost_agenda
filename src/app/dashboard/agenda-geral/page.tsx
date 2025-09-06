@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { isSameDay, format } from 'date-fns';
+import { isSameDay, format, isBefore, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -41,6 +41,16 @@ export default function AgendaGeralPage() {
     const maxVisibleAdmins = 2;
     const visibleAdmins = admins.slice(0, maxVisibleAdmins);
     const hiddenAdminsCount = admins.length - maxVisibleAdmins;
+    
+    const isPast = isBefore(date, startOfToday());
+
+    if (isPast) {
+      return (
+         <div className="h-full w-full p-2 flex flex-col bg-gradient-to-b from-[#00CFFF] via-[#7C3AED] via-40% to-[#F59E0B]">
+            <span className="font-semibold text-white">{format(date, 'd')}</span>
+        </div>
+      )
+    }
 
     if (!dayAppointments) {
       return <div className="h-full w-full p-2">{format(date, 'd')}</div>;
