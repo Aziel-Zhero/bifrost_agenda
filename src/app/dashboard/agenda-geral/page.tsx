@@ -32,7 +32,7 @@ export default function AgendaGeralPage() {
       acc[day][appt.admin].sort();
       return acc;
     }, {} as AppointmentsByDay);
-  }, [appointments]);
+  }, []);
 
   const DayWithAppointments = ({ date }: { date: Date }) => {
     const dayKey = format(date, 'yyyy-MM-dd');
@@ -42,12 +42,12 @@ export default function AgendaGeralPage() {
     const visibleAdmins = admins.slice(0, maxVisibleAdmins);
     const hiddenAdminsCount = admins.length - maxVisibleAdmins;
     
-    const isPast = isBefore(date, startOfToday());
+    const isPast = isBefore(date, startOfToday()) && !isSameDay(date, new Date());
 
     if (isPast) {
       return (
-         <div className="h-full w-full p-2 flex flex-col bg-gradient-to-b from-[#00CFFF] via-[#7C3AED] via-40% to-[#F59E0B]">
-            <span className="font-semibold text-white">{format(date, 'd')}</span>
+         <div className="h-full w-full p-2 flex flex-col bg-gradient-to-b from-[#A5F3FC] via-[#C4B5FD] to-[#E0E7FF]">
+            <span className="font-semibold text-primary-foreground">{format(date, 'd')}</span>
         </div>
       )
     }
