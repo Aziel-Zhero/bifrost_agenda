@@ -58,10 +58,21 @@ export default function PerfilStudioPage() {
   const handleExportAndSave = () => {
     const today = format(new Date(), 'ddMMyyyy');
     const filename = `${studioName.replace(/\s/g, '')}_${today}.csv`;
-    const csvContent = "data:text/csv;charset=utf-8,Metrica,Valor\n"
-      + `Ganhos,${goals.monthlyGoal}\n`
-      + `Clientes Atendidos,${goals.clientsGoal}\n`
-      + `Novos Clientes,${goals.newClientsGoal}\n`;
+    
+    // Mocked dashboard data for export
+    const dashboardData = {
+        gains: "1250.00",
+        cancellations: "2",
+        totalClients: "48",
+        newClients: "8"
+    };
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "Metrica,Valor\n"
+      + `Ganhos,R$ ${dashboardData.gains}\n`
+      + `Cancelamentos,${dashboardData.cancellations}\n`
+      + `Clientes Totais,${dashboardData.totalClients}\n`
+      + `Novos Clientes,${dashboardData.newClients}\n`;
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
