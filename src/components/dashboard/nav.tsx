@@ -10,6 +10,7 @@ import {
   BookText,
   Contact,
   ClipboardList,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export const menuItems = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/meus-clientes", label: "Meus Clientes", icon: Contact },
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/dashboard/agenda-geral", label: "Agenda Geral", icon: Globe },
   { href: "/dashboard/servicos", label: "Serviços", icon: ClipboardList },
   { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Histórico", icon: BookText },
