@@ -1,3 +1,4 @@
+
 export type Client = {
   id: string;
   name: string;
@@ -33,3 +34,10 @@ export type Service = {
   price: number;
   icon?: string;
 };
+
+export type UserProfile = {
+    id: string;
+    name: string;
+    email: string;
+    role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
+}

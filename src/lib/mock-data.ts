@@ -1,4 +1,5 @@
-import type { Appointment, Client, Service } from "@/types";
+
+import type { Appointment, Client, Service, UserProfile } from "@/types";
 import {
   CalendarClock,
   Ban,
@@ -194,6 +195,13 @@ export const serviceIcons: Record<string, React.ElementType> = {
   Scissors,
   Smile,
 };
+
+export const users: UserProfile[] = [
+    { id: 'user-1', name: 'Admin Master', email: 'admin@example.com', role: 'Bifrost' },
+    { id: 'user-2', name: 'Heitor V.', email: 'heitor@example.com', role: 'Heimdall' },
+    { id: 'user-3', name: 'Laura P.', email: 'laura@example.com', role: 'Asgard' },
+    { id: 'user-4', name: 'Pedro M.', email: 'pedro@example.com', role: 'Midgard' },
+];
 
 
 export const chartData = [
