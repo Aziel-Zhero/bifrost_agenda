@@ -29,6 +29,7 @@ import ReactCrop, {
   type PixelCrop,
 } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { Eye, EyeOff } from "lucide-react";
 
 // This is a helper function that will be used to generate the cropped image.
 function getCroppedImg(
@@ -93,6 +94,10 @@ export default function PerfilPage() {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
@@ -150,8 +155,13 @@ export default function PerfilPage() {
                 <AvatarImage src={profilePic} alt="Admin" data-ai-hint="person" />
                 <AvatarFallback>A</AvatarFallback>
               </Avatar>
-              <Input type="file" ref={fileInputRef} onChange={onSelectFile} className="hidden" accept="image/*" />
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>Alterar Foto</Button>
+              <div>
+                <Input type="file" ref={fileInputRef} onChange={onSelectFile} className="hidden" accept="image/*" />
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>Alterar Foto</Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                    Recomendamos imagens 1:1 (quadradas).
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -164,9 +174,29 @@ export default function PerfilPage() {
               <Input id="email" type="email" defaultValue="admin@example.com" disabled />
             </div>
             
-             <div className="space-y-2">
-              <Label htmlFor="password">Alterar Senha</Label>
-              <Input id="password" type="password" placeholder="Digite a nova senha" />
+             <div className="space-y-4 rounded-lg border p-4">
+                <h4 className="font-medium">Alterar Senha</h4>
+                <div className="space-y-2 relative">
+                    <Label htmlFor="currentPassword">Senha Atual</Label>
+                    <Input id="currentPassword" type={showCurrentPassword ? "text" : "password"} placeholder="Digite sua senha atual" />
+                     <Button variant="ghost" size="icon" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowCurrentPassword(prev => !prev)}>
+                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                </div>
+                 <div className="space-y-2 relative">
+                    <Label htmlFor="newPassword">Nova Senha</Label>
+                    <Input id="newPassword" type={showNewPassword ? "text" : "password"} placeholder="Digite a nova senha" />
+                     <Button variant="ghost" size="icon" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                </div>
+                 <div className="space-y-2 relative">
+                    <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                    <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Confirme a nova senha" />
+                     <Button variant="ghost" size="icon" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                </div>
             </div>
 
             <div className="flex justify-end">
