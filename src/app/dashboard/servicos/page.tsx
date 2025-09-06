@@ -34,10 +34,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { services as mockServices } from "@/lib/mock-data";
+import { services as mockServices, serviceIcons } from "@/lib/mock-data";
 import type { Service } from "@/types";
+import { cn } from "@/lib/utils";
+
 
 export default function ServicosPage() {
   const [services, setServices] = useState<Service[]>(mockServices);
@@ -45,7 +54,6 @@ export default function ServicosPage() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   
-  // You would use react-hook-form for a real application
   const [formData, setFormData] = useState<Partial<Service>>({});
 
   const handleEditClick = (service: Service) => {
@@ -62,15 +70,14 @@ export default function ServicosPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedService) {
-      // Update existing service
-      setServices(services.map(s => s.id === selectedService.id ? { ...s, ...formData } : s));
+      setServices(services.map(s => s.id === selectedService.id ? { ...s, ...formData } as Service : s));
     } else {
-      // Add new service
       const newService: Service = {
         id: `serv-${Date.now()}`,
         name: formData.name || "",
         duration: formData.duration || "",
         price: formData.price || 0,
+        icon: formData.icon,
       };
       setServices([...services, newService]);
     }
@@ -91,6 +98,12 @@ export default function ServicosPage() {
     setFormData({});
   };
 
+  const renderIcon = (iconName?: string) => {
+    if (!iconName) return null;
+    const IconComponent = serviceIcons[iconName];
+    return IconComponent ? <IconComponent className="h-5 w-5 text-muted-foreground" /> : null;
+  }
+
   return (
     <>
       <div className="flex flex-col gap-8">
@@ -103,7 +116,7 @@ export default function ServicosPage() {
           </div>
           <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setFormOpen(true)}>
+              <Button onClick={() => { setSelectedService(null); setFormData({}); setFormOpen(true);}}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Adicionar Serviço
               </Button>
@@ -115,16 +128,39 @@ export default function ServicosPage() {
               <form onSubmit={handleFormSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome do Serviço</Label>
-                  <Input id="name" placeholder="Ex: Maquiagem Social" defaultValue={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                  <Input id="name" placeholder="Ex: Maquiagem Social" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required />
                 </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="icon">Ícone</Label>
+                    <Select value={formData.icon} onValueChange={value => setFormData({...formData, icon: value})}>
+                        <SelectTrigger id="icon">
+                            <SelectValue placeholder="Selecione um ícone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Object.keys(serviceIcons).map(iconName => {
+                                const Icon = serviceIcons[iconName];
+                                return (
+                                    <SelectItem key={iconName} value={iconName}>
+                                        <div className="flex items-center gap-2">
+                                            <Icon className="h-5 w-5" />
+                                            <span>{iconName}</span>
+                                        </div>
+                                    </SelectItem>
+                                )
+                            })}
+                        </SelectContent>
+                    </Select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="duration">Duração</Label>
-                    <Input id="duration" placeholder="Ex: 1 hora" defaultValue={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} required />
+                    <Input id="duration" placeholder="Ex: 1 hora" value={formData.duration || ''} onChange={e => setFormData({...formData, duration: e.target.value})} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="price">Preço (R$)</Label>
-                    <Input id="price" type="number" placeholder="Ex: 200.00" defaultValue={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} required/>
+                    <Input id="price" type="number" placeholder="Ex: 200.00" value={formData.price || ''} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} required/>
                   </div>
                 </div>
                 <DialogFooter>
@@ -150,7 +186,12 @@ export default function ServicosPage() {
               <TableBody>
                 {services.map((service) => (
                   <TableRow key={service.id}>
-                    <TableCell className="font-medium">{service.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3 font-medium">
+                        {renderIcon(service.icon)}
+                        {service.name}
+                      </div>
+                    </TableCell>
                     <TableCell>{service.duration}</TableCell>
                     <TableCell>{`R$ ${service.price.toFixed(2)}`}</TableCell>
                     <TableCell className="text-right">

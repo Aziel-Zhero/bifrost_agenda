@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { appointments as mockAppointments } from "@/lib/mock-data";
+import { appointments as mockAppointments, services } from "@/lib/mock-data";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import NewAppointmentWizard from './components/new-appointment-wizard';
@@ -46,7 +46,7 @@ export default function AgendaPage() {
     Bloqueado: "bg-gray-200 text-gray-800",
   };
   
-  const handleAppointmentSuccess = (details: { clientName: string; date: string; time: string; serviceName: string; }) => {
+  const handleAppointmentSuccess = (details: { clientName: string; date: string; time: string; serviceName: string; serviceId: string; }) => {
     const [day, month, year] = details.date.split('/');
     const [hours, minutes] = details.time.split(':');
     const newAppointmentDate = new Date(+year, +month - 1, +day, +hours, +minutes);
@@ -59,6 +59,7 @@ export default function AgendaPage() {
       notes: details.serviceName,
       status: 'Agendado',
       admin: 'Admin Master', // Assuming current user
+      serviceId: details.serviceId,
     };
 
     setAppointments(prev => [...prev, newAppointment]);

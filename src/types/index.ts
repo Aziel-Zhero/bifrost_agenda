@@ -18,6 +18,7 @@ export type Appointment = {
   notes: string;
   status: AppointmentStatus;
   admin: string;
+  serviceId: string;
 };
 
 export type AppointmentReport = Appointment & {
@@ -30,4 +31,5 @@ export type Service = {
   name: string;
   duration: string; // e.g., "30 min", "1 hora"
   price: number;
+  icon?: string;
 };

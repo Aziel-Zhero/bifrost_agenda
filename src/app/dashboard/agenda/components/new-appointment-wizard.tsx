@@ -45,7 +45,7 @@ type FormData = {
 };
 
 interface NewAppointmentWizardProps {
-    onFinish: (details: {clientName: string; date: string; time: string; serviceName: string;}) => void;
+    onFinish: (details: {clientName: string; date: string; time: string; serviceName: string; serviceId: string;}) => void;
 }
 
 
@@ -113,27 +113,29 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
       const clientName = formData.clientType === 'new' 
           ? formData.newClientName 
           : clients.find(c => c.id === formData.existingClientId)?.name;
-      const serviceName = services.find(s => s.id === formData.serviceId)?.name;
+      const service = services.find(s => s.id === formData.serviceId);
+      const serviceName = service?.name;
       const date = formData.date?.toLocaleDateString('pt-BR');
       const time = formData.time;
+      const serviceId = service?.id;
 
-      return { clientName, serviceName, date, time };
+      return { clientName, serviceName, date, time, serviceId };
   }
 
   const handleSubmit = () => {
     const summary = getSummary();
     if (formData.clientType === 'new' && (!formData.newClientName || !formData.newClientWhatsapp)) {
-        // Simple validation, should be improved with a toast or inline message
         console.error("New client details are missing");
         return;
     }
 
-    if(summary.clientName && summary.date && summary.time && summary.serviceName) {
+    if(summary.clientName && summary.date && summary.time && summary.serviceName && summary.serviceId) {
         onFinish({
             clientName: summary.clientName,
             date: summary.date,
             time: summary.time,
             serviceName: summary.serviceName,
+            serviceId: summary.serviceId
         });
     }
   };

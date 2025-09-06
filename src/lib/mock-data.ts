@@ -4,6 +4,11 @@ import {
   Ban,
   Users,
   UserPlus,
+  Home,
+  Briefcase,
+  Heart,
+  Scissors,
+  Smile,
 } from "lucide-react";
 
 export const clients: Client[] = [
@@ -53,11 +58,11 @@ export const clients: Client[] = [
 ];
 
 export const services: Service[] = [
-    { id: 'serv-1', name: 'Maquiagem para Casamento', duration: '2 horas', price: 450.00 },
-    { id: 'serv-2', name: 'Maquiagem para Festa de 15 anos', duration: '1 hora 30 min', price: 300.00 },
-    { id: 'serv-3', name: 'Maquiagem Social', duration: '1 hora', price: 200.00 },
-    { id: 'serv-4', name: 'Penteado', duration: '1 hora', price: 150.00 },
-    { id: 'serv-5', name: 'Design de Sobrancelhas', duration: '30 min', price: 50.00 },
+    { id: 'serv-1', name: 'Maquiagem para Casamento', duration: '2 horas', price: 450.00, icon: 'Heart' },
+    { id: 'serv-2', name: 'Maquiagem para Festa de 15 anos', duration: '1 hora 30 min', price: 300.00, icon: 'Smile' },
+    { id: 'serv-3', name: 'Maquiagem Social (a domicílio)', duration: '1 hora', price: 250.00, icon: 'Home' },
+    { id: 'serv-4', name: 'Penteado', duration: '1 hora', price: 150.00, icon: 'Scissors' },
+    { id: 'serv-5', name: 'Design de Sobrancelhas', duration: '30 min', price: 50.00, icon: 'Briefcase' },
 ];
 
 export const appointments: Appointment[] = [
@@ -69,6 +74,7 @@ export const appointments: Appointment[] = [
     notes: "Maquiagem para Casamento",
     status: "Agendado",
     admin: "Admin Master",
+    serviceId: "serv-1",
   },
   {
     id: "appt-2",
@@ -78,6 +84,7 @@ export const appointments: Appointment[] = [
     notes: "Maquiagem Social",
     status: "Agendado",
     admin: "Admin Comum",
+    serviceId: "serv-3",
   },
   {
     id: "appt-3",
@@ -87,6 +94,7 @@ export const appointments: Appointment[] = [
     notes: "Penteado",
     status: "Realizado",
     admin: "Admin Master",
+    serviceId: "serv-4",
   },
   {
     id: "appt-4",
@@ -96,6 +104,7 @@ export const appointments: Appointment[] = [
     notes: "Motivo: Conflito de agenda.",
     status: "Cancelado",
     admin: "Admin Comum",
+    serviceId: "serv-2",
   },
   {
     id: "appt-5",
@@ -105,6 +114,7 @@ export const appointments: Appointment[] = [
     notes: "Design de Sobrancelhas",
     status: "Agendado",
     admin: "Admin Master",
+    serviceId: "serv-5",
   },
   {
     id: "appt-6",
@@ -114,6 +124,7 @@ export const appointments: Appointment[] = [
     notes: "Almoço",
     status: "Bloqueado",
     admin: "Sistema",
+    serviceId: "",
   },
     {
     id: "appt-7",
@@ -123,6 +134,7 @@ export const appointments: Appointment[] = [
     notes: "Maquiagem",
     status: "Realizado",
     admin: "Admin Master",
+    serviceId: "serv-3",
   },
    {
     id: "appt-8",
@@ -132,35 +144,57 @@ export const appointments: Appointment[] = [
     notes: "Penteado",
     status: "Realizado",
     admin: "Admin Master",
+    serviceId: "serv-4",
+  },
+  // Adding more data for better chart/kpi representation
+  {
+    id: "appt-9",
+    clientName: "Ana Silva",
+    dateTime: new Date(new Date(new Date().setMonth(new Date().getMonth() - 1)).setHours(10, 0, 0, 0)),
+    status: "Realizado",
+    serviceId: "serv-1",
+    clientAvatarUrl: '',
+    notes: '',
+    admin: 'Admin Master',
+  },
+  {
+    id: "appt-10",
+    clientName: "Bruno Costa",
+    dateTime: new Date(new Date(new Date().setMonth(new Date().getMonth() - 1)).setHours(15, 0, 0, 0)),
+    status: "Realizado",
+    serviceId: "serv-2",
+    clientAvatarUrl: '',
+    notes: '',
+    admin: 'Admin Comum',
+  },
+  {
+    id: "appt-11",
+    clientName: "Carla Dias",
+    dateTime: new Date(new Date(new Date().setMonth(new Date().getMonth() - 2)).setHours(10, 0, 0, 0)),
+    status: "Realizado",
+    serviceId: "serv-4",
+    clientAvatarUrl: '',
+    notes: '',
+    admin: 'Admin Master',
   },
 ];
 
-export const kpiData = [
-  {
-    title: "Total Agendamentos (Mês)",
-    value: "124",
-    icon: CalendarClock,
-    change: "+15.2%",
-  },
-  {
-    title: "Taxa de Cancelamento",
-    value: "8.1%",
-    icon: Ban,
-    change: "-1.5%",
-  },
-  {
-    title: "Clientes",
-    value: "57",
-    icon: Users,
-    change: "+5",
-  },
-  {
-    title: "Novos Clientes (Mês)",
-    value: "8",
-    icon: UserPlus,
-    change: "+20%",
-  },
-];
+
+export const kpiIcons = {
+  gains: CalendarClock,
+  cancellations: Ban,
+  clients: Users,
+  newClients: UserPlus,
+};
+
+export const serviceIcons: Record<string, React.ElementType> = {
+  Home,
+  Briefcase,
+  Heart,
+  Scissors,
+  Smile,
+};
+
 
 export const chartData = [
   { name: "Jan", total: Math.floor(Math.random() * 50) + 10 },
@@ -170,7 +204,7 @@ export const chartData = [
   { name: "Mai", total: Math.floor(Math.random() * 50) + 10 },
   { name: "Jun", total: Math.floor(Math.random() * 50) + 10 },
   { name: "Jul", total: Math.floor(Math.random() * 50) + 10 },
-  { name: "Ago", total: Math.floor(Math.random() * 50) + 10 },
+  { name: "Ago", Math: 45, total: Math.floor(Math.random() * 50) + 10 },
   { name: "Set", total: Math.floor(Math.random() * 50) + 10 },
   { name: "Out", total: Math.floor(Math.random() * 50) + 10 },
   { name: "Nov", total: Math.floor(Math.random() * 50) + 10 },
