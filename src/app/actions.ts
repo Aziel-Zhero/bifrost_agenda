@@ -1,5 +1,4 @@
 
-// @/app/actions.ts
 'use server';
 
 import { supabase } from "@/lib/supabase/client";
@@ -14,13 +13,10 @@ export async function signUpUser(formData: FormData) {
     }
     
     // Auth Supabase client
-    // Note: In a real app, you'd want to use a server-side Supabase client for admin operations
-    // but for signUp, the client-side one works and handles the flow correctly.
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-            // You can add additional data to the user's metadata if needed
             data: {
                 full_name: name,
             }
@@ -36,7 +32,6 @@ export async function signUpUser(formData: FormData) {
     }
 
     // Now, insert into the public.profiles table
-    // The user has been created in auth, but we need to create their profile in our public table.
     const { error: profileError } = await supabase
         .from('profiles')
         .insert({

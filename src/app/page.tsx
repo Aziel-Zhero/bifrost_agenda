@@ -25,18 +25,37 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { signUpUser } from "./actions";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isRegistering, setIsRegistering] = useState(false);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically handle authentication with Supabase
-    // For now, we just redirect
-    router.push("/dashboard");
+    setIsLoggingIn(true);
+    const form = e.target as HTMLFormElement;
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+    const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+    
+    if (error) {
+        toast({
+            title: "Erro de login",
+            description: error.message,
+            variant: "destructive"
+        })
+    } else {
+        router.push("/dashboard");
+    }
+    setIsLoggingIn(false);
   };
 
   const handleRegistration = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -79,6 +98,7 @@ export default function LoginPage() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="admin@example.com"
                 required
@@ -87,10 +107,10 @@ export default function LoginPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" required defaultValue="password" />
+              <Input id="password" name="password" type="password" required defaultValue="password" />
             </div>
-            <Button type="submit" className="w-full">
-              Entrar
+            <Button type="submit" className="w-full" disabled={isLoggingIn}>
+              {isLoggingIn ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
         </CardContent>
