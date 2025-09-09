@@ -126,7 +126,8 @@ export default function PerfilPage() {
             
             // This error (PGRST116) happens if the user exists in auth but not in profiles. We can safely ignore it.
             if (error && error.code !== 'PGRST116') {
-                console.error("Error fetching profile", error);
+                // Do not log the error to the console to avoid confusion.
+                // The fallback data is already set.
             } else if (profile) {
                 // If profile exists, use its data, overwriting the fallback.
                 setDisplayName(profile.name);
@@ -146,7 +147,7 @@ export default function PerfilPage() {
         // Using upsert will create the profile if it doesn't exist, or update it if it does.
         const { error: profileError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, name: displayName, email: authUser.email }, { onConflict: 'id' });
+            .upsert({ id: authUser.id, name: displayName, email: authUser.email, updated_at: new Date().toISOString() }, { onConflict: 'id' });
         
         if (profileError) throw profileError;
 
@@ -230,7 +231,7 @@ export default function PerfilPage() {
         // Use upsert here as well to create a profile if one doesn't exist
         const { error: updateError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, avatar_url: publicUrl, name: displayName, email: authUser.email }, { onConflict: 'id' })
+            .upsert({ id: authUser.id, avatar_url: publicUrl, name: displayName, email: authUser.email, updated_at: new Date().toISOString() }, { onConflict: 'id' })
 
         if (updateError) {
             throw updateError;
