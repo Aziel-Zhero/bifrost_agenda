@@ -40,7 +40,7 @@ export type UserProfile = {
     name: string;
     email: string;
     role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
-    permissions?: {
+    permissions: {
       [key: string]: boolean; // key is the route href
     }
 }

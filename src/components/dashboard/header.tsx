@@ -29,9 +29,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Nav, { menuItems } from "./nav";
+import { users } from "@/lib/mock-data";
+
+// Mock of the current user
+const currentUser = users[0];
 
 export default function Header() {
   const pathname = usePathname();
+
+  const visibleMenuItems = menuItems.filter(item => currentUser.permissions[item.href]);
+
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
       <div className="flex w-full items-center gap-6">
@@ -54,7 +61,7 @@ export default function Header() {
                 <Logo />
               </div>
             <nav className="grid gap-6 text-lg font-medium">
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

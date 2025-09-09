@@ -12,8 +12,13 @@ import {
   ClipboardList,
   Globe,
   Users2,
+  Building,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { users } from "@/lib/mock-data";
+
+// Mock of the current user
+const currentUser = users[0];
 
 export const menuItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -28,10 +33,12 @@ export const menuItems = [
 
 export default function Nav() {
   const pathname = usePathname();
+  
+  const visibleMenuItems = menuItems.filter(item => currentUser.permissions[item.href]);
 
   return (
     <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-        {menuItems.map((item) => (
+        {visibleMenuItems.map((item) => (
             <Link
             key={item.href}
             href={item.href}

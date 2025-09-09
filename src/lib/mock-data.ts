@@ -217,10 +217,18 @@ const generatePermissions = (role: UserProfile['role']) => {
         permissions['/dashboard/agenda-geral'] = true;
         permissions['/dashboard/meus-clientes'] = true;
         permissions['/dashboard/servicos'] = true;
+        permissions['/dashboard/usuarios'] = false;
+        permissions['/dashboard/dashboards'] = false;
+        permissions['/dashboard/relatorios'] = false;
     } else if (role === 'Midgard') {
         permissions['/dashboard'] = true;
         permissions['/dashboard/agenda'] = true;
         permissions['/dashboard/meus-clientes'] = true;
+        permissions['/dashboard/agenda-geral'] = false;
+        permissions['/dashboard/servicos'] = false;
+        permissions['/dashboard/usuarios'] = false;
+        permissions['/dashboard/dashboards'] = false;
+        permissions['/dashboard/relatorios'] = false;
     }
     return permissions;
 }
