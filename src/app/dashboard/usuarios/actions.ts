@@ -1,6 +1,9 @@
 
 'use server'
 
+// IMPORTANT: This line needs to be at the top to load environment variables
+import 'dotenv/config'
+
 import { createClient } from '@supabase/supabase-js'
 
 // This needs to be the service_role key to bypass RLS
@@ -25,5 +28,3 @@ export async function deleteUser(userId: string) {
 
   return { error: null }
 }
-
-    
