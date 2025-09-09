@@ -23,7 +23,12 @@ const roleVariant: Record<string, string> = {
   Midgard: "bg-green-500 text-white",
 };
 
-export const columns: ColumnDef<UserProfile>[] = [
+type ColumnsProps = {
+  onEditPermissions: (user: UserProfile) => void;
+};
+
+
+export const columns = ({ onEditPermissions }: ColumnsProps): ColumnDef<UserProfile>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -65,6 +70,7 @@ export const columns: ColumnDef<UserProfile>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
+      const user = row.original;
       return (
         <div className="text-right">
           <DropdownMenu>
@@ -76,7 +82,9 @@ export const columns: ColumnDef<UserProfile>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
-              <DropdownMenuItem>Editar Permissões</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEditPermissions(user)}>
+                Editar Permissões
+              </DropdownMenuItem>
               <DropdownMenuItem className="text-destructive">
                 Remover Usuário
               </DropdownMenuItem>

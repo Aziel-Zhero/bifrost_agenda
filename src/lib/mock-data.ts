@@ -196,11 +196,41 @@ export const serviceIcons: Record<string, React.ElementType> = {
   Smile,
 };
 
+const allMenus = [
+  "/dashboard",
+  "/dashboard/meus-clientes",
+  "/dashboard/agenda",
+  "/dashboard/agenda-geral",
+  "/dashboard/servicos",
+  "/dashboard/usuarios",
+  "/dashboard/dashboards",
+  "/dashboard/relatorios",
+];
+
+const generatePermissions = (role: UserProfile['role']) => {
+    const permissions: UserProfile['permissions'] = {};
+    if (role === 'Heimdall' || role === 'Bifrost') {
+        allMenus.forEach(menu => permissions[menu] = true);
+    } else if (role === 'Asgard') {
+        permissions['/dashboard'] = true;
+        permissions['/dashboard/agenda'] = true;
+        permissions['/dashboard/agenda-geral'] = true;
+        permissions['/dashboard/meus-clientes'] = true;
+        permissions['/dashboard/servicos'] = true;
+    } else if (role === 'Midgard') {
+        permissions['/dashboard'] = true;
+        permissions['/dashboard/agenda'] = true;
+        permissions['/dashboard/meus-clientes'] = true;
+    }
+    return permissions;
+}
+
+
 export const users: UserProfile[] = [
-    { id: 'user-1', name: 'Admin Master', email: 'admin@example.com', role: 'Bifrost' },
-    { id: 'user-2', name: 'Heitor V.', email: 'heitor@example.com', role: 'Heimdall' },
-    { id: 'user-3', name: 'Laura P.', email: 'laura@example.com', role: 'Asgard' },
-    { id: 'user-4', name: 'Pedro M.', email: 'pedro@example.com', role: 'Midgard' },
+    { id: 'user-1', name: 'Admin Master', email: 'admin@example.com', role: 'Heimdall', permissions: generatePermissions('Heimdall') },
+    { id: 'user-2', name: 'Heitor V.', email: 'heitor@example.com', role: 'Bifrost', permissions: generatePermissions('Bifrost') },
+    { id: 'user-3', name: 'Laura P.', email: 'laura@example.com', role: 'Asgard', permissions: generatePermissions('Asgard') },
+    { id: 'user-4', name: 'Pedro M.', email: 'pedro@example.com', role: 'Midgard', permissions: generatePermissions('Midgard') },
 ];
 
 
