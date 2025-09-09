@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { isSameDay, format, isBefore, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { appointments } from "@/lib/mock-data";
 import { cn } from '@/lib/utils';
 import type { Appointment } from '@/types';
+import { supabase } from '@/lib/supabase/client';
 
 type AppointmentsByDay = {
   [day: string]: {
@@ -18,6 +18,30 @@ type AppointmentsByDay = {
 
 export default function AgendaGeralPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      const { data, error } = await supabase.from('appointments').select('id, date_time, admin_id'); // Assuming admin_id maps to a user
+       if (error) {
+        console.error("Error fetching appointments", error);
+      } else {
+        const formattedAppointments = data.map((appt: any) => ({
+          id: appt.id,
+          dateTime: new Date(appt.date_time),
+          admin: appt.admin_id, // This will be a UUID, you might need to fetch user names
+          // Add dummy values for other required Appointment fields
+          clientName: '',
+          clientAvatarUrl: '',
+          notes: '',
+          status: 'Agendado',
+          serviceId: '',
+        }));
+        setAppointments(formattedAppointments);
+      }
+    };
+    fetchAppointments();
+  }, []);
 
   const appointmentsByDay = useMemo(() => {
     return appointments.reduce((acc, appt) => {
@@ -25,14 +49,15 @@ export default function AgendaGeralPage() {
       if (!acc[day]) {
         acc[day] = {};
       }
-      if (!acc[day][appt.admin]) {
-        acc[day][appt.admin] = [];
+      const adminName = `User ${appt.admin.substring(0, 4)}`; // Placeholder for admin name
+      if (!acc[day][adminName]) {
+        acc[day][adminName] = [];
       }
-      acc[day][appt.admin].push(format(appt.dateTime, 'HH:mm'));
-      acc[day][appt.admin].sort();
+      acc[day][adminName].push(format(appt.dateTime, 'HH:mm'));
+      acc[day][adminName].sort();
       return acc;
     }, {} as AppointmentsByDay);
-  }, []);
+  }, [appointments]);
 
   const DayWithAppointments = ({ date }: { date: Date }) => {
     const dayKey = format(date, 'yyyy-MM-dd');

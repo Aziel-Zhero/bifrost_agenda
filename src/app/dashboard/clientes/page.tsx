@@ -1,0 +1,308 @@
+
+"use client";
+
+import { useState, useEffect } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import {
+  ArrowUpDown,
+  MoreHorizontal,
+  PlusCircle,
+  User,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { DataTable } from "./components/data-table";
+import type { Client } from "@/types";
+import { supabase } from "@/lib/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+// We can define columns directly in the page component if they are specific to it
+// Or we can keep them in a separate file if they are reused
+export const getColumns = (
+  onEdit: (client: Client) => void,
+  onDelete: (client: Client) => void
+): ColumnDef<Client>[] => [
+  {
+    accessorKey: "name",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Nome
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const client = row.original;
+      return (
+        <div className="flex items-center gap-3">
+          <Avatar className="h-9 w-9">
+            <div className="flex h-full w-full items-center justify-center rounded-full bg-muted">
+              <User className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="font-medium">{client.name}</span>
+            <span className="text-sm text-muted-foreground">
+              {client.email}
+            </span>
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "whatsapp",
+    header: "WhatsApp",
+  },
+  {
+    accessorKey: "admin",
+    header: "Usuário Designado",
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const client = row.original;
+      return (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onEdit(client)}>
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => onDelete(client)}
+              >
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
+  },
+];
+
+export default function ClientesPage() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      const { data, error } = await supabase.from("clients").select("*");
+      if (error) {
+        console.error("Error fetching clients:", error);
+      } else {
+        setClients(data || []);
+      }
+    };
+    fetchClients();
+  }, []);
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const clientData = {
+      name: formData.get("name") as string,
+      whatsapp: formData.get("whatsapp") as string,
+      email: formData.get("email") as string,
+      admin: formData.get("admin") as string, // This should probably be a select of users
+      telegram: editingClient?.telegram || "",
+      avatarUrl: editingClient?.avatarUrl || "",
+    };
+
+    if (editingClient) {
+      // Update
+      const { data, error } = await supabase
+        .from("clients")
+        .update(clientData)
+        .eq("id", editingClient.id)
+        .select()
+        .single();
+      if (error) {
+        toast({
+          title: "Erro ao atualizar",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setClients(
+          clients.map((c) => (c.id === editingClient.id ? data : c))
+        );
+        toast({ title: "Cliente atualizado com sucesso!" });
+        setFormOpen(false);
+      }
+    } else {
+      // Create
+      const { data, error } = await supabase
+        .from("clients")
+        .insert(clientData)
+        .select()
+        .single();
+      if (error) {
+        toast({
+          title: "Erro ao criar",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setClients([...clients, data]);
+        toast({ title: "Cliente criado com sucesso!" });
+        setFormOpen(false);
+      }
+    }
+  };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setFormOpen(true);
+  };
+
+  const handleDelete = async (client: Client) => {
+    // Ideally, show a confirmation dialog first
+    const { error } = await supabase.from("clients").delete().eq("id", client.id);
+    if (error) {
+       toast({
+          title: "Erro ao excluir",
+          description: error.message,
+          variant: "destructive",
+        });
+    } else {
+        setClients(clients.filter(c => c.id !== client.id));
+        toast({ title: "Cliente excluído com sucesso!" });
+    }
+  };
+  
+  const columns = getColumns(handleEdit, handleDelete);
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Clientes do Studio</h1>
+          <p className="text-muted-foreground">
+            Gerencie todos os clientes do seu negócio.
+          </p>
+        </div>
+        <Dialog
+          open={isFormOpen}
+          onOpenChange={(isOpen) => {
+            setFormOpen(isOpen);
+            if (!isOpen) {
+              setEditingClient(null);
+            }
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Cliente
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingClient ? "Editar Cliente" : "Adicionar Novo Cliente"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="Nome completo do cliente"
+                  defaultValue={editingClient?.name}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  name="whatsapp"
+                  placeholder="(99) 99999-9999"
+                  defaultValue={editingClient?.whatsapp}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="cliente@email.com"
+                  defaultValue={editingClient?.email}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="admin">Usuário Designado</Label>
+                <Input
+                  id="admin"
+                  name="admin"
+                  placeholder="Nome do admin"
+                  defaultValue={editingClient?.admin}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setFormOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit">Salvar</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <DataTable columns={columns} data={clients} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

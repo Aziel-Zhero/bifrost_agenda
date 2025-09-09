@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -19,9 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { appointments, services, kpiIcons } from "@/lib/mock-data";
-import { User, Calendar as CalendarIcon } from "lucide-react";
-import type { Client } from "@/types";
+import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus } from "lucide-react";
+import type { Appointment, Service } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -29,6 +28,7 @@ import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterva
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
+import { supabase } from '@/lib/supabase/client';
 
 type ClientRanking = {
   clientName: string;
@@ -43,12 +43,58 @@ type Kpi = {
   changeType?: 'increase' | 'decrease';
 };
 
+const kpiIcons = {
+  gains: DollarSign,
+  cancellations: XCircle,
+  clients: Users,
+  newClients: UserPlus,
+};
+
+
 export default function DashboardPage() {
   const today = new Date();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(today),
     to: endOfMonth(today),
   });
+
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [clientsCount, setClientsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch Appointments
+      const { data: apptData, error: apptError } = await supabase.from('appointments').select(`*, clients(name)`);
+      if (apptError) {
+        console.error("Error fetching appointments", apptError);
+      } else {
+        const formattedAppointments = apptData.map((appt: any) => ({
+          id: appt.id,
+          clientName: appt.clients.name,
+          clientAvatarUrl: '',
+          dateTime: new Date(appt.date_time),
+          notes: appt.notes || '',
+          status: appt.status,
+          admin: 'Admin Master',
+          serviceId: appt.service_id,
+        }));
+        setAppointments(formattedAppointments);
+      }
+
+      // Fetch Services
+      const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
+      if (serviceError) console.error("Error fetching services", serviceError);
+      else setServices(serviceData || []);
+      
+      // Fetch total clients count
+      const { count, error: countError } = await supabase.from('clients').select('*', { count: 'exact', head: true });
+      if (countError) console.error("Error fetching clients count", countError);
+      else setClientsCount(count || 0);
+    };
+    fetchData();
+  }, []);
+
 
   const filteredAppointments = useMemo(() => {
     if (!dateRange?.from) return [];
@@ -58,7 +104,7 @@ export default function DashboardPage() {
     return appointments.filter(appt => 
       isWithinInterval(appt.dateTime, { start: startOfDay(from), end: endOfDay(to) })
     );
-  }, [dateRange]);
+  }, [dateRange, appointments]);
 
   const kpiData: Kpi[] = useMemo(() => {
     const completedInPeriod = filteredAppointments.filter(a => a.status === 'Realizado');
@@ -84,8 +130,7 @@ export default function DashboardPage() {
 
     const totalCancellations = filteredAppointments.filter(a => a.status === 'Cancelado').length;
     
-    const uniqueClientNames = new Set(appointments.map(a => a.clientName));
-    const totalClients = uniqueClientNames.size;
+    const totalClients = clientsCount;
 
     const calculateChange = (current: number, previous: number) => {
         if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -120,7 +165,7 @@ export default function DashboardPage() {
       },
     ]
 
-  }, [filteredAppointments, dateRange]);
+  }, [filteredAppointments, appointments, services, clientsCount, dateRange]);
 
 
   const getTopClients = (): ClientRanking[] => {

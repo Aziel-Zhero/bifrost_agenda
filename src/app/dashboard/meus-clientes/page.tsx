@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,16 +17,64 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { clients } from "@/lib/mock-data";
 import { columns } from "./components/columns";
 import { DataTable } from "@/app/dashboard/clientes/components/data-table";
+import { supabase } from "@/lib/supabase/client";
+import type { Client } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
-// Mocking current user
-const currentUser = "Admin Master";
 
 export default function MeusClientesPage() {
+  const { toast } = useToast();
   const [isFormOpen, setFormOpen] = useState(false);
-  const myClients = clients.filter((client) => client.admin === currentUser);
+  const [myClients, setMyClients] = useState<Client[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUserAndClients = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+          const { data: profile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+          setCurrentUser({ ...user, name: profile?.name || user.email });
+          
+          const { data, error } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('admin', profile?.name || user.email);
+              
+          if (error) {
+              console.error("Error fetching clients:", error);
+          } else {
+              setMyClients(data || []);
+          }
+      }
+    };
+    fetchUserAndClients();
+  }, []);
+
+  const handleAddClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const newClient = {
+        name: formData.get('name') as string,
+        whatsapp: formData.get('whatsapp') as string,
+        telegram: formData.get('telegram') as string,
+        email: formData.get('email') as string,
+        admin: currentUser.name,
+        avatarUrl: ''
+    };
+
+    const { data, error } = await supabase.from('clients').insert(newClient).select().single();
+
+    if (error) {
+        toast({ title: "Erro ao adicionar cliente", description: error.message, variant: "destructive" });
+    } else if (data) {
+        setMyClients(prev => [...prev, data]);
+        toast({ title: "Cliente Adicionado!", description: `${data.name} foi adicionado à sua lista.`, className: "bg-green-100" });
+        setFormOpen(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -47,22 +96,22 @@ export default function MeusClientesPage() {
             <DialogHeader>
               <DialogTitle>Adicionar Novo Cliente</DialogTitle>
             </DialogHeader>
-            <form className="space-y-4">
+            <form onSubmit={handleAddClient} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input id="name" placeholder="Nome completo do cliente" />
+                <Input id="name" name="name" placeholder="Nome completo do cliente" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input id="whatsapp" placeholder="(99) 99999-9999" />
+                <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="telegram">Telegram</Label>
-                <Input id="telegram" placeholder="ID ou Telefone" />
+                <Input id="telegram" name="telegram" placeholder="ID ou Telefone" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="cliente@email.com" />
+                <Input id="email" name="email" type="email" placeholder="cliente@email.com" />
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={() => setFormOpen(false)}>Cancelar</Button>

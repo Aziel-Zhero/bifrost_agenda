@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { PlusCircle, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { useState, useEffect } from "react";
+import { PlusCircle, MoreHorizontal, Trash2, Edit, Palette, Scissors, Smile, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -43,18 +43,39 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { services as mockServices, serviceIcons } from "@/lib/mock-data";
 import type { Service } from "@/types";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
+const serviceIcons: { [key: string]: React.ElementType } = {
+  Maquiagem: Palette,
+  Cabelo: Scissors,
+  Estética: Smile,
+  Outro: Tag,
+};
 
 export default function ServicosPage() {
-  const [services, setServices] = useState<Service[]>(mockServices);
+  const [services, setServices] = useState<Service[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   
   const [formData, setFormData] = useState<Partial<Service>>({});
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchServices = async () => {
+        const { data, error } = await supabase.from('services').select('*');
+        if (error) {
+            console.error("Error fetching services", error);
+            toast({ title: "Erro ao buscar serviços", description: error.message, variant: "destructive" });
+        } else {
+            setServices(data || []);
+        }
+    };
+    fetchServices();
+  }, [toast]);
 
   const handleEditClick = (service: Service) => {
     setSelectedService(service);
@@ -67,26 +88,56 @@ export default function ServicosPage() {
     setDeleteAlertOpen(true);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedService) {
-      setServices(services.map(s => s.id === selectedService.id ? { ...s, ...formData } as Service : s));
-    } else {
-      const newService: Service = {
-        id: `serv-${Date.now()}`,
+    const serviceData = {
         name: formData.name || "",
         duration: formData.duration || "",
         price: formData.price || 0,
-        icon: formData.icon,
-      };
-      setServices([...services, newService]);
+        icon: formData.icon || "Outro",
+    };
+
+    if (selectedService) {
+      // Update
+      const { data, error } = await supabase
+        .from('services')
+        .update(serviceData)
+        .eq('id', selectedService.id)
+        .select()
+        .single();
+      if (error) {
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      } else {
+        setServices(services.map(s => s.id === selectedService.id ? data : s));
+        toast({ title: "Serviço atualizado!" });
+        closeForm();
+      }
+    } else {
+      // Create
+       const { data, error } = await supabase
+        .from('services')
+        .insert(serviceData)
+        .select()
+        .single();
+       if (error) {
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+       } else {
+        setServices([...services, data]);
+        toast({ title: "Serviço adicionado!" });
+        closeForm();
+       }
     }
-    closeForm();
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedService) {
-      setServices(services.filter(s => s.id !== selectedService.id));
+      const { error } = await supabase.from('services').delete().eq('id', selectedService.id);
+      if (error) {
+        toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      } else {
+        setServices(services.filter(s => s.id !== selectedService.id));
+        toast({ title: "Serviço excluído." });
+      }
     }
     setDeleteAlertOpen(false);
     setSelectedService(null);
@@ -101,7 +152,7 @@ export default function ServicosPage() {
   const renderIcon = (iconName?: string) => {
     if (!iconName) return null;
     const IconComponent = serviceIcons[iconName];
-    return IconComponent ? <IconComponent className="h-5 w-5 text-muted-foreground" /> : null;
+    return IconComponent ? <IconComponent className="h-5 w-5 text-muted-foreground" /> : <Tag className="h-5 w-5 text-muted-foreground" />;
   }
 
   return (
@@ -114,7 +165,10 @@ export default function ServicosPage() {
               Adicione, edite ou remova os serviços oferecidos.
             </p>
           </div>
-          <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
+          <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+              if (!isOpen) closeForm();
+              else setFormOpen(true);
+          }}>
             <DialogTrigger asChild>
               <Button onClick={() => { setSelectedService(null); setFormData({}); setFormOpen(true);}}>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -133,7 +187,7 @@ export default function ServicosPage() {
 
                 <div className="space-y-2">
                     <Label htmlFor="icon">Ícone</Label>
-                    <Select value={formData.icon} onValueChange={value => setFormData({...formData, icon: value})}>
+                    <Select value={formData.icon || 'Outro'} onValueChange={value => setFormData({...formData, icon: value})}>
                         <SelectTrigger id="icon">
                             <SelectValue placeholder="Selecione um ícone" />
                         </SelectTrigger>
@@ -160,7 +214,7 @@ export default function ServicosPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="price">Preço (R$)</Label>
-                    <Input id="price" type="number" placeholder="Ex: 200.00" value={formData.price || ''} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} required/>
+                    <Input id="price" type="number" step="0.01" placeholder="Ex: 200.00" value={formData.price || ''} onChange={e => setFormData({...formData, price: parseFloat(e.target.value) || 0})} required/>
                   </div>
                 </div>
                 <DialogFooter>
