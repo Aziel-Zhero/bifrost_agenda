@@ -49,11 +49,15 @@ export default function DashboardRedirectPage() {
       }
 
       const formattedAppointments = data.map((appt: any) => ({
-        ...appt,
         id: appt.id,
         clientName: appt.clients.name,
-        notes: appt.services.name,
+        notes: appt.services.name, // The service name is in 'notes' now from the type
         dateTime: new Date(appt.date_time),
+        status: appt.status,
+        // Add dummy values for fields not in this query
+        clientAvatarUrl: '',
+        admin: 'System', 
+        serviceId: '',
       }));
       setAppointments(formattedAppointments);
     };
