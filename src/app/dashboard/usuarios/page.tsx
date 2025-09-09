@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { users as mockUsers } from "@/lib/mock-data";
 import type { UserProfile } from "@/types";
 import { columns } from "./components/columns";
 import { DataTable } from "./components/data-table";
@@ -30,22 +29,46 @@ import {
 } from "@/components/ui/select";
 import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
+import { supabase } from "@/lib/supabase/client";
 
 
 export default function UsuariosPage() {
-  const [users, setUsers] = useState<UserProfile[]>(mockUsers);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [isAddFormOpen, setAddFormOpen] = useState(false);
   const [isPermissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (error) {
+        console.error('Error fetching users:', error);
+      } else if (data) {
+        // We need to ensure the permissions object is not null
+        const usersWithPermissions = data.map(u => ({...u, permissions: u.permissions || {}}))
+        setUsers(usersWithPermissions);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleEditPermissions = (user: UserProfile) => {
     setSelectedUser(user);
     setPermissionsDialogOpen(true);
   };
   
-  const handlePermissionsSave = (updatedPermissions: UserProfile['permissions']) => {
+  const handlePermissionsSave = async (updatedPermissions: UserProfile['permissions']) => {
     if (selectedUser) {
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, permissions: updatedPermissions } : u));
+        const { error } = await supabase
+          .from('profiles')
+          .update({ permissions: updatedPermissions })
+          .eq('id', selectedUser.id)
+
+        if (error) {
+            console.error('Error updating permissions:', error);
+        } else {
+             setUsers(users.map(u => u.id === selectedUser.id ? { ...u, permissions: updatedPermissions } : u));
+        }
     }
     setPermissionsDialogOpen(false);
   }

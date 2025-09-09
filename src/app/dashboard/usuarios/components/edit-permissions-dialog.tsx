@@ -22,7 +22,7 @@ import { Shield } from "lucide-react";
 interface EditPermissionsDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  user: UserProfile;
+  user: UserProfile | null;
   menuItems: typeof menuItems;
   onSave: (permissions: UserProfile['permissions']) => void;
 }
@@ -34,24 +34,31 @@ export default function EditPermissionsDialog({
   menuItems: navItems,
   onSave,
 }: EditPermissionsDialogProps) {
-  const [permissions, setPermissions] = useState<UserProfile['permissions']>(user.permissions || {});
+  const [permissions, setPermissions] = useState<UserProfile['permissions']>({});
 
   useEffect(() => {
-    // Ensure permissions are initialized for all menu items
-    const initialPermissions = { ...user.permissions };
-    let needsUpdate = false;
-    navItems.forEach(item => {
-        if (typeof initialPermissions[item.href] === 'undefined') {
-            initialPermissions[item.href] = (user.role === 'Heimdall' || user.role === 'Bifrost');
-            needsUpdate = true;
+    if (user) {
+        const initialPermissions = { ...user.permissions };
+        let needsUpdate = false;
+        
+        navItems.forEach(item => {
+            if (typeof initialPermissions[item.href] === 'undefined') {
+                initialPermissions[item.href] = (user.role === 'Heimdall' || user.role === 'Bifrost');
+                needsUpdate = true;
+            }
+        });
+        
+        if (needsUpdate) {
+            setPermissions(initialPermissions);
+        } else {
+            setPermissions(user.permissions || initialPermissions);
         }
-    });
-    if(needsUpdate) {
-        setPermissions(initialPermissions);
-    } else {
-        setPermissions(user.permissions || initialPermissions);
     }
   }, [user, navItems]);
+
+  if (!user) {
+    return null;
+  }
 
   const handlePermissionChange = (href: string, value: boolean) => {
     setPermissions(prev => ({ ...prev, [href]: value }));
@@ -100,7 +107,7 @@ export default function EditPermissionsDialog({
                         </div>
                         <Switch
                             id={`perm-${item.href}`}
-                            checked={isHeimdall || permissions[item.href]}
+                            checked={isHeimdall || !!permissions[item.href]}
                             onCheckedChange={(value) => handlePermissionChange(item.href, value)}
                             disabled={isHeimdall}
                         />
