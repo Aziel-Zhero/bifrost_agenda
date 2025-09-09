@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +17,16 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { UserProfile } from "@/types";
@@ -33,13 +43,14 @@ import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
+import { deleteUser } from "./actions";
 
 export default function UsuariosPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isAddFormOpen, setAddFormOpen] = useState(false);
   const [isPermissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [isRoleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   
   const [newUserName, setNewUserName] = useState('');
@@ -74,6 +85,11 @@ export default function UsuariosPage() {
     setSelectedUser(user);
     setSelectedRole(user.role);
     setRoleDialogOpen(true);
+  };
+
+   const handleDeleteClick = (user: UserProfile) => {
+    setSelectedUser(user);
+    setDeleteAlertOpen(true);
   };
   
   const handlePermissionsSave = async (updatedPermissions: UserProfile['permissions']) => {
@@ -139,9 +155,7 @@ export default function UsuariosPage() {
 
     const { data, error } = await supabase.auth.signUp({
       email: newUserEmail,
-      // The form does not have a password field, so we use a default one.
-      // In a real application, you'd want to send an invitation link instead.
-      password: 'password',
+      password: 'password', // Default password, user should change it
       options: {
         data: {
           full_name: newUserName,
@@ -169,6 +183,29 @@ export default function UsuariosPage() {
       setNewUserRole('');
       setAddFormOpen(false);
     }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    const result = await deleteUser(selectedUser.id);
+    
+    if (result.error) {
+      toast({
+        title: "Erro ao remover usuário",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else {
+      setUsers(users.filter(u => u.id !== selectedUser.id));
+      toast({
+        title: "Usuário removido",
+        description: `${selectedUser.name} foi removido do sistema.`,
+      });
+    }
+
+    setDeleteAlertOpen(false);
+    setSelectedUser(null);
   };
 
 
@@ -230,7 +267,7 @@ export default function UsuariosPage() {
 
         <Card>
           <CardContent className="pt-6">
-            <DataTable columns={columns({ onEditPermissions: handleEditPermissions, onEditRole: handleEditRole })} data={users} />
+            <DataTable columns={columns({ onEditPermissions: handleEditPermissions, onEditRole: handleEditRole, onDelete: handleDeleteClick })} data={users} />
           </CardContent>
         </Card>
       </div>
@@ -275,6 +312,25 @@ export default function UsuariosPage() {
             </DialogContent>
         </Dialog>
       )}
+
+      {selectedUser && (
+        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação é irreversível. O usuário <span className="font-semibold">{selectedUser.name}</span> e todos os seus dados associados serão permanentemente removidos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteUser} className="bg-destructive hover:bg-destructive/90">Confirmar Exclusão</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </>
   );
 }
+
+    

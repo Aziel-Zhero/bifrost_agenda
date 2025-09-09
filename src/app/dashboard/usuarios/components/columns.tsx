@@ -27,10 +27,11 @@ const roleVariant: Record<string, string> = {
 type ColumnsProps = {
   onEditPermissions: (user: UserProfile) => void;
   onEditRole: (user: UserProfile) => void;
+  onDelete: (user: UserProfile) => void;
 };
 
 
-export const columns = ({ onEditPermissions, onEditRole }: ColumnsProps): ColumnDef<UserProfile>[] => [
+export const columns = ({ onEditPermissions, onEditRole, onDelete }: ColumnsProps): ColumnDef<UserProfile>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -91,7 +92,7 @@ export const columns = ({ onEditPermissions, onEditRole }: ColumnsProps): Column
                 Editar Permissões
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={() => onDelete(user)}>
                 Remover Usuário
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -101,3 +102,5 @@ export const columns = ({ onEditPermissions, onEditRole }: ColumnsProps): Column
     },
   },
 ];
+
+    

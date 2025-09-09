@@ -44,3 +44,14 @@ export type UserProfile = {
       [key: string]: boolean; // key is the route href
     }
 }
+
+export type AuditLog = {
+    id: string;
+    payload: {
+        message?: string;
+        record?: any;
+    };
+    timestamp: Date;
+}
+
+    
