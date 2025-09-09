@@ -1,81 +1,95 @@
--- Tabela de Perfis de Usuários (profiles)
--- Armazena informações dos usuários do sistema.
+
+-- ### TABELAS ###
+
+-- Tabela de Perfis de Usuários
+-- Armazena dados públicos dos usuários, complementando a tabela 'auth.users'.
 CREATE TABLE public.profiles (
-    id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    name text NOT NULL,
-    email text UNIQUE NOT NULL,
-    role text NOT NULL CHECK (role IN ('Bifrost', 'Heimdall', 'Asgard', 'Midgard')),
-    avatar_url text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+  id UUID NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT,
+  email TEXT,
+  role TEXT NOT NULL DEFAULT 'Midgard',
+  permissions JSONB NOT NULL DEFAULT '{}'::jsonb
 );
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow authenticated users to read profiles" ON public.profiles FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow user to update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+COMMENT ON TABLE public.profiles IS 'Tabela de perfis públicos para cada usuário.';
 
-
--- Tabela de Clientes (clients)
--- Armazena os dados dos clientes do estúdio.
+-- Tabela de Clientes
+-- Armazena informações dos clientes do estúdio.
 CREATE TABLE public.clients (
-    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    name text NOT NULL,
-    whatsapp text NOT NULL,
-    telegram text,
-    email text UNIQUE,
-    assigned_to_id uuid REFERENCES public.profiles(id),
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+  id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  whatsapp TEXT NOT NULL,
+  telegram TEXT,
+  email TEXT,
+  avatarUrl TEXT,
+  admin TEXT -- Nome do usuário que gerencia este cliente
 );
-ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow authenticated users to manage clients" ON public.clients FOR ALL TO authenticated USING (true);
+COMMENT ON TABLE public.clients IS 'Armazena os clientes do estúdio.';
 
-
--- Tabela de Serviços (services)
+-- Tabela de Serviços
 -- Armazena os serviços oferecidos pelo estúdio.
 CREATE TABLE public.services (
-    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    name text NOT NULL,
-    duration text NOT NULL,
-    price numeric(10, 2) NOT NULL,
-    icon text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+  id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  duration TEXT,
+  price NUMERIC,
+  icon TEXT
 );
-ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow authenticated users to manage services" ON public.services FOR ALL TO authenticated USING (true);
+COMMENT ON TABLE public.services IS 'Serviços oferecidos pelo estúdio.';
 
-
--- Tabela de Agendamentos (appointments)
--- Armazena todos os agendamentos.
+-- Tabela de Agendamentos
+-- Armazena os agendamentos dos clientes.
 CREATE TABLE public.appointments (
-    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    client_id uuid NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
-    service_id uuid NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
-    user_id uuid NOT NULL REFERENCES public.profiles(id),
-    date_time timestamp with time zone NOT NULL,
-    status text NOT NULL CHECK (status IN ('Agendado', 'Realizado', 'Cancelado', 'Bloqueado')),
-    notes text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+  id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+  service_id UUID NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
+  admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  date_time TIMESTAMPTZ NOT NULL,
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'Agendado' -- Ex: Agendado, Realizado, Cancelado
 );
-ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow authenticated users to manage appointments" ON public.appointments FOR ALL TO authenticated USING (true);
+COMMENT ON TABLE public.appointments IS 'Agendamentos dos clientes.';
 
--- Adicionando dados iniciais para o usuário admin, se não existir
--- Esta função será acionada sempre que um novo usuário se registrar.
+
+-- ### FUNÇÃO E GATILHO PARA CRIAÇÃO AUTOMÁTICA DE PERFIL ###
+
+-- Esta função é acionada sempre que um novo usuário é criado na tabela auth.users.
+-- Ela insere uma nova linha na tabela public.profiles, populando-a com os dados do novo usuário.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, email, role, avatar_url)
-  VALUES (
-    NEW.id,
-    NEW.raw_user_meta_data->>'name',
-    NEW.email,
-    'Heimdall', -- Por padrão, novos usuários podem ser Heimdall, ou ajuste conforme necessário.
-    NEW.raw_user_meta_data->>'avatar_url'
-  );
+  INSERT INTO public.profiles (id, name, email, role)
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name', NEW.email, 'Midgard');
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger para executar a função quando um novo usuário for criado
+-- Este gatilho (trigger) chama a função handle_new_user() após cada inserção na tabela auth.users.
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+
+-- ### POLÍTICAS DE SEGURANÇA (ROW LEVEL SECURITY) ###
+
+-- Ativar RLS para todas as tabelas
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para a tabela 'profiles'
+CREATE POLICY "Allow public read access to profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Allow users to insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Allow users to update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Políticas para a tabela 'clients'
+CREATE POLICY "Allow public read access to clients" ON public.clients FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to manage clients" ON public.clients FOR ALL USING (auth.role() = 'authenticated');
+
+-- Políticas para a tabela 'services'
+CREATE POLICY "Allow public read access to services" ON public.services FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to manage services" ON public.services FOR ALL USING (auth.role() = 'authenticated');
+
+-- Políticas para a tabela 'appointments'
+CREATE POLICY "Allow public read access to appointments" ON public.appointments FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to manage appointments" ON public.appointments FOR ALL USING (auth.role() = 'authenticated');

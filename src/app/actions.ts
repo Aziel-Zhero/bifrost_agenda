@@ -12,42 +12,29 @@ export async function signUpUser(formData: FormData) {
         return { error: { message: "Nome, email e senha são obrigatórios." }};
     }
     
-    // Auth Supabase client
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // The trigger in Supabase will automatically create the profile.
+    // We only need to handle the auth signup here.
+    const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
+                // This data is passed to the JWT and can be used by the trigger.
                 full_name: name,
             }
         }
     });
 
-    if (authError) {
-        return { error: authError };
+    if (error) {
+        console.error("Sign up error:", error);
+        return { error };
     }
 
-    if (!authData.user) {
-        return { error: { message: "Usuário não foi criado no sistema de autenticação." }}
-    }
-
-    // Now, insert into the public.profiles table
-    const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-            id: authData.user.id, // The ID from the authenticated user
-            name: name,
-            email: email,
-            role: 'Midgard', // Assign a default role
-            permissions: {} // Default empty permissions
-        });
-    
-    if (profileError) {
-        // This is tricky. The user is in auth but not in profiles.
-        // For a production app, you might want to have a cleanup process.
-        console.error("Error creating profile for user:", authData.user.id, profileError);
-        return { error: { message: "O usuário foi autenticado, mas houve um erro ao criar o perfil."}};
+    if (!data.user) {
+        return { error: { message: "Usuário não foi criado no sistema de autenticação." }};
     }
     
-    return { data: authData.user };
+    // The trigger handles profile creation. We don't need to insert into 'profiles' manually.
+    
+    return { data: data.user };
 }
