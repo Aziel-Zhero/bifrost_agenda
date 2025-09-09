@@ -1,25 +1,67 @@
+
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
+import { signUpUser } from "./actions";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isDialogOpen, setDialogOpen] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // Here you would typically handle authentication with Supabase
+    // For now, we just redirect
     router.push("/dashboard");
   };
+
+  const handleRegistration = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsRegistering(true);
+    const formData = new FormData(e.currentTarget);
+    const result = await signUpUser(formData);
+
+    if (result.error) {
+      toast({
+        title: "Erro ao criar conta",
+        description: result.error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Conta Criada!",
+        description: "Verifique seu email para confirmar sua conta antes de fazer login.",
+        className: 'bg-green-100 border-green-300 text-green-800'
+      });
+      setDialogOpen(false); // Close the dialog on success
+    }
+    setIsRegistering(false);
+  };
+
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -52,7 +94,49 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
+        <CardFooter className="flex-col gap-4 text-sm">
+            <p>Não tem uma conta?</p>
+            <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                    Criar conta
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Criar nova conta</DialogTitle>
+                  <DialogDescription>
+                    Preencha seus dados para se registrar. Após o registro, você receberá um email de confirmação.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleRegistration} className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Nome
+                    </Label>
+                    <Input id="name" name="name" required className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email-reg" className="text-right">
+                      Email
+                    </Label>
+                    <Input id="email-reg" name="email" type="email" required className="col-span-3" />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="password-reg" className="text-right">
+                      Senha
+                    </Label>
+                    <Input id="password-reg" name="password" type="password" required className="col-span-3" />
+                  </div>
+                  <Button type="submit" disabled={isRegistering} className="mt-4 w-full col-span-4">
+                    {isRegistering ? 'Criando conta...' : 'Criar conta'}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+        </CardFooter>
       </Card>
     </main>
   );
 }
+
