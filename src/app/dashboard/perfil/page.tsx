@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,9 @@ import ReactCrop, {
 } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { User } from "@supabase/supabase-js";
 
 // This is a helper function that will be used to generate the cropped image.
 function getCroppedImg(
@@ -83,6 +86,15 @@ function getCroppedImg(
 
 
 export default function PerfilPage() {
+  const { toast } = useToast();
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [imgSrc, setImgSrc] = useState('');
   const [profilePic, setProfilePic] = useState('https://picsum.photos/128/128');
   const [crop, setCrop] = useState<Crop>();
@@ -97,6 +109,69 @@ export default function PerfilPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            setAuthUser(user);
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('name')
+                .eq('id', user.id)
+                .single();
+
+            if (error) {
+                console.error("Error fetching profile", error);
+            } else if (profile) {
+                setDisplayName(profile.name);
+                setEmail(user.email || '');
+            }
+        }
+    };
+    fetchUserData();
+  }, []);
+
+  const handleSaveChanges = async () => {
+    if (!authUser) return;
+    setIsSaving(true);
+
+    // Update Display Name
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ name: displayName })
+        .eq('id', authUser.id);
+    
+    if (profileError) {
+        toast({ title: 'Erro ao atualizar nome', description: profileError.message, variant: 'destructive' });
+        setIsSaving(false);
+        return;
+    }
+
+    // Update Password
+    if (newPassword) {
+        if (newPassword !== confirmPassword) {
+            toast({ title: 'Erro de senha', description: 'As novas senhas não correspondem.', variant: 'destructive' });
+            setIsSaving(false);
+            return;
+        }
+
+        const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+
+        if (passwordError) {
+            toast({ title: 'Erro ao atualizar senha', description: passwordError.message, variant: 'destructive' });
+            setIsSaving(false);
+            return;
+        }
+    }
+    
+    toast({ title: 'Sucesso!', description: 'Seu perfil foi atualizado.', className: 'bg-green-100 border-green-300 text-green-800'});
+    setNewPassword('');
+    setCurrentPassword('');
+    setConfirmPassword('');
+    setIsSaving(false);
+  };
 
 
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -152,8 +227,8 @@ export default function PerfilPage() {
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={profilePic} alt="Admin" data-ai-hint="person" />
-                <AvatarFallback>A</AvatarFallback>
+                <AvatarImage src={profilePic} alt={displayName} data-ai-hint="person" />
+                <AvatarFallback>{displayName?.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div>
                 <Input type="file" ref={fileInputRef} onChange={onSelectFile} className="hidden" accept="image/*" />
@@ -166,33 +241,51 @@ export default function PerfilPage() {
 
             <div className="space-y-2">
               <Label htmlFor="displayName">Nome de Exibição</Label>
-              <Input id="displayName" defaultValue="Admin Master" />
+              <Input id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="admin@example.com" disabled />
+              <Input id="email" type="email" value={email} disabled />
             </div>
             
              <div className="space-y-4 rounded-lg border p-4">
                 <h4 className="font-medium">Alterar Senha</h4>
                 <div className="space-y-2 relative">
                     <Label htmlFor="currentPassword">Senha Atual</Label>
-                    <Input id="currentPassword" type={showCurrentPassword ? "text" : "password"} placeholder="Digite sua senha atual" />
+                    <Input 
+                        id="currentPassword" 
+                        type={showCurrentPassword ? "text" : "password"} 
+                        placeholder="Digite sua senha atual" 
+                        value={currentPassword} 
+                        onChange={e => setCurrentPassword(e.target.value)}
+                        />
                      <Button variant="ghost" size="icon" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowCurrentPassword(prev => !prev)}>
                         {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                 </div>
                  <div className="space-y-2 relative">
                     <Label htmlFor="newPassword">Nova Senha</Label>
-                    <Input id="newPassword" type={showNewPassword ? "text" : "password"} placeholder="Digite a nova senha" />
+                    <Input 
+                        id="newPassword" 
+                        type={showNewPassword ? "text" : "password"} 
+                        placeholder="Digite a nova senha" 
+                        value={newPassword} 
+                        onChange={e => setNewPassword(e.target.value)}
+                        />
                      <Button variant="ghost" size="icon" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
                         {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                 </div>
                  <div className="space-y-2 relative">
                     <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-                    <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Confirme a nova senha" />
+                    <Input 
+                        id="confirmPassword" 
+                        type={showConfirmPassword ? "text" : "password"} 
+                        placeholder="Confirme a nova senha" 
+                        value={confirmPassword} 
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        />
                      <Button variant="ghost" size="icon" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
@@ -200,7 +293,9 @@ export default function PerfilPage() {
             </div>
 
             <div className="flex justify-end">
-              <Button>Salvar Alterações</Button>
+              <Button onClick={handleSaveChanges} disabled={isSaving}>
+                {isSaving ? "Salvando..." : "Salvar Alterações"}
+              </Button>
             </div>
           </CardContent>
         </Card>
