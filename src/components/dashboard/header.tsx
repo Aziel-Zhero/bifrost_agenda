@@ -39,33 +39,44 @@ export default function Header() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      // In a real app, you'd get the logged-in user's ID
-      // For now, we'll fetch the 'Admin Master' profile
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('name', 'Admin Master');
-      
-      if (error || !data || data.length === 0) {
-          if(error) console.error("Error fetching current user:", error);
-          // Fallback to a default user structure if fetch fails or user not found
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+          const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+
+          if (error) {
+              console.error("Error fetching user profile:", error);
+              // Set a fallback user if profile doesn't exist yet
+              setCurrentUser({
+                id: user.id,
+                name: user.email?.split('@')[0] || 'Usuário',
+                email: user.email || 'Não encontrado',
+                role: 'Midgard', // Default role
+                permissions: {}
+              });
+          } else {
+              setCurrentUser(profile);
+          }
+      } else {
+         // Fallback for logged out state or initial load
           setCurrentUser({
             id: 'fallback-id',
-            name: 'Admin Master',
-            email: 'admin@example.com',
-            role: 'Heimdall',
-            permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {})
+            name: 'Visitante',
+            email: '',
+            role: 'Midgard',
+            permissions: {}
           });
-      } else {
-        // Use the first user found
-        setCurrentUser(data[0]);
       }
     };
     fetchUser();
   }, []);
 
   const visibleMenuItems = currentUser 
-    ? menuItems.filter(item => currentUser.permissions[item.href]) 
+    ? menuItems.filter(item => currentUser.permissions[item.href] || currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost')
     : [];
 
   if (!currentUser) {
@@ -124,7 +135,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar>
-                  <AvatarImage src="https://picsum.photos/32/32" alt="Admin" data-ai-hint="person" />
+                  <AvatarImage src="https://picsum.photos/32/32" alt={currentUser.name} data-ai-hint="person" />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
