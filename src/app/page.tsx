@@ -20,20 +20,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { signUpUser } from "./actions";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/client";
-import type { UserProfile } from "@/types";
+import { Eye, EyeOff } from "lucide-react";
 
 
 export default function LoginPage() {
@@ -41,20 +34,10 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
-
-  useEffect(() => {
-    const fetchProfiles = async () => {
-        const { data, error } = await supabase.from('profiles').select('*');
-        if (data) {
-            setProfiles(data);
-        }
-    }
-    fetchProfiles();
-  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,22 +78,10 @@ export default function LoginPage() {
         description: "Verifique seu email para confirmar sua conta antes de fazer login.",
         className: 'bg-green-100 border-green-300 text-green-800'
       });
-      // Refresh profiles list
-      const { data } = await supabase.from('profiles').select('*');
-      if(data) setProfiles(data);
-
       setDialogOpen(false); // Close the dialog on success
     }
     setIsRegistering(false);
   };
-
-  const handleUserSelection = (userId: string) => {
-      const selectedProfile = profiles.find(p => p.id === userId);
-      if (selectedProfile) {
-          setEmail(selectedProfile.email);
-          setPassword('password'); // Hardcoded password for development
-      }
-  }
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4 bg-muted">
@@ -124,21 +95,6 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
-             <div className="grid gap-2">
-                <Label htmlFor="user-select">Selecionar Usuário (Dev)</Label>
-                <Select onValueChange={handleUserSelection}>
-                    <SelectTrigger id="user-select">
-                        <SelectValue placeholder="Escolha um perfil para login rápido" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {profiles.map(profile => (
-                            <SelectItem key={profile.id} value={profile.id}>
-                                {profile.name} ({profile.role})
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -151,17 +107,20 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 relative">
               <Label htmlFor="password">Senha</Label>
               <Input 
                 id="password" 
                 name="password" 
-                type="password" 
+                type={showPassword ? 'text' : 'password'}
                 required 
                 placeholder="Sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+               <Button variant="ghost" size="icon" type="button" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowPassword(prev => !prev)}>
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
             </div>
             <Button type="submit" className="w-full" disabled={isLoggingIn}>
               {isLoggingIn ? 'Entrando...' : 'Entrar'}
