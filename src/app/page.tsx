@@ -68,7 +68,7 @@ export default function LoginPage() {
     if (error) {
         toast({
             title: "Erro de login",
-            description: error.message,
+            description: "Credenciais inválidas. Verifique seu email e senha.",
             variant: "destructive"
         })
     } else {
