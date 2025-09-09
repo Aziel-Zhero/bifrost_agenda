@@ -1,4 +1,5 @@
--- Drop existing objects to avoid conflicts
+
+-- Drop existing objects if they exist
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user;
 DROP TABLE IF EXISTS public.appointments;
@@ -6,79 +7,74 @@ DROP TABLE IF EXISTS public.services;
 DROP TABLE IF EXISTS public.clients;
 DROP TABLE IF EXISTS public.profiles;
 
--- 1. PROFILES TABLE
--- This table stores user data. It's linked to the auth.users table.
+-- Create profiles table
 CREATE TABLE public.profiles (
-  id UUID NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT,
-  email TEXT,
-  role TEXT NOT NULL DEFAULT 'Midgard',
-  permissions JSONB
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'Midgard',
+    permissions JSONB NOT NULL DEFAULT '{}'::jsonb
 );
-COMMENT ON TABLE public.profiles IS 'Stores public-facing profile information for each user.';
+COMMENT ON TABLE public.profiles IS 'Stores user profiles, extending auth.users.';
 
--- 2. CLIENTS TABLE
--- This table stores client information.
+-- Create clients table
 CREATE TABLE public.clients (
-    id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    whatsapp TEXT NOT NULL,
-    telegram TEXT,
-    "avatarUrl" TEXT,
-    email TEXT,
-    admin TEXT
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    whatsapp VARCHAR(50) NOT NULL,
+    telegram VARCHAR(50),
+    avatarUrl TEXT,
+    admin VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-COMMENT ON TABLE public.clients IS 'Stores information about the studio''s clients.';
+COMMENT ON TABLE public.clients IS 'Stores client information for the studio.';
 
-
--- 3. SERVICES TABLE
--- This table stores the services offered by the studio.
+-- Create services table
 CREATE TABLE public.services (
-    id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    duration TEXT,
-    price NUMERIC,
-    icon TEXT
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    duration VARCHAR(50) NOT NULL,
+    price NUMERIC(10, 2) NOT NULL,
+    icon VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-COMMENT ON TABLE public.services IS 'Stores the different services offered.';
+COMMENT ON TABLE public.services IS 'Stores the services offered by the studio.';
 
--- 4. APPOINTMENTS TABLE
--- This table stores appointment information, linking clients and services.
+-- Create appointments table
 CREATE TABLE public.appointments (
-    id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
     service_id UUID NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
     admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     date_time TIMESTAMPTZ NOT NULL,
     notes TEXT,
-    status TEXT NOT NULL DEFAULT 'Agendado'
+    status VARCHAR(50) NOT NULL DEFAULT 'Agendado', -- e.g., Agendado, Realizado, Cancelado
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-COMMENT ON TABLE public.appointments IS 'Stores all appointment details.';
+COMMENT ON TABLE public.appointments IS 'Stores appointment details.';
 
 
--- FUNCTION to create a profile when a new user signs up in Supabase Auth
+-- Function to create a profile for a new user
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, email, role)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email, 'Midgard');
+  INSERT INTO public.profiles (id, name, email)
+  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email);
   RETURN new;
 END;
 $$;
-COMMENT ON FUNCTION public.handle_new_user() IS 'Automatically creates a profile for a new user.';
 
-
--- TRIGGER to call the function when a new user is created
+-- Trigger to call the function when a new user is created in auth
 CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW
-EXECUTE FUNCTION public.handle_new_user();
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 
--- ROW LEVEL SECURITY (RLS) POLICIES
+-- RLS POLICIES --
 
 -- Enable RLS for all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -86,40 +82,32 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 
--- POLICIES FOR 'profiles' TABLE
-CREATE POLICY "Allow public read access to profiles"
-ON public.profiles
-FOR SELECT USING (true);
+-- Profiles Policies
+CREATE POLICY "Allow public read access to profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Allow users to insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Allow users to update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "Allow user to update their own profile"
-ON public.profiles
-FOR UPDATE USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+-- Clients Policies
+CREATE POLICY "Allow public read access to clients" ON public.clients FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to manage clients" ON public.clients FOR ALL USING (auth.role() = 'authenticated');
 
--- POLICIES FOR 'clients', 'services', 'appointments'
--- For development, allow broad access. We'll tighten this later.
-CREATE POLICY "Allow public read access on clients"
-ON public.clients
-FOR SELECT USING (true);
+-- Services Policies
+CREATE POLICY "Allow public read access to services" ON public.services FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to manage services" ON public.services FOR ALL USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow authenticated users to manage clients"
-ON public.clients
-FOR ALL USING (auth.role() = 'authenticated');
+-- Appointments Policies
+CREATE POLICY "Allow public read access to appointments" ON public.appointments FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated users to manage appointments" ON public.appointments FOR ALL USING (auth.role() = 'authenticated');
 
+-- Grant usage on schemas to all roles
+GRANT USAGE ON SCHEMA public TO service_role, authenticated, anon;
 
-CREATE POLICY "Allow public read access on services"
-ON public.services
-FOR SELECT USING (true);
+-- Grant all privileges on tables to supabase_admin
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, supabase_admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, supabase_admin;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres, supabase_admin;
 
-CREATE POLICY "Allow authenticated users to manage services"
-ON public_sso.services
-FOR ALL USING (auth.role() = 'authenticated');
+-- Grant selective privileges to roles
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated, service_role;
 
-
-CREATE POLICY "Allow public read access on appointments"
-ON public.appointments
-FOR SELECT USING (true);
-
-CREATE POLICY "Allow authenticated users to manage appointments"
-ON public.appointments
-FOR ALL USING (auth.role() = 'authenticated');
