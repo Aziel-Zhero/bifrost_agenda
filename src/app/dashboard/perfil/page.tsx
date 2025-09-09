@@ -119,7 +119,7 @@ export default function PerfilPage() {
                 .select('name, avatar_url')
                 .eq('id', user.id)
                 .single();
-
+            
             // This error (PGRST116) happens if the user exists in auth but not in profiles. We can ignore it.
             if (error && error.code !== 'PGRST116') {
                 console.error("Error fetching profile", error);
@@ -129,7 +129,7 @@ export default function PerfilPage() {
                 setProfilePic(profile.avatar_url || '');
             } else {
                 // Fallback for when profile doesn't exist
-                setDisplayName(user.email?.split('@')[0] || 'Usuário');
+                setDisplayName(user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário');
             }
         }
     };
@@ -145,7 +145,7 @@ export default function PerfilPage() {
         // Using upsert will create the profile if it doesn't exist, or update it if it does.
         const { error: profileError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, name: displayName }, { onConflict: 'id' });
+            .upsert({ id: authUser.id, name: displayName, email: authUser.email }, { onConflict: 'id' });
         
         if (profileError) throw profileError;
 
@@ -155,6 +155,7 @@ export default function PerfilPage() {
                 throw new Error('As novas senhas não correspondem.');
             }
 
+            // We don't need the current password to update to a new one with Supabase as the user is already authenticated.
             const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
 
             if (passwordError) throw passwordError;
@@ -172,7 +173,7 @@ export default function PerfilPage() {
   };
 
 
-  function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
       setCrop(undefined); // Makes crop preview update between images.
       const reader = new FileReader();
@@ -210,7 +211,7 @@ export default function PerfilPage() {
             .from('avatars')
             .upload(filePath, blob, {
                 cacheControl: '3600',
-                upsert: false,
+                upsert: true, // Use upsert to allow overwriting if needed
             });
 
         if (uploadError) {
@@ -224,12 +225,12 @@ export default function PerfilPage() {
         if (!publicUrl) {
             throw new Error("Could not get public URL for avatar.");
         }
-
+        
+        // Use upsert here as well to create a profile if one doesn't exist
         const { error: updateError } = await supabase
             .from('profiles')
-            .update({ avatar_url: publicUrl })
-            .eq('id', authUser.id);
-        
+            .upsert({ id: authUser.id, avatar_url: publicUrl, name: displayName, email: authUser.email }, { onConflict: 'id' })
+
         if (updateError) {
             throw updateError;
         }
@@ -297,11 +298,11 @@ export default function PerfilPage() {
              <div className="space-y-4 rounded-lg border p-4">
                 <h4 className="font-medium">Alterar Senha</h4>
                 <div className="space-y-2 relative">
-                    <Label htmlFor="currentPassword">Senha Atual</Label>
+                    <Label htmlFor="currentPassword">Senha Atual (opcional)</Label>
                     <Input 
                         id="currentPassword" 
                         type={showCurrentPassword ? "text" : "password"} 
-                        placeholder="Digite sua senha atual" 
+                        placeholder="Deixe em branco para não alterar" 
                         value={currentPassword} 
                         onChange={e => setCurrentPassword(e.target.value)}
                         />
