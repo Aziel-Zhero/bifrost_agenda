@@ -36,9 +36,9 @@ export default function DashboardRedirectPage() {
     const fetchAppointments = async () => {
       const { data, error } = await supabase.from("appointments").select(`
           id,
-          clientName:clients ( name ),
-          serviceId:services ( name ),
-          dateTime:date_time,
+          clients ( name ),
+          services ( name ),
+          date_time,
           notes,
           status
         `);
@@ -51,9 +51,9 @@ export default function DashboardRedirectPage() {
       const formattedAppointments = data.map((appt: any) => ({
         ...appt,
         id: appt.id,
-        clientName: appt.clientName.name,
-        notes: appt.serviceId.name,
-        dateTime: new Date(appt.dateTime),
+        clientName: appt.clients.name,
+        notes: appt.services.name,
+        dateTime: new Date(appt.date_time),
       }));
       setAppointments(formattedAppointments);
     };
