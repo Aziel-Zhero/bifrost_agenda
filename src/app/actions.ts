@@ -13,13 +13,13 @@ export async function signUpUser(formData: FormData) {
     }
     
     // O trigger no Supabase irá criar o perfil automaticamente.
-    // Apenas precisamos lidar com o cadastro na autenticação aqui.
+    // Para isso, precisamos passar o nome do usuário nos metadados (options.data)
+    // que o trigger irá usar para popular a tabela 'profiles'.
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
-                // Estes dados são passados para o JWT e podem ser usados pelo trigger.
                 full_name: name,
             }
         }
