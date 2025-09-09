@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   Bell,
   LogOut,
@@ -29,15 +30,52 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Nav, { menuItems } from "./nav";
-import { users } from "@/lib/mock-data";
-
-// Mock of the current user
-const currentUser = users[0];
+import { supabase } from "@/lib/supabase/client";
+import type { UserProfile } from "@/types";
 
 export default function Header() {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
-  const visibleMenuItems = menuItems.filter(item => currentUser.permissions[item.href]);
+  useEffect(() => {
+    const fetchUser = async () => {
+      // In a real app, you'd get the logged-in user's ID
+      // For now, we'll fetch the 'Admin Master' profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('name', 'Admin Master')
+        .limit(1)
+        .single();
+      
+      if (error) {
+          console.error("Error fetching current user:", error);
+          // Fallback to a default user structure if fetch fails to avoid crashing UI
+          setCurrentUser({
+            id: 'fallback-id',
+            name: 'Admin Master',
+            email: 'admin@example.com',
+            role: 'Heimdall',
+            permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {})
+          });
+      } else {
+        setCurrentUser(data);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const visibleMenuItems = currentUser 
+    ? menuItems.filter(item => currentUser.permissions[item.href]) 
+    : [];
+
+  if (!currentUser) {
+    return (
+        <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 px-4 md:px-6">
+            {/* Render a loading state or a skeleton header */}
+        </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 text-white px-4 md:px-6">
@@ -45,7 +83,7 @@ export default function Header() {
         <div className="flex items-center gap-6">
           <Logo isHeader />
           <div className="hidden md:block">
-            <Nav />
+            <Nav currentUser={currentUser} />
           </div>
         </div>
 
@@ -88,16 +126,16 @@ export default function Header() {
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar>
                   <AvatarImage src="https://picsum.photos/32/32" alt="Admin" data-ai-hint="person" />
-                  <AvatarFallback>A</AvatarFallback>
+                  <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin Master</p>
+                  <p className="text-sm font-medium leading-none">{currentUser.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    admin@example.com
+                    {currentUser.email}
                   </p>
                 </div>
               </DropdownMenuLabel>

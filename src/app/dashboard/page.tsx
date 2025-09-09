@@ -1,18 +1,15 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   isSameDay,
   isSameWeek,
   isSameMonth,
-  startOfDay,
 } from "date-fns";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -24,15 +21,45 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { appointments } from "@/lib/mock-data";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase/client";
 
 type Period = "day" | "week" | "month";
 
 export default function DashboardRedirectPage() {
   const [period, setPeriod] = useState<Period>("day");
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const today = useMemo(() => new Date(), []);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      const { data, error } = await supabase.from("appointments").select(`
+          id,
+          clientName:clients ( name ),
+          serviceId:services ( name ),
+          dateTime:date_time,
+          notes,
+          status
+        `);
+
+      if (error) {
+        console.error("Error fetching appointments:", error);
+        return;
+      }
+
+      const formattedAppointments = data.map((appt: any) => ({
+        ...appt,
+        id: appt.id,
+        clientName: appt.clientName.name,
+        notes: appt.serviceId.name,
+        dateTime: new Date(appt.dateTime),
+      }));
+      setAppointments(formattedAppointments);
+    };
+
+    fetchAppointments();
+  }, []);
 
   const filteredAppointments = useMemo(() => {
     const now = new Date();
@@ -54,7 +81,7 @@ export default function DashboardRedirectPage() {
     return appointments
       .filter((appt) => checkFunction(appt.dateTime))
       .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
-  }, [period]);
+  }, [period, appointments]);
 
   const statusVariant: Record<AppointmentStatus, string> = {
     Agendado: "status-agendado",

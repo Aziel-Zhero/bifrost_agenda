@@ -15,10 +15,7 @@ import {
   Building,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { users } from "@/lib/mock-data";
-
-// Mock of the current user
-const currentUser = users[0];
+import type { UserProfile } from "@/types";
 
 export const menuItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -31,7 +28,11 @@ export const menuItems = [
   { href: "/dashboard/relatorios", label: "Histórico", icon: BookText },
 ];
 
-export default function Nav() {
+interface NavProps {
+  currentUser: UserProfile;
+}
+
+export default function Nav({ currentUser }: NavProps) {
   const pathname = usePathname();
   
   const visibleMenuItems = menuItems.filter(item => currentUser.permissions[item.href]);
