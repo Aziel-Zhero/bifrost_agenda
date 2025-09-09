@@ -30,6 +30,7 @@ import {
 import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function UsuariosPage() {
@@ -37,6 +38,12 @@ export default function UsuariosPage() {
   const [isAddFormOpen, setAddFormOpen] = useState(false);
   const [isPermissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<UserProfile['role'] | ''>('');
+  const { toast } = useToast();
+
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -44,7 +51,6 @@ export default function UsuariosPage() {
       if (error) {
         console.error('Error fetching users:', error);
       } else if (data) {
-        // We need to ensure the permissions object is not null
         const usersWithPermissions = data.map(u => ({...u, permissions: u.permissions || {}}))
         setUsers(usersWithPermissions);
       }
@@ -65,13 +71,64 @@ export default function UsuariosPage() {
           .eq('id', selectedUser.id)
 
         if (error) {
+            toast({
+              title: "Erro ao salvar",
+              description: "Não foi possível atualizar as permissões.",
+              variant: "destructive",
+            });
             console.error('Error updating permissions:', error);
         } else {
              setUsers(users.map(u => u.id === selectedUser.id ? { ...u, permissions: updatedPermissions } : u));
+             toast({
+              title: "Sucesso!",
+              description: "Permissões do usuário atualizadas.",
+            });
         }
     }
     setPermissionsDialogOpen(false);
-  }
+  };
+  
+  const handleAddUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserName || !newUserEmail || !newUserRole) {
+      toast({
+        title: "Campos incompletos",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // This is a simplified user creation. In a real-world scenario,
+    // you would use Supabase Auth to create the user, which would give you a secure ID.
+    // Then you would insert into the 'profiles' table with that ID.
+    // For this prototype, we'll insert directly. This will not create an authenticated user.
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert([{ name: newUserName, email: newUserEmail, role: newUserRole, permissions: {} }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating user:", error);
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message || "Não foi possível adicionar o usuário.",
+        variant: "destructive",
+      });
+    } else if (data) {
+      setUsers([...users, data]);
+      toast({
+        title: "Usuário Adicionado!",
+        description: `${newUserName} foi adicionado com sucesso.`,
+      });
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserRole('');
+      setAddFormOpen(false);
+    }
+  };
+
 
   return (
     <>
@@ -94,18 +151,18 @@ export default function UsuariosPage() {
               <DialogHeader>
                 <DialogTitle>Adicionar Novo Usuário</DialogTitle>
               </DialogHeader>
-              <form className="space-y-4">
+              <form onSubmit={handleAddUserSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome Completo</Label>
-                  <Input id="name" placeholder="Nome do membro da equipe" />
+                  <Input id="name" placeholder="Nome do membro da equipe" value={newUserName} onChange={e => setNewUserName(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email de Acesso</Label>
-                  <Input id="email" type="email" placeholder="usuario@email.com" />
+                  <Input id="email" type="email" placeholder="usuario@email.com" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Tipo de Acesso</Label>
-                  <Select>
+                  <Select value={newUserRole} onValueChange={(value: UserProfile['role']) => setNewUserRole(value)}>
                       <SelectTrigger id="role">
                           <SelectValue placeholder="Selecione um cargo" />
                       </SelectTrigger>
