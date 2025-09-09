@@ -11,9 +11,11 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,11 +39,15 @@ export default function UsuariosPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isAddFormOpen, setAddFormOpen] = useState(false);
   const [isPermissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+  const [isRoleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserProfile['role'] | ''>('');
+  
+  const [selectedRole, setSelectedRole] = useState<UserProfile['role'] | ''>('');
+  
   const { toast } = useToast();
 
 
@@ -61,6 +67,12 @@ export default function UsuariosPage() {
   const handleEditPermissions = (user: UserProfile) => {
     setSelectedUser(user);
     setPermissionsDialogOpen(true);
+  };
+  
+  const handleEditRole = (user: UserProfile) => {
+    setSelectedUser(user);
+    setSelectedRole(user.role);
+    setRoleDialogOpen(true);
   };
   
   const handlePermissionsSave = async (updatedPermissions: UserProfile['permissions']) => {
@@ -88,6 +100,31 @@ export default function UsuariosPage() {
     setPermissionsDialogOpen(false);
   };
   
+  const handleRoleSave = async () => {
+    if (selectedUser && selectedRole) {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ role: selectedRole })
+            .eq('id', selectedUser.id);
+        
+        if (error) {
+            toast({
+              title: "Erro ao salvar",
+              description: "Não foi possível atualizar o cargo do usuário.",
+              variant: "destructive",
+            });
+            console.error('Error updating role:', error);
+        } else {
+            setUsers(users.map(u => u.id === selectedUser.id ? { ...u, role: selectedRole } : u));
+            toast({
+              title: "Sucesso!",
+              description: `O cargo de ${selectedUser.name} foi atualizado para ${selectedRole}.`,
+            });
+        }
+    }
+    setRoleDialogOpen(false);
+  };
+
   const handleAddUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName || !newUserEmail || !newUserRole) {
@@ -185,7 +222,7 @@ export default function UsuariosPage() {
 
         <Card>
           <CardContent className="pt-6">
-            <DataTable columns={columns({ onEditPermissions: handleEditPermissions })} data={users} />
+            <DataTable columns={columns({ onEditPermissions: handleEditPermissions, onEditRole: handleEditRole })} data={users} />
           </CardContent>
         </Card>
       </div>
@@ -198,6 +235,37 @@ export default function UsuariosPage() {
           menuItems={menuItems}
           onSave={handlePermissionsSave}
         />
+      )}
+
+      {selectedUser && (
+        <Dialog open={isRoleDialogOpen} onOpenChange={setRoleDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Alterar Tipo de Acesso</DialogTitle>
+                    <DialogDescription>
+                        Alterando o cargo de <span className="font-semibold">{selectedUser.name}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                     <Label htmlFor="edit-role">Cargo</Label>
+                     <Select value={selectedRole} onValueChange={(value: UserProfile['role']) => setSelectedRole(value)}>
+                      <SelectTrigger id="edit-role">
+                          <SelectValue placeholder="Selecione um cargo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="Midgard">Midgard</SelectItem>
+                          <SelectItem value="Asgard">Asgard</SelectItem>
+                          <SelectItem value="Heimdall">Heimdall</SelectItem>
+                          <SelectItem value="Bifrost">Bifrost</SelectItem>
+                      </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setRoleDialogOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleRoleSave}>Salvar Alteração</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
       )}
     </>
   );

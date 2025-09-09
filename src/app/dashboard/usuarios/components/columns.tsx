@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import type { UserProfile } from "@/types";
@@ -25,10 +26,11 @@ const roleVariant: Record<string, string> = {
 
 type ColumnsProps = {
   onEditPermissions: (user: UserProfile) => void;
+  onEditRole: (user: UserProfile) => void;
 };
 
 
-export const columns = ({ onEditPermissions }: ColumnsProps): ColumnDef<UserProfile>[] => [
+export const columns = ({ onEditPermissions, onEditRole }: ColumnsProps): ColumnDef<UserProfile>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -82,9 +84,13 @@ export const columns = ({ onEditPermissions }: ColumnsProps): ColumnDef<UserProf
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onEditRole(user)}>
+                Alterar Tipo de Acesso
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEditPermissions(user)}>
                 Editar Permissões
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem className="text-destructive">
                 Remover Usuário
               </DropdownMenuItem>
