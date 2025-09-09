@@ -51,16 +51,17 @@ export default function UsuariosPage() {
   const { toast } = useToast();
 
 
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) {
+      console.error('Error fetching users:', error);
+    } else if (data) {
+      const usersWithPermissions = data.map(u => ({...u, permissions: u.permissions || {}}))
+      setUsers(usersWithPermissions);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (error) {
-        console.error('Error fetching users:', error);
-      } else if (data) {
-        const usersWithPermissions = data.map(u => ({...u, permissions: u.permissions || {}}))
-        setUsers(usersWithPermissions);
-      }
-    };
     fetchUsers();
   }, []);
 
@@ -136,28 +137,32 @@ export default function UsuariosPage() {
       return;
     }
 
-    // In a real app, you would use Supabase Auth to create the user, which gives an ID.
-    // For this prototype, we'll insert directly. This requires RLS to be configured to allow inserts.
-    // The user will need to create a policy in Supabase for the 'profiles' table.
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert([{ name: newUserName, email: newUserEmail, role: newUserRole, permissions: {} }])
-      .select(); // We select to get the created data back
+    const { data, error } = await supabase.auth.signUp({
+      email: newUserEmail,
+      // The form does not have a password field, so we use a default one.
+      // In a real application, you'd want to send an invitation link instead.
+      password: 'password',
+      options: {
+        data: {
+          full_name: newUserName,
+          role: newUserRole,
+        },
+      },
+    });
 
     if (error) {
       console.error("Error creating user:", error);
       toast({
         title: "Erro ao criar usuário",
-        description: error.message || "Não foi possível adicionar o usuário. Verifique as permissões (RLS) no Supabase.",
+        description: error.message || "Não foi possível adicionar o usuário.",
         variant: "destructive",
       });
-    } else if (data) {
-      // The 'data' returned from an insert is an array, get the first element.
-      const newUser = data[0];
-      setUsers([...users, newUser]);
+    } else if (data.user) {
+      // The trigger will create the profile. We just need to refresh the user list.
+      await fetchUsers();
       toast({
         title: "Usuário Adicionado!",
-        description: `${newUserName} foi adicionado com sucesso.`,
+        description: `${newUserName} foi adicionado. A senha inicial é 'password'.`,
       });
       setNewUserName('');
       setNewUserEmail('');
@@ -187,6 +192,9 @@ export default function UsuariosPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+                <DialogDescription>
+                  O usuário será criado com uma senha padrão ('password') e deverá alterá-la no primeiro acesso.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddUserSubmit} className="space-y-4">
                 <div className="space-y-2">
