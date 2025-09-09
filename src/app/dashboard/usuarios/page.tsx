@@ -99,25 +99,25 @@ export default function UsuariosPage() {
       return;
     }
 
-    // This is a simplified user creation. In a real-world scenario,
-    // you would use Supabase Auth to create the user, which would give you a secure ID.
-    // Then you would insert into the 'profiles' table with that ID.
-    // For this prototype, we'll insert directly. This will not create an authenticated user.
+    // In a real app, you would use Supabase Auth to create the user, which gives an ID.
+    // For this prototype, we'll insert directly. This requires RLS to be configured to allow inserts.
+    // The user will need to create a policy in Supabase for the 'profiles' table.
     const { data, error } = await supabase
       .from('profiles')
       .insert([{ name: newUserName, email: newUserEmail, role: newUserRole, permissions: {} }])
-      .select()
-      .single();
+      .select(); // We select to get the created data back
 
     if (error) {
       console.error("Error creating user:", error);
       toast({
         title: "Erro ao criar usuário",
-        description: error.message || "Não foi possível adicionar o usuário.",
+        description: error.message || "Não foi possível adicionar o usuário. Verifique as permissões (RLS) no Supabase.",
         variant: "destructive",
       });
     } else if (data) {
-      setUsers([...users, data]);
+      // The 'data' returned from an insert is an array, get the first element.
+      const newUser = data[0];
+      setUsers([...users, newUser]);
       toast({
         title: "Usuário Adicionado!",
         description: `${newUserName} foi adicionado com sucesso.`,
