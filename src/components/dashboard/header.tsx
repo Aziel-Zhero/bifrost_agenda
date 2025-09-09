@@ -44,13 +44,11 @@ export default function Header() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('name', 'Admin Master')
-        .limit(1)
-        .single();
+        .eq('name', 'Admin Master');
       
-      if (error) {
-          console.error("Error fetching current user:", error);
-          // Fallback to a default user structure if fetch fails to avoid crashing UI
+      if (error || !data || data.length === 0) {
+          if(error) console.error("Error fetching current user:", error);
+          // Fallback to a default user structure if fetch fails or user not found
           setCurrentUser({
             id: 'fallback-id',
             name: 'Admin Master',
@@ -59,7 +57,8 @@ export default function Header() {
             permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {})
           });
       } else {
-        setCurrentUser(data);
+        // Use the first user found
+        setCurrentUser(data[0]);
       }
     };
     fetchUser();
