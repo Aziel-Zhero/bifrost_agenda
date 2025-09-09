@@ -1,113 +1,120 @@
+-- 1. Drop existing objects to ensure a clean slate (Idempotent Script)
+DROP POLICY IF EXISTS "Allow authenticated users to manage services" ON public.services;
+DROP POLICY IF EXISTS "Enable read access for all users on services" ON public.services;
+DROP POLICY IF EXISTS "Allow authenticated users to manage appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Enable read access for all users on appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Allow authenticated users to manage clients" ON public.clients;
+DROP POLICY IF EXISTS "Enable read access for all users on clients" ON public.clients;
+DROP POLICY IF EXISTS "Allow user to update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow authenticated users to read profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Enable read access for all users on profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Enable insert for all users" ON public.profiles;
 
--- Drop existing objects if they exist
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user;
+
 DROP TABLE IF EXISTS public.appointments;
 DROP TABLE IF EXISTS public.services;
 DROP TABLE IF EXISTS public.clients;
 DROP TABLE IF EXISTS public.profiles;
 
--- Create profiles table
+-- 2. Create Tables
+
+-- Table for User Profiles
+-- This table will be populated automatically by a trigger when a new user signs up.
 CREATE TABLE public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    role VARCHAR(50) NOT NULL DEFAULT 'Midgard',
-    permissions JSONB NOT NULL DEFAULT '{}'::jsonb
+    id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    name character varying,
+    email character varying,
+    role text,
+    permissions jsonb
 );
-COMMENT ON TABLE public.profiles IS 'Stores user profiles, extending auth.users.';
-
--- Create clients table
-CREATE TABLE public.clients (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    whatsapp VARCHAR(50) NOT NULL,
-    telegram VARCHAR(50),
-    avatarUrl TEXT,
-    admin VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-COMMENT ON TABLE public.clients IS 'Stores client information for the studio.';
-
--- Create services table
-CREATE TABLE public.services (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    duration VARCHAR(50) NOT NULL,
-    price NUMERIC(10, 2) NOT NULL,
-    icon VARCHAR(50),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-COMMENT ON TABLE public.services IS 'Stores the services offered by the studio.';
-
--- Create appointments table
-CREATE TABLE public.appointments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
-    service_id UUID NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
-    admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-    date_time TIMESTAMPTZ NOT NULL,
-    notes TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'Agendado', -- e.g., Agendado, Realizado, Cancelado
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-COMMENT ON TABLE public.appointments IS 'Stores appointment details.';
-
-
--- Function to create a profile for a new user
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, name, email)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email);
-  RETURN new;
-END;
-$$;
-
--- Trigger to call the function when a new user is created in auth
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
-
--- RLS POLICIES --
-
--- Enable RLS for all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Table for Clients
+CREATE TABLE public.clients (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name character varying NOT NULL,
+    whatsapp character varying,
+    telegram character varying,
+    avatarUrl text,
+    email character varying,
+    admin character varying
+);
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
+
+-- Table for Services
+CREATE TABLE public.services (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name character varying NOT NULL,
+    duration character varying,
+    price numeric,
+    icon character varying
+);
 ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+
+-- Table for Appointments
+CREATE TABLE public.appointments (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    client_id uuid REFERENCES public.clients(id) ON DELETE SET NULL,
+    service_id uuid REFERENCES public.services(id) ON DELETE SET NULL,
+    admin_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+    date_time timestamp with time zone NOT NULL,
+    notes text,
+    status character varying
+);
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
-CREATE POLICY "Allow public read access to profiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Allow users to insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Allow users to update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
--- Clients Policies
-CREATE POLICY "Allow public read access to clients" ON public.clients FOR SELECT USING (true);
-CREATE POLICY "Allow authenticated users to manage clients" ON public.clients FOR ALL USING (auth.role() = 'authenticated');
+-- 3. Create Function and Trigger for New User Automation
 
--- Services Policies
-CREATE POLICY "Allow public read access to services" ON public.services FOR SELECT USING (true);
-CREATE POLICY "Allow authenticated users to manage services" ON public.services FOR ALL USING (auth.role() = 'authenticated');
+-- This function is triggered when a new user signs up.
+-- It inserts a new row into public.profiles, copying the id, email, and name from the auth.users table.
+create function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, name, role, permissions)
+  values (new.id, new.email, new.raw_user_meta_data->>'full_name', 'Midgard', '{}'::jsonb);
+  return new;
+end;
+$$;
 
--- Appointments Policies
-CREATE POLICY "Allow public read access to appointments" ON public.appointments FOR SELECT USING (true);
-CREATE POLICY "Allow authenticated users to manage appointments" ON public.appointments FOR ALL USING (auth.role() = 'authenticated');
+-- This trigger calls the handle_new_user function after a new user is created in the auth.users table.
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
 
--- Grant usage on schemas to all roles
-GRANT USAGE ON SCHEMA public TO service_role, authenticated, anon;
 
--- Grant all privileges on tables to supabase_admin
-GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, supabase_admin;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, supabase_admin;
-GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres, supabase_admin;
+-- 4. Set up Row Level Security (RLS) Policies
 
--- Grant selective privileges to roles
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
-GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated, service_role;
+-- PROFILES Table Policies
+CREATE POLICY "Enable read access for all users on profiles" ON "public"."profiles"
+AS PERMISSIVE FOR SELECT TO public USING (true);
+CREATE POLICY "Allow user to update own profile" ON "public"."profiles"
+AS PERMISSIVE FOR UPDATE TO public USING ((auth.uid() = id));
+CREATE POLICY "Enable insert for all users" ON "public"."profiles"
+AS PERMISSIVE FOR INSERT TO public WITH CHECK (true); -- Required for the trigger to work
 
+
+-- CLIENTS Table Policies
+CREATE POLICY "Enable read access for all users on clients" ON "public"."clients"
+AS PERMISSIVE FOR SELECT TO public USING (true);
+CREATE POLICY "Allow authenticated users to manage clients" ON "public"."clients"
+AS PERMISSIVE FOR ALL TO authenticated USING (true);
+
+
+-- SERVICES Table Policies
+CREATE POLICY "Enable read access for all users on services" ON "public"."services"
+AS PERMISSIVE FOR SELECT TO public USING (true);
+CREATE POLICY "Allow authenticated users to manage services" ON "public"."services"
+AS PERMISSIVE FOR ALL TO authenticated USING (true);
+
+
+-- APPOINTMENTS Table Policies
+CREATE POLICY "Enable read access for all users on appointments" ON "public"."appointments"
+AS PERMISSIVE FOR SELECT TO public USING (true);
+CREATE POLICY "Allow authenticated users to manage appointments" ON "public"."appointments"
+AS PERMISSIVE FOR ALL TO authenticated USING (true);
