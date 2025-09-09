@@ -30,6 +30,8 @@ import { supabase } from "@/lib/supabase/client";
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -37,10 +39,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
-    const form = e.target as HTMLFormElement;
-    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-    const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-
+    
     const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -100,14 +99,23 @@ export default function LoginPage() {
                 id="email"
                 name="email"
                 type="email"
-                placeholder="admin@example.com"
+                placeholder="seu@email.com"
                 required
-                defaultValue="admin@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" name="password" type="password" required defaultValue="password" />
+              <Input 
+                id="password" 
+                name="password" 
+                type="password" 
+                required 
+                placeholder="Sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={isLoggingIn}>
               {isLoggingIn ? 'Entrando...' : 'Entrar'}
@@ -159,4 +167,3 @@ export default function LoginPage() {
     </main>
   );
 }
-
