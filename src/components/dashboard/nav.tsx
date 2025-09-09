@@ -43,10 +43,10 @@ export default function Nav() {
             key={item.href}
             href={item.href}
             className={cn(
-                "flex items-center gap-2 transition-colors hover:text-foreground",
+                "flex items-center gap-2 transition-colors hover:text-white",
                 pathname === item.href
-                ? "text-foreground"
-                : "text-muted-foreground"
+                ? "text-white"
+                : "text-white/70"
             )}
             >
             <item.icon className="h-5 w-5" />

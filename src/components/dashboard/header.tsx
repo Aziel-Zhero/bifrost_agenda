@@ -40,10 +40,10 @@ export default function Header() {
   const visibleMenuItems = menuItems.filter(item => currentUser.permissions[item.href]);
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 text-white px-4 md:px-6">
       <div className="flex w-full items-center gap-6">
         <div className="flex items-center gap-6">
-          <Logo />
+          <Logo isHeader />
           <div className="hidden md:block">
             <Nav />
           </div>
@@ -51,7 +51,7 @@ export default function Header() {
 
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+            <Button variant="ghost" size="icon" className="shrink-0 md:hidden hover:bg-white/10">
               <PanelLeft className="h-5 w-5" />
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
@@ -79,13 +79,13 @@ export default function Header() {
         </Sheet>
         
         <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
             <Bell className="h-5 w-5" />
             <span className="sr-only">Toggle notifications</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="overflow-hidden rounded-full">
+              <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar>
                   <AvatarImage src="https://picsum.photos/32/32" alt="Admin" data-ai-hint="person" />
                   <AvatarFallback>A</AvatarFallback>
