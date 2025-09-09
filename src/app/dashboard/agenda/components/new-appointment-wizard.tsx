@@ -17,9 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { clients, services } from "@/lib/mock-data";
 import { ptBR } from 'date-fns/locale';
 import { User, Calendar as CalendarIcon, Clock, Tag, Pencil } from "lucide-react";
+import type { Client, Service } from "@/types";
+import { supabase } from "@/lib/supabase/client";
 
 const steps = [
   { id: 1, name: "Tipo de Cliente" },
@@ -45,11 +46,13 @@ type FormData = {
 };
 
 interface NewAppointmentWizardProps {
-    onFinish: (details: {clientName: string; date: string; time: string; serviceName: string; serviceId: string;}) => void;
+    onFinish: (details: {clientName: string; clientId: string; date: string; time: string; serviceName: string; serviceId: string; notes: string;}) => void;
+    clients: Client[];
+    services: Service[];
 }
 
 
-export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardProps) {
+export default function NewAppointmentWizard({ onFinish, clients, services }: NewAppointmentWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     clientType: 'existing',
@@ -61,6 +64,7 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
     time: '',
     notes: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
@@ -110,33 +114,63 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
   };
   
   const getSummary = () => {
-      const clientName = formData.clientType === 'new' 
-          ? formData.newClientName 
-          : clients.find(c => c.id === formData.existingClientId)?.name;
+      const client = formData.clientType === 'new' ? null : clients.find(c => c.id === formData.existingClientId);
+      const clientName = formData.clientType === 'new' ? formData.newClientName : client?.name;
+      const clientId = client?.id;
+
       const service = services.find(s => s.id === formData.serviceId);
       const serviceName = service?.name;
       const date = formData.date?.toLocaleDateString('pt-BR');
       const time = formData.time;
       const serviceId = service?.id;
 
-      return { clientName, serviceName, date, time, serviceId };
+      return { clientName, clientId, serviceName, date, time, serviceId };
   }
 
-  const handleSubmit = () => {
-    const summary = getSummary();
-    if (formData.clientType === 'new' && (!formData.newClientName || !formData.newClientWhatsapp)) {
-        console.error("New client details are missing");
-        return;
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    let finalClientId = formData.existingClientId;
+    let finalClientName = clients.find(c => c.id === formData.existingClientId)?.name || '';
+    
+    // If it's a new client, create it first
+    if (formData.clientType === 'new') {
+        const { data: newClient, error } = await supabase
+            .from('clients')
+            .insert({ 
+                name: formData.newClientName, 
+                whatsapp: formData.newClientWhatsapp,
+                // These are dummy values as they are required by the type but not in the form
+                email: `${formData.newClientName.split(' ')[0].toLowerCase()}@example.com`,
+                avatarUrl: '',
+                admin: 'Admin Master' // Or assign dynamically
+            })
+            .select()
+            .single();
+
+        if (error || !newClient) {
+            console.error("Error creating new client", error);
+            // Here you should show a toast to the user
+            setIsSubmitting(false);
+            return;
+        }
+        finalClientId = newClient.id;
+        finalClientName = newClient.name;
     }
 
-    if(summary.clientName && summary.date && summary.time && summary.serviceName && summary.serviceId) {
+    const summary = getSummary();
+    if(finalClientName && summary.date && summary.time && summary.serviceName && summary.serviceId) {
         onFinish({
-            clientName: summary.clientName,
+            clientName: finalClientName,
+            clientId: finalClientId,
             date: summary.date,
             time: summary.time,
             serviceName: summary.serviceName,
-            serviceId: summary.serviceId
+            serviceId: summary.serviceId,
+            notes: formData.notes
         });
+    } else {
+       console.error("Could not gather all required details for finishing.");
+       setIsSubmitting(false);
     }
   };
 
@@ -340,13 +374,15 @@ export default function NewAppointmentWizard({ onFinish }: NewAppointmentWizardP
       </div>
 
       <div className="flex justify-between">
-        <Button variant="ghost" onClick={handleBack} disabled={currentStep === 0}>
+        <Button variant="ghost" onClick={handleBack} disabled={currentStep === 0 || isSubmitting}>
           Voltar
         </Button>
         {currentStep < steps.length - 1 ? (
           <Button onClick={handleNext} disabled={isNextDisabled()}>Próximo</Button>
         ) : (
-          <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">Finalizar Agendamento</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
+            {isSubmitting ? "Finalizando..." : "Finalizar Agendamento"}
+          </Button>
         )}
       </div>
     </div>

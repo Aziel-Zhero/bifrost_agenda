@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Download, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { appointments, clients } from "@/lib/mock-data";
 import { columns } from "./components/columns";
 import { DataTable } from "./components/data-table";
 import type { AppointmentReport } from "@/types";
@@ -22,20 +21,44 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase/client";
 
 export default function RelatoriosPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [appointmentReports, setAppointmentReports] = useState<AppointmentReport[]>([]);
 
-  const appointmentReports: AppointmentReport[] = appointments
-    .filter(appt => appt.status !== 'Bloqueado')
-    .map(appt => {
-      const client = clients.find(c => c.name === appt.clientName);
-      return {
-        ...appt,
-        whatsapp: client?.whatsapp || 'N/A',
-        telegram: client?.telegram || 'N/A'
+  useEffect(() => {
+    const fetchReports = async () => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          clients (*),
+          services (*)
+        `);
+
+      if (error) {
+        console.error("Error fetching reports:", error);
+        return;
       }
-    });
+
+      const reports: AppointmentReport[] = data.map((appt: any) => ({
+        id: appt.id,
+        clientName: appt.clients.name,
+        clientAvatarUrl: appt.clients.avatarUrl,
+        dateTime: new Date(appt.date_time),
+        notes: appt.services.name,
+        status: appt.status,
+        admin: 'Admin', // Placeholder, you might want to fetch admin name
+        serviceId: appt.service_id,
+        whatsapp: appt.clients.whatsapp,
+        telegram: appt.clients.telegram,
+      }));
+      setAppointmentReports(reports);
+    };
+
+    fetchReports();
+  }, []);
   
   const filteredAppointments = appointmentReports.filter(appt => {
     if (!dateRange || (!dateRange.from && !dateRange.to)) return true;
