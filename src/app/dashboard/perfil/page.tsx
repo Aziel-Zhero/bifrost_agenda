@@ -34,12 +34,12 @@ import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
 
-// This is a helper function that will be used to generate the cropped image.
+// This is a helper function that will be used to generate the cropped image blob.
 function getCroppedImg(
   image: HTMLImageElement,
   crop: PixelCrop,
   rotation = 0
-): Promise<string> {
+): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
@@ -75,11 +75,7 @@ function getCroppedImg(
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
-      if (!blob) {
-         resolve('');
-         return;
-      }
-      resolve(URL.createObjectURL(blob));
+      resolve(blob);
     }, "image/png");
   });
 }
@@ -96,7 +92,7 @@ export default function PerfilPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   
   const [imgSrc, setImgSrc] = useState('');
-  const [profilePic, setProfilePic] = useState('https://picsum.photos/128/128');
+  const [profilePic, setProfilePic] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [scale, setScale] = useState(1);
@@ -118,7 +114,7 @@ export default function PerfilPage() {
             setAuthUser(user);
             const { data: profile, error } = await supabase
                 .from('profiles')
-                .select('name')
+                .select('name, avatar_url')
                 .eq('id', user.id)
                 .single();
 
@@ -126,6 +122,7 @@ export default function PerfilPage() {
                 console.error("Error fetching profile", error);
             } else if (profile) {
                 setDisplayName(profile.name);
+                setProfilePic(profile.avatar_url || '');
                 setEmail(user.email || '');
             }
         }
@@ -137,40 +134,35 @@ export default function PerfilPage() {
     if (!authUser) return;
     setIsSaving(true);
 
-    // Update Display Name
-    const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ name: displayName })
-        .eq('id', authUser.id);
-    
-    if (profileError) {
-        toast({ title: 'Erro ao atualizar nome', description: profileError.message, variant: 'destructive' });
+    try {
+        // Update Display Name
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ name: displayName })
+            .eq('id', authUser.id);
+        
+        if (profileError) throw profileError;
+
+        // Update Password
+        if (newPassword) {
+            if (newPassword !== confirmPassword) {
+                throw new Error('As novas senhas não correspondem.');
+            }
+
+            const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+
+            if (passwordError) throw passwordError;
+        }
+        
+        toast({ title: 'Sucesso!', description: 'Seu perfil foi atualizado.', className: 'bg-green-100 border-green-300 text-green-800'});
+        setNewPassword('');
+        setCurrentPassword('');
+        setConfirmPassword('');
+    } catch(error: any) {
+        toast({ title: 'Erro ao atualizar perfil', description: error.message, variant: 'destructive' });
+    } finally {
         setIsSaving(false);
-        return;
     }
-
-    // Update Password
-    if (newPassword) {
-        if (newPassword !== confirmPassword) {
-            toast({ title: 'Erro de senha', description: 'As novas senhas não correspondem.', variant: 'destructive' });
-            setIsSaving(false);
-            return;
-        }
-
-        const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
-
-        if (passwordError) {
-            toast({ title: 'Erro ao atualizar senha', description: passwordError.message, variant: 'destructive' });
-            setIsSaving(false);
-            return;
-        }
-    }
-    
-    toast({ title: 'Sucesso!', description: 'Seu perfil foi atualizado.', className: 'bg-green-100 border-green-300 text-green-800'});
-    setNewPassword('');
-    setCurrentPassword('');
-    setConfirmPassword('');
-    setIsSaving(false);
   };
 
 
@@ -199,12 +191,59 @@ export default function PerfilPage() {
   }
 
   async function handleCropSave() {
-    if (completedCrop && imgRef.current) {
-        const croppedImageUrl = await getCroppedImg(imgRef.current, completedCrop, rotation);
-        setProfilePic(croppedImageUrl);
+    if (!completedCrop || !imgRef.current || !authUser) return;
+
+    try {
+        const blob = await getCroppedImg(imgRef.current, completedCrop, rotation);
+        if (!blob) {
+            throw new Error("Could not create cropped image.");
+        }
+
+        const filePath = `public/${authUser.id}-${Date.now()}.png`;
+        const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, blob, {
+                cacheControl: '3600',
+                upsert: false,
+            });
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+        if (!publicUrl) {
+            throw new Error("Could not get public URL for avatar.");
+        }
+
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ avatar_url: publicUrl })
+            .eq('id', authUser.id);
+        
+        if (updateError) {
+            throw updateError;
+        }
+
+        setProfilePic(publicUrl);
         setCropModalOpen(false);
+        toast({
+            title: 'Foto atualizada!',
+            description: 'Sua nova foto de perfil foi salva.',
+        });
+
+    } catch (error: any) {
+        toast({
+            title: 'Erro no Upload',
+            description: error.message || 'Não foi possível salvar a nova foto.',
+            variant: 'destructive',
+        });
     }
   }
+
 
   return (
     <>
@@ -363,3 +402,5 @@ export default function PerfilPage() {
     </>
   );
 }
+
+    
