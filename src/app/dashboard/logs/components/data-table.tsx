@@ -58,9 +58,9 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center py-4">
         <Input
           placeholder="Filtrar por email..."
-          value={(table.getColumn("payload.record.email")?.getFilterValue() as string) ?? ""}
+          value={(table.getColumn("affectedUser")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("payload.record.email")?.setFilterValue(event.target.value)
+            table.getColumn("affectedUser")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -136,5 +136,3 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
-
-    

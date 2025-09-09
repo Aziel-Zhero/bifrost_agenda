@@ -25,6 +25,7 @@ export const columns: ColumnDef<AuditLog>[] = [
     },
   },
   {
+    id: "affectedUser", // Explicit ID for the column
     accessorKey: "payload.record.email",
     header: "Usuário Afetado",
     cell: ({ row }) => {
@@ -52,5 +53,3 @@ export const columns: ColumnDef<AuditLog>[] = [
      }
   },
 ];
-
-    
