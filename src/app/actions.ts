@@ -6,11 +6,10 @@ import { supabase } from "@/lib/supabase/client";
 export async function signUpUser(formData: FormData) {
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
-    // A senha agora é fixa para desenvolvimento
-    const password = 'password'; 
+    const password = formData.get('password') as string;
 
-    if (!name || !email) {
-        return { error: { message: "Nome e email são obrigatórios." }};
+    if (!name || !email || !password) {
+        return { error: { message: "Nome, email e senha são obrigatórios." }};
     }
     
     // O trigger no Supabase irá criar o perfil automaticamente.

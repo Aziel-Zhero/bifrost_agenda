@@ -139,7 +139,7 @@ export default function LoginPage() {
                 <DialogHeader>
                   <DialogTitle>Criar nova conta</DialogTitle>
                   <DialogDescription>
-                    Preencha seus dados para se registrar. A senha padrão será "password".
+                    Preencha seus dados para se registrar.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleRegistration} className="grid gap-4 py-4">
@@ -154,6 +154,12 @@ export default function LoginPage() {
                       Email
                     </Label>
                     <Input id="email-reg" name="email" type="email" required className="col-span-3" />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="password-reg" className="text-right">
+                      Senha
+                    </Label>
+                    <Input id="password-reg" name="password" type="password" required className="col-span-3" />
                   </div>
                   <Button type="submit" disabled={isRegistering} className="mt-4 w-full col-span-4">
                     {isRegistering ? 'Criando conta...' : 'Criar conta'}
