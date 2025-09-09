@@ -19,10 +19,11 @@ export default function LogsPage() {
 
   useEffect(() => {
     const fetchLogs = async () => {
-      // Fetch logs from the audit.log table
+      // Fetch logs from the audit.log table, filtering for insert/delete actions
       const { data, error } = await supabase
         .from("log")
         .select("*")
+        .or('payload->>message.ilike.%insert%,payload->>message.ilike.%delete%')
         .order("timestamp", { ascending: false });
 
       if (error) {
@@ -57,5 +58,3 @@ export default function LogsPage() {
     </div>
   );
 }
-
-    
