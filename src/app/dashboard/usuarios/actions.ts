@@ -1,24 +1,22 @@
 
 'use server'
 
-// IMPORTANT: This line needs to be at the top to load environment variables
-import 'dotenv/config'
-
 import { createClient } from '@supabase/supabase-js'
 
-// This needs to be the service_role key to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
-
 export async function deleteUser(userId: string) {
+  // Initialize the admin client inside the function
+  // to ensure environment variables are loaded at runtime.
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  )
+
   const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
   
   if (error) {
