@@ -112,18 +112,24 @@ export default function PerfilPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
             setAuthUser(user);
+            setEmail(user.email || ''); // Set email from auth user
+
             const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('name, avatar_url')
                 .eq('id', user.id)
                 .single();
 
-            if (error) {
+            // This error (PGRST116) happens if the user exists in auth but not in profiles. We can ignore it.
+            if (error && error.code !== 'PGRST116') {
                 console.error("Error fetching profile", error);
             } else if (profile) {
+                // If profile exists, use its data
                 setDisplayName(profile.name);
                 setProfilePic(profile.avatar_url || '');
-                setEmail(user.email || '');
+            } else {
+                // Fallback for when profile doesn't exist
+                setDisplayName(user.email?.split('@')[0] || 'Usuário');
             }
         }
     };
@@ -136,10 +142,10 @@ export default function PerfilPage() {
 
     try {
         // Update Display Name
+        // Using upsert will create the profile if it doesn't exist, or update it if it does.
         const { error: profileError } = await supabase
             .from('profiles')
-            .update({ name: displayName })
-            .eq('id', authUser.id);
+            .upsert({ id: authUser.id, name: displayName }, { onConflict: 'id' });
         
         if (profileError) throw profileError;
 
