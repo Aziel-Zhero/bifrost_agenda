@@ -112,24 +112,25 @@ export default function PerfilPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
             setAuthUser(user);
-            setEmail(user.email || ''); // Set email from auth user
+            setEmail(user.email || '');
 
+            // Set fallback name from auth data first
+            setDisplayName(user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário');
+
+            // Then, try to fetch the profile
             const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('name, avatar_url')
                 .eq('id', user.id)
                 .single();
             
-            // This error (PGRST116) happens if the user exists in auth but not in profiles. We can ignore it.
+            // This error (PGRST116) happens if the user exists in auth but not in profiles. We can safely ignore it.
             if (error && error.code !== 'PGRST116') {
                 console.error("Error fetching profile", error);
             } else if (profile) {
-                // If profile exists, use its data
+                // If profile exists, use its data, overwriting the fallback.
                 setDisplayName(profile.name);
                 setProfilePic(profile.avatar_url || '');
-            } else {
-                // Fallback for when profile doesn't exist
-                setDisplayName(user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário');
             }
         }
     };
@@ -211,7 +212,7 @@ export default function PerfilPage() {
             .from('avatars')
             .upload(filePath, blob, {
                 cacheControl: '3600',
-                upsert: true, // Use upsert to allow overwriting if needed
+                upsert: true,
             });
 
         if (uploadError) {
@@ -245,7 +246,7 @@ export default function PerfilPage() {
     } catch (error: any) {
         toast({
             title: 'Erro no Upload',
-            description: error.message || 'Não foi possível salvar a nova foto.',
+            description: error.message || 'Não foi possível salvar a nova foto. Verifique se o bucket "avatars" existe e é público.',
             variant: 'destructive',
         });
     }
@@ -298,7 +299,7 @@ export default function PerfilPage() {
              <div className="space-y-4 rounded-lg border p-4">
                 <h4 className="font-medium">Alterar Senha</h4>
                 <div className="space-y-2 relative">
-                    <Label htmlFor="currentPassword">Senha Atual (opcional)</Label>
+                    <Label htmlFor="currentPassword">Senha Atual</Label>
                     <Input 
                         id="currentPassword" 
                         type={showCurrentPassword ? "text" : "password"} 
