@@ -48,9 +48,9 @@ export default function Header() {
               .eq('id', user.id)
               .single();
 
-          if (error) {
+          if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
               console.error("Error fetching user profile:", error);
-              // Set a fallback user if profile doesn't exist yet
+              // Set a fallback user if profile doesn't exist yet but auth user does
               setCurrentUser({
                 id: user.id,
                 name: user.email?.split('@')[0] || 'Usuário',
@@ -61,22 +61,20 @@ export default function Header() {
           } else {
               setCurrentUser(profile);
           }
-      } else {
-         // Fallback for logged out state or initial load
-          setCurrentUser({
-            id: 'fallback-id',
-            name: 'Visitante',
-            email: '',
-            role: 'Midgard',
-            permissions: {}
-          });
       }
     };
     fetchUser();
   }, []);
 
-  const visibleMenuItems = currentUser 
-    ? menuItems.filter(item => currentUser.permissions[item.href] || currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost')
+  const visibleMenuItems = currentUser
+    ? menuItems.filter(item => {
+        // Heimdall and Bifrost see everything
+        if (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost') {
+          return true;
+        }
+        // For other roles, check permissions. If a permission is explicitly false, hide it. Otherwise, show.
+        return currentUser.permissions[item.href] !== false;
+      })
     : [];
 
   if (!currentUser) {

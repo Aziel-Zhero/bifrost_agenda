@@ -35,7 +35,14 @@ interface NavProps {
 export default function Nav({ currentUser }: NavProps) {
   const pathname = usePathname();
   
-  const visibleMenuItems = menuItems.filter(item => currentUser.permissions[item.href]);
+  const visibleMenuItems = menuItems.filter(item => {
+    // Heimdall and Bifrost see everything
+    if (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost') {
+      return true;
+    }
+    // For other roles, check permissions. If a permission is explicitly false, hide it. Otherwise, show.
+    return currentUser.permissions[item.href] !== false;
+  });
 
   return (
     <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
