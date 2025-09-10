@@ -109,10 +109,6 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
       }
       finalValue = masked;
     }
-     if (field === 'date') {
-      // Reset time when date changes
-      setFormData(prev => ({ ...prev, time: '' }));
-    }
     setFormData((prev) => ({ ...prev, [field]: finalValue }));
   };
   
