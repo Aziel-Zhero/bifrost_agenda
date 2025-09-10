@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
-import type { Appointment } from '@/types';
+import type { Appointment, UserProfile } from '@/types';
 import { supabase } from '@/lib/supabase/client';
 import { Star } from 'lucide-react';
 
@@ -17,21 +17,37 @@ type AppointmentsByDay = {
   };
 };
 
+type AdminMap = {
+    [id: string]: string;
+}
+
 export default function AgendaGeralPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [adminMap, setAdminMap] = useState<AdminMap>({});
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      const { data, error } = await supabase.from('appointments').select('id, date_time, admin_id'); // Assuming admin_id maps to a user
+    const fetchData = async () => {
+      // Fetch users to create a map of ID -> Name
+      const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, name');
+      if (profileError) {
+        console.error("Error fetching profiles", profileError);
+      } else {
+        const newAdminMap = profiles.reduce((acc, profile) => {
+            acc[profile.id] = profile.name;
+            return acc;
+        }, {} as AdminMap);
+        setAdminMap(newAdminMap);
+      }
+      
+      const { data, error } = await supabase.from('appointments').select('id, date_time, admin_id');
        if (error) {
         console.error("Error fetching appointments", error);
       } else {
         const formattedAppointments = data.map((appt: any) => ({
           id: appt.id,
           dateTime: new Date(appt.date_time),
-          admin: appt.admin_id, // This will be a UUID, you might need to fetch user names
-          // Add dummy values for other required Appointment fields
+          admin: appt.admin_id,
           clientName: '',
           clientAvatarUrl: '',
           notes: '',
@@ -41,7 +57,7 @@ export default function AgendaGeralPage() {
         setAppointments(formattedAppointments);
       }
     };
-    fetchAppointments();
+    fetchData();
   }, []);
 
   const appointmentsByDay = useMemo(() => {
@@ -50,7 +66,7 @@ export default function AgendaGeralPage() {
       if (!acc[day]) {
         acc[day] = {};
       }
-      const adminName = `User ${appt.admin.substring(0, 4)}`; // Placeholder for admin name
+      const adminName = adminMap[appt.admin] || `Usuário (${appt.admin.substring(0, 4)})`;
       if (!acc[day][adminName]) {
         acc[day][adminName] = [];
       }
@@ -58,7 +74,7 @@ export default function AgendaGeralPage() {
       acc[day][adminName].sort();
       return acc;
     }, {} as AppointmentsByDay);
-  }, [appointments]);
+  }, [appointments, adminMap]);
 
   const DayWithAppointments = ({ date }: { date: Date }) => {
     const dayKey = format(date, 'yyyy-MM-dd');
