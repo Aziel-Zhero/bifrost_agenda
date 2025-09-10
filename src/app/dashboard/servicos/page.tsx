@@ -25,6 +25,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -338,10 +339,10 @@ export default function ServicosPage() {
           <DialogContent>
                <DialogHeader>
                     <DialogTitle>Você tem certeza?</DialogTitle>
-                    <CardDescription>
+                    <DialogDescription>
                        Esta ação não pode ser desfeita. Isso excluirá permanentemente o serviço
                        <span className="font-semibold"> {selectedService?.name}</span>.
-                    </CardDescription>
+                    </DialogDescription>
                </DialogHeader>
                <DialogFooter>
                     <DialogClose asChild>
