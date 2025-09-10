@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from '@/lib/utils';
 import type { Appointment } from '@/types';
 import { supabase } from '@/lib/supabase/client';
+import { Star } from 'lucide-react';
 
 type AppointmentsByDay = {
   [day: string]: {
@@ -69,10 +70,11 @@ export default function AgendaGeralPage() {
     
     const isPast = isBefore(date, startOfToday()) && !isSameDay(date, new Date());
 
-    if (isPast) {
+    if (isPast && !dayAppointments) {
       return (
-         <div className="h-full w-full p-2 flex flex-col bg-gradient-to-b from-[#A5F3FC] via-[#C4B5FD] to-[#E0E7FF]">
-            <span className="font-semibold text-primary-foreground">{format(date, 'd')}</span>
+         <div className="h-full w-full p-2 flex flex-col relative">
+            <span className="font-semibold">{format(date, 'd')}</span>
+            <Star className="absolute top-1.5 right-1.5 h-4 w-4 text-accent/50" />
         </div>
       )
     }
@@ -84,6 +86,7 @@ export default function AgendaGeralPage() {
     return (
       <div className="h-full w-full p-2 flex flex-col">
         <span className="font-semibold">{format(date, 'd')}</span>
+        {isPast &&  <Star className="absolute top-1.5 right-1.5 h-4 w-4 text-accent/80" />}
         <div className="mt-1 space-y-1 overflow-y-auto">
           {visibleAdmins.map(admin => (
             <Popover key={admin}>
@@ -141,7 +144,7 @@ export default function AgendaGeralPage() {
             head_cell: 'flex-1 text-muted-foreground rounded-md w-full font-normal text-[0.8rem] capitalize py-2 border-b border-r',
             row: 'flex w-full',
             cell: cn(
-              "h-24 sm:h-32 w-full text-left text-sm p-0 relative border-b border-r",
+              "h-24 sm:h-32 lg:h-36 xl:h-40 w-full text-left text-sm p-0 relative border-b border-r",
                "[&:nth-child(7n)]:border-r-0"
             ),
             day: 'h-full w-full focus-within:relative focus-within:z-20',
