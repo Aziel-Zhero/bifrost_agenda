@@ -53,5 +53,3 @@ export type AuditLog = {
     };
     timestamp: Date;
 }
-
-    
