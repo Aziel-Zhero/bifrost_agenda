@@ -29,6 +29,7 @@ export default function MeusClientesPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [myClients, setMyClients] = useState<Client[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [whatsapp, setWhatsapp] = useState('');
 
   useEffect(() => {
     const fetchUserAndClients = async () => {
@@ -52,12 +53,29 @@ export default function MeusClientesPage() {
     fetchUserAndClients();
   }, []);
 
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const onlyNums = value.replace(/\D/g, '');
+    let masked = '';
+    if (onlyNums.length > 0) {
+      masked = `(${onlyNums.substring(0, 2)}`;
+    }
+    if (onlyNums.length > 2) {
+      masked += `) ${onlyNums.substring(2, 7)}`;
+    }
+    if (onlyNums.length > 7) {
+      masked += `-${onlyNums.substring(7, 11)}`;
+    }
+    setWhatsapp(masked);
+  };
+
+
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const newClient = {
         name: formData.get('name') as string,
-        whatsapp: formData.get('whatsapp') as string,
+        whatsapp: (formData.get('whatsapp') as string).replace(/\D/g, ''),
         telegram: formData.get('telegram') as string,
         admin: currentUser.name,
     };
@@ -70,6 +88,7 @@ export default function MeusClientesPage() {
         setMyClients(prev => [...prev, data]);
         toast({ title: "Cliente Adicionado!", description: `${data.name} foi adicionado à sua lista.`, className: "bg-green-100" });
         setFormOpen(false);
+        setWhatsapp(''); // Reset whatsapp state
     }
   };
 
@@ -83,7 +102,12 @@ export default function MeusClientesPage() {
             Gerencie os clientes que são designados a você.
           </p>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
+        <Dialog open={isFormOpen} onOpenChange={isOpen => {
+          setFormOpen(isOpen);
+          if (!isOpen) {
+            setWhatsapp('');
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -101,7 +125,7 @@ export default function MeusClientesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" required/>
+                <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" value={whatsapp} onChange={handleWhatsappChange} maxLength={15} required/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="telegram">Telegram</Label>

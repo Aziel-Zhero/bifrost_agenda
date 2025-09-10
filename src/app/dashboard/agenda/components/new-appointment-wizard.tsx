@@ -99,13 +99,13 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
       const onlyNums = value.replace(/\D/g, '');
       let masked = '';
       if (onlyNums.length > 0) {
-        masked = `(${onlyNums.substring(0,2)}`;
+        masked = `(${onlyNums.substring(0, 2)}`;
       }
       if (onlyNums.length > 2) {
-        masked += `) ${onlyNums.substring(2,7)}`;
+        masked += `) ${onlyNums.substring(2, 7)}`;
       }
       if (onlyNums.length > 7) {
-        masked += `-${onlyNums.substring(7,11)}`;
+        masked += `-${onlyNums.substring(7, 11)}`;
       }
       finalValue = masked;
     }
@@ -139,7 +139,6 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
             .insert({ 
                 name: formData.newClientName, 
                 whatsapp: whatsappOnlyNumbers, // Send only numbers to DB
-                // The 'admin' field will be set by default value or RLS policy in Supabase.
             })
             .select()
             .single();

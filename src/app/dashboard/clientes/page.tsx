@@ -110,6 +110,7 @@ export default function ClientesPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [whatsapp, setWhatsapp] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,14 +125,30 @@ export default function ClientesPage() {
     fetchClients();
   }, []);
 
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const onlyNums = value.replace(/\D/g, '');
+    let masked = '';
+    if (onlyNums.length > 0) {
+      masked = `(${onlyNums.substring(0, 2)}`;
+    }
+    if (onlyNums.length > 2) {
+      masked += `) ${onlyNums.substring(2, 7)}`;
+    }
+    if (onlyNums.length > 7) {
+      masked += `-${onlyNums.substring(7, 11)}`;
+    }
+    setWhatsapp(masked);
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const clientData = {
       name: formData.get("name") as string,
-      whatsapp: formData.get("whatsapp") as string,
+      whatsapp: (formData.get("whatsapp") as string).replace(/\D/g, ''),
       telegram: formData.get("telegram") as string,
-      admin: formData.get("admin") as string, // This should probably be a select of users
+      admin: formData.get("admin") as string,
     };
 
     if (editingClient) {
@@ -178,6 +195,7 @@ export default function ClientesPage() {
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
+    setWhatsapp(client.whatsapp); // Set whatsapp state for editing
     setFormOpen(true);
   };
 
@@ -213,6 +231,7 @@ export default function ClientesPage() {
             setFormOpen(isOpen);
             if (!isOpen) {
               setEditingClient(null);
+              setWhatsapp(''); // Reset whatsapp state
             }
           }}
         >
@@ -245,7 +264,9 @@ export default function ClientesPage() {
                   id="whatsapp"
                   name="whatsapp"
                   placeholder="(99) 99999-9999"
-                  defaultValue={editingClient?.whatsapp}
+                  value={whatsapp}
+                  onChange={handleWhatsappChange}
+                  maxLength={15}
                   required
                 />
               </div>
