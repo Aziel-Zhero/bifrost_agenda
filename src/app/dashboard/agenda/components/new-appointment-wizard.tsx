@@ -142,7 +142,6 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
             .insert({ 
                 name: formData.newClientName, 
                 whatsapp: formData.newClientWhatsapp,
-                // These are dummy values as they are required by the type but not in the form
                 email: `${formData.newClientName.split(' ')[0].toLowerCase()}@example.com`,
                 avatarUrl: '',
                 admin: currentUserName // Use the name of the logged in user
