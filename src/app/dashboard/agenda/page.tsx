@@ -72,10 +72,14 @@ export default function AgendaPage() {
       if (serviceError) console.error("Error fetching services", serviceError);
       else setServices(serviceData || []);
       
-      // Fetch Studio Hours
+      // Fetch Studio Hours - Fail silently if the table doesn't exist yet
       const { data: hoursData, error: hoursError } = await supabase.from('studio_hours').select('*');
-      if(hoursError) console.error("Error fetching studio hours", hoursError);
-      else setStudioHours(hoursData || []);
+      if(hoursError) {
+        // Do not log error to console, as this can happen on first run
+        // The component will gracefully handle an empty array of hours.
+      } else {
+        setStudioHours(hoursData || []);
+      }
     };
     fetchData();
   }, []);
