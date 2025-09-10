@@ -30,7 +30,7 @@ export type AppointmentReport = Appointment & {
 export type Service = {
   id: string;
   name: string;
-  duration: string; // e.g., "30 min", "1 hora"
+  duration: number; // Stored in minutes
   price: number;
   icon?: string;
 };

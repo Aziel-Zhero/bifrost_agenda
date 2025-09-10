@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlusCircle, MoreHorizontal, Trash2, Edit, Palette, Scissors, Smile, Tag } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -47,13 +47,40 @@ import type { Service } from "@/types";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { FaSmile, FaPaintBrush, FaCut, FaTag, FaHeart, FaStar, FaGift, FaCamera, FaMusic, FaVideo, FaCog, FaSun } from 'react-icons/fa';
+import * as FaIcons from 'react-icons/fa';
+import * as BsIcons from 'react-icons/bs';
 
-const serviceIcons: { [key: string]: React.ElementType } = {
-  Maquiagem: Palette,
-  Cabelo: Scissors,
-  Estética: Smile,
-  Outro: Tag,
+const allIcons: { [key: string]: React.ElementType } = { ...FaIcons, ...BsIcons };
+
+const iconCategories: { [key: string]: { name: string, icons: string[] } } = {
+    'Beleza e Estética': {
+        name: 'Beleza e Estética',
+        icons: ['FaCut', 'FaPaintBrush', 'FaSmile', 'FaEye', 'FaFemale', 'BsEyedropper', 'BsBrush']
+    },
+    'Bem-estar': {
+        name: 'Bem-estar',
+        icons: ['FaHeart', 'FaStar', 'FaSun', 'FaSpa', 'FaHotTub', 'BsPeaceFill', 'BsHeartFill']
+    },
+    'Eventos': {
+        name: 'Eventos',
+        icons: ['FaGift', 'FaCamera', 'FaMusic', 'FaVideo', 'FaBirthdayCake', 'BsCameraReelsFill', 'BsMusicNoteBeamed']
+    },
+    'Geral': {
+        name: 'Geral',
+        icons: ['FaTag', 'FaCog', 'FaInfoCircle', 'FaQuestionCircle', 'FaRegCommentDots', 'BsGearFill', 'BsTagFill']
+    }
+}
+
+type FormData = {
+  id?: string;
+  name: string;
+  price: number;
+  icon: string;
+  durationHours: number;
+  durationMinutes: number;
 };
+
 
 export default function ServicosPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -61,7 +88,7 @@ export default function ServicosPage() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   
-  const [formData, setFormData] = useState<Partial<Service>>({});
+  const [formData, setFormData] = useState<Partial<FormData>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,7 +106,9 @@ export default function ServicosPage() {
 
   const handleEditClick = (service: Service) => {
     setSelectedService(service);
-    setFormData(service);
+    const hours = Math.floor(service.duration / 60);
+    const minutes = service.duration % 60;
+    setFormData({ ...service, durationHours: hours, durationMinutes: minutes });
     setFormOpen(true);
   };
   
@@ -90,11 +119,14 @@ export default function ServicosPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const durationInMinutes = (formData.durationHours || 0) * 60 + (formData.durationMinutes || 0);
+
     const serviceData = {
         name: formData.name || "",
-        duration: formData.duration || "",
+        duration: durationInMinutes,
         price: formData.price || 0,
-        icon: formData.icon || "Outro",
+        icon: formData.icon || "FaTag",
     };
 
     if (selectedService) {
@@ -150,9 +182,16 @@ export default function ServicosPage() {
   };
 
   const renderIcon = (iconName?: string) => {
-    if (!iconName) return null;
-    const IconComponent = serviceIcons[iconName];
-    return IconComponent ? <IconComponent className="h-5 w-5 text-muted-foreground" /> : <Tag className="h-5 w-5 text-muted-foreground" />;
+    if (!iconName) return <FaTag className="h-5 w-5 text-muted-foreground" />;
+    const IconComponent = allIcons[iconName];
+    return IconComponent ? <IconComponent className="h-5 w-5 text-muted-foreground" /> : <FaTag className="h-5 w-5 text-muted-foreground" />;
+  }
+  
+  const formatDuration = (minutes: number) => {
+    if (!minutes) return "N/A";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h > 0 ? `${h}h` : ''} ${m > 0 ? `${m}m` : ''}`.trim();
   }
 
   return (
@@ -175,7 +214,7 @@ export default function ServicosPage() {
                 Adicionar Serviço
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{selectedService ? "Editar" : "Adicionar"} Serviço</DialogTitle>
               </DialogHeader>
@@ -184,37 +223,50 @@ export default function ServicosPage() {
                   <Label htmlFor="name">Nome do Serviço</Label>
                   <Input id="name" placeholder="Ex: Maquiagem Social" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required />
                 </div>
-
-                <div className="space-y-2">
+                
+                 <div className="space-y-2">
                     <Label htmlFor="icon">Ícone</Label>
-                    <Select value={formData.icon || 'Outro'} onValueChange={value => setFormData({...formData, icon: value})}>
+                     <Select value={formData.icon || ''} onValueChange={value => setFormData({...formData, icon: value})}>
                         <SelectTrigger id="icon">
-                            <SelectValue placeholder="Selecione um ícone" />
+                             <div className="flex items-center gap-2">
+                                {renderIcon(formData.icon)}
+                                <SelectValue placeholder="Selecione um ícone" />
+                             </div>
                         </SelectTrigger>
                         <SelectContent>
-                            {Object.keys(serviceIcons).map(iconName => {
-                                const Icon = serviceIcons[iconName];
-                                return (
-                                    <SelectItem key={iconName} value={iconName}>
-                                        <div className="flex items-center gap-2">
-                                            <Icon className="h-5 w-5" />
-                                            <span>{iconName}</span>
-                                        </div>
-                                    </SelectItem>
-                                )
-                            })}
+                             {Object.entries(iconCategories).map(([categoryName, {icons}]) => (
+                                <div key={categoryName}>
+                                    <Label className="px-2 py-1.5 text-sm font-semibold">{categoryName}</Label>
+                                    <div className="grid grid-cols-8 gap-1 p-2">
+                                        {icons.map(iconName => {
+                                            const Icon = allIcons[iconName];
+                                            return Icon ? (
+                                                <SelectItem key={iconName} value={iconName} className="flex justify-center items-center p-2 h-10 w-10">
+                                                    <Icon className="h-5 w-5" />
+                                                </SelectItem>
+                                            ) : null;
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duração</Label>
-                    <Input id="duration" placeholder="Ex: 1 hora" value={formData.duration || ''} onChange={e => setFormData({...formData, duration: e.target.value})} required />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2 col-span-2 grid grid-cols-2 gap-4">
+                    <div>
+                        <Label htmlFor="durationHours">Duração (Horas)</Label>
+                        <Input id="durationHours" type="number" min="0" placeholder="1" value={formData.durationHours || ''} onChange={e => setFormData({...formData, durationHours: parseInt(e.target.value) || 0})} />
+                    </div>
+                    <div>
+                        <Label htmlFor="durationMinutes">Duração (Minutos)</Label>
+                        <Input id="durationMinutes" type="number" min="0" step="5" max="59" placeholder="30" value={formData.durationMinutes || ''} onChange={e => setFormData({...formData, durationMinutes: parseInt(e.target.value) || 0})} />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="price">Preço (R$)</Label>
-                    <Input id="price" type="number" step="0.01" placeholder="Ex: 200.00" value={formData.price || ''} onChange={e => setFormData({...formData, price: parseFloat(e.target.value) || 0})} required/>
+                    <Input id="price" type="number" step="0.01" placeholder="200.00" value={formData.price || ''} onChange={e => setFormData({...formData, price: parseFloat(e.target.value) || 0})} required/>
                   </div>
                 </div>
                 <DialogFooter>
@@ -246,7 +298,7 @@ export default function ServicosPage() {
                         {service.name}
                       </div>
                     </TableCell>
-                    <TableCell>{service.duration}</TableCell>
+                    <TableCell>{formatDuration(service.duration)}</TableCell>
                     <TableCell>{`R$ ${service.price.toFixed(2)}`}</TableCell>
                     <TableCell className="text-right">
                        <DropdownMenu>
