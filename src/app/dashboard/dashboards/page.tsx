@@ -51,6 +51,7 @@ type OverviewData = {
 // Fetch appointments with client's creation date
 type AppointmentWithClientCreation = Appointment & {
     clients: {
+        name: string;
         created_at: string;
     } | null;
 }
@@ -87,7 +88,7 @@ export default function DashboardPage() {
       } else {
         const formattedAppointments = apptData.map((appt: any) => ({
           id: appt.id,
-          clientName: appt.clients.name,
+          clientName: appt.clients?.name || 'Cliente Removido',
           clientAvatarUrl: '',
           dateTime: new Date(appt.date_time),
           notes: appt.notes || '',
@@ -352,3 +353,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
