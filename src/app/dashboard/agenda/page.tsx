@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Appointment, AppointmentStatus, Service, Client } from "@/types";
+import type { Appointment, AppointmentStatus, Service, Client, StudioHour } from "@/types";
 import { cn } from "@/lib/utils";
 import NewAppointmentWizard from './components/new-appointment-wizard';
 import { Toaster } from "@/components/ui/toaster"
@@ -34,6 +34,7 @@ export default function AgendaPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [studioHours, setStudioHours] = useState<StudioHour[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const { toast } = useToast();
 
@@ -70,6 +71,11 @@ export default function AgendaPage() {
       const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
       if (serviceError) console.error("Error fetching services", serviceError);
       else setServices(serviceData || []);
+      
+      // Fetch Studio Hours
+      const { data: hoursData, error: hoursError } = await supabase.from('studio_hours').select('*');
+      if(hoursError) console.error("Error fetching studio hours", hoursError);
+      else setStudioHours(hoursData || []);
     };
     fetchData();
   }, []);
@@ -153,7 +159,7 @@ export default function AgendaPage() {
             <DialogHeader>
               <DialogTitle>Novo Agendamento</DialogTitle>
             </DialogHeader>
-            <NewAppointmentWizard onFinish={handleAppointmentSuccess} clients={clients} services={services} />
+            <NewAppointmentWizard onFinish={handleAppointmentSuccess} clients={clients} services={services} studioHours={studioHours} />
           </DialogContent>
         </Dialog>
       </div>

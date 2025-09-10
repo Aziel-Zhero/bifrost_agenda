@@ -47,10 +47,11 @@ interface NewAppointmentWizardProps {
     onFinish: (details: {clientName: string; clientId: string; date: string; time: string; serviceName: string; serviceId: string; notes: string;}) => void;
     clients: Client[];
     services: Service[];
+    studioHours: StudioHour[];
 }
 
 
-export default function NewAppointmentWizard({ onFinish, clients, services }: NewAppointmentWizardProps) {
+export default function NewAppointmentWizard({ onFinish, clients, services, studioHours }: NewAppointmentWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     clientType: 'existing',
@@ -66,36 +67,35 @@ export default function NewAppointmentWizard({ onFinish, clients, services }: Ne
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
   useEffect(() => {
-    // This is a placeholder for fetching studio hours.
-    // In a real app, you would fetch this from your database.
-    const studioHours: StudioHour[] = [
-      { dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isEnabled: false }, // Domingo
-      { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Segunda
-      { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Terça
-      { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Quarta
-      { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Quinta
-      { dayOfWeek: 5, startTime: '09:00', endTime: '20:00', isEnabled: true }, // Sexta
-      { dayOfWeek: 6, startTime: '08:00', endTime: '15:00', isEnabled: true }, // Sábado
-    ];
-
-    if (formData.date) {
+    if (formData.date && studioHours.length > 0) {
       const dayOfWeek = formData.date.getDay();
-      const relevantHours = studioHours.find(h => h.dayOfWeek === dayOfWeek);
+      const relevantHours = studioHours.find(h => h.day_of_week === dayOfWeek);
 
-      if (relevantHours && relevantHours.isEnabled) {
+      if (relevantHours && relevantHours.is_enabled) {
         const times = [];
-        const [startHour] = relevantHours.startTime.split(':').map(Number);
-        const [endHour] = relevantHours.endTime.split(':').map(Number);
+        const [startHour, startMinute] = relevantHours.start_time.split(':').map(Number);
+        const [endHour, endMinute] = relevantHours.end_time.split(':').map(Number);
         
-        for (let h = startHour; h < endHour; h++) {
-          times.push(`${String(h).padStart(2, '0')}:00`);
+        let currentTime = new Date(formData.date);
+        currentTime.setHours(startHour, startMinute, 0, 0);
+
+        let endTime = new Date(formData.date);
+        endTime.setHours(endHour, endMinute, 0, 0);
+
+        while (currentTime < endTime) {
+            times.push(
+                `${String(currentTime.getHours()).padStart(2, '0')}:${String(currentTime.getMinutes()).padStart(2, '0')}`
+            );
+            // Increment by 1 hour for now, can be based on service duration later
+            currentTime.setHours(currentTime.getHours() + 1);
         }
+
         setAvailableTimes(times);
       } else {
         setAvailableTimes([]);
       }
     }
-  }, [formData.date]);
+  }, [formData.date, studioHours]);
 
 
   const progress = ((currentStep + 1) / steps.length) * 100;
