@@ -5,20 +5,26 @@ export type Client = {
   whatsapp: string;
   telegram?: string;
   admin: string;
+  created_at?: string; // Add created_at as optional
 };
 
 export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloqueado';
 
 export type Appointment = {
   id: string;
-  clientName: string;
-  clientAvatarUrl: string;
-  dateTime: Date;
+  dateTime: string; // Changed to string to match Supabase return
   notes: string;
   status: AppointmentStatus;
-  admin: string;
-  serviceId: string;
+  admin_id: string;
+  service_id: string;
+  client_id: string;
+  // Nested properties for joins
+  clients: { name: string; created_at: string } | null;
+  services: { name: string; price: number } | null;
+  // Deprecated fields to be removed from usage
+  clientName?: string; 
 };
+
 
 export type AppointmentReport = Appointment & {
   whatsapp: string;

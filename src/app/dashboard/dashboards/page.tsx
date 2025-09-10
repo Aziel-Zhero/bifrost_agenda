@@ -48,12 +48,13 @@ type OverviewData = {
     total: number;
 }
 
-// Fetch appointments with client's creation date
-type AppointmentWithClientCreation = Appointment & {
+// Redefine the type to match the Supabase query result
+type AppointmentWithDetails = Appointment & {
     clients: {
         name: string;
         created_at: string;
     } | null;
+    services: Service | null;
 }
 
 
@@ -73,12 +74,13 @@ export default function DashboardPage() {
     to: endOfMonth(today),
   });
 
-  const [appointments, setAppointments] = useState<AppointmentWithClientCreation[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch Appointments with the client's created_at date
+      // Fetch Appointments with nested client and service data
+      // This is more robust against RLS policies than fetching tables separately.
       const { data: apptData, error: apptError } = await supabase
         .from('appointments')
         .select(`*, clients ( name, created_at ), services ( * )`);
@@ -86,21 +88,11 @@ export default function DashboardPage() {
       if (apptError) {
         console.error("Error fetching appointments", apptError);
       } else {
-        const formattedAppointments = apptData.map((appt: any) => ({
-          id: appt.id,
-          clientName: appt.clients?.name || 'Cliente Removido',
-          clientAvatarUrl: '',
-          dateTime: new Date(appt.date_time),
-          notes: appt.notes || '',
-          status: appt.status,
-          admin: 'Admin Master',
-          serviceId: appt.service_id,
-          clients: appt.clients // Keep the nested client object
-        }));
-        setAppointments(formattedAppointments);
+        // The data is already in a good format, just update the state
+        setAppointments(apptData || []);
 
+        // Extract unique services from the appointments
          const allServices = apptData.map((appt: any) => appt.services).filter(Boolean);
-         // Remove duplicates
          const uniqueServices = allServices.reduce((acc: Service[], current: Service) => {
             if (!acc.some(item => item.id === current.id)) {
                 acc.push(current);
@@ -120,7 +112,7 @@ export default function DashboardPage() {
     const to = dateRange.to || from; // if no 'to', use 'from'
     
     return appointments.filter(appt => 
-      isWithinInterval(appt.dateTime, { start: startOfDay(from), end: endOfDay(to) })
+      isWithinInterval(new Date(appt.dateTime), { start: startOfDay(from), end: endOfDay(to) })
     );
   }, [dateRange, appointments]);
 
@@ -136,25 +128,22 @@ export default function DashboardPage() {
     const prevMonthEnd = endOfMonth(prevMonthDate);
     
     const prevMonthAppointments = appointments.filter(appt => 
-      isWithinInterval(appt.dateTime, { start: prevMonthStart, end: prevMonthEnd }) && appt.status === 'Realizado'
+      isWithinInterval(new Date(appt.dateTime), { start: prevMonthStart, end: prevMonthEnd }) && appt.status === 'Realizado'
     );
 
     const totalGains = completedInPeriod.reduce((sum, appt) => {
-      const service = services.find(s => s.id === appt.serviceId);
-      return sum + (service?.price || 0);
+      return sum + (appt.services?.price || 0);
     }, 0);
 
     const totalLosses = cancelledInPeriod.reduce((sum, appt) => {
-      const service = services.find(s => s.id === appt.serviceId);
-      return sum + (service?.price || 0);
+      return sum + (appt.services?.price || 0);
     }, 0);
 
     const prevMonthGains = prevMonthAppointments.reduce((sum, appt) => {
-        const service = services.find(s => s.id === appt.serviceId);
-        return sum + (service?.price || 0);
+        return sum + (appt.services?.price || 0);
     }, 0);
     
-    const totalClients = new Set(completedInPeriod.map(a => a.clientName)).size;
+    const totalClients = new Set(completedInPeriod.map(a => a.clients?.name)).size;
     
     const newClientsInPeriod = new Set(
         filteredAppointments
@@ -165,7 +154,7 @@ export default function DashboardPage() {
                 const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
                 return isWithinInterval(clientCreationDate, { start: fromDate, end: toDate });
             })
-            .map(appt => appt.clientName)
+            .map(appt => appt.clients?.name)
     ).size;
 
 
@@ -209,9 +198,10 @@ export default function DashboardPage() {
 
   const getTopClients = (): ClientRanking[] => {
     const clientCounts = appointments
-      .filter(appt => appt.status === 'Realizado')
+      .filter(appt => appt.status === 'Realizado' && appt.clients?.name)
       .reduce((acc, appt) => {
-        acc[appt.clientName] = (acc[appt.clientName] || 0) + 1;
+        const clientName = appt.clients!.name;
+        acc[clientName] = (acc[clientName] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
@@ -226,9 +216,8 @@ export default function DashboardPage() {
     const completedAppointments = appointments.filter(a => a.status === 'Realizado');
 
     completedAppointments.forEach(appt => {
-        const month = format(appt.dateTime, 'MMM', {locale: ptBR});
-        const service = services.find(s => s.id === appt.serviceId);
-        const price = service?.price || 0;
+        const month = format(new Date(appt.dateTime), 'MMM', {locale: ptBR});
+        const price = appt.services?.price || 0;
         monthlyGains[month] = (monthlyGains[month] || 0) + price;
     });
     
@@ -244,7 +233,7 @@ export default function DashboardPage() {
     }
 
     return yearData;
-  }, [appointments, services, today]);
+  }, [appointments, today]);
   
   const topClients = getTopClients();
 
