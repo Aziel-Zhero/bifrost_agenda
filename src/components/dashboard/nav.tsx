@@ -46,7 +46,7 @@ export default function Nav({ currentUser }: NavProps) {
   });
 
   return (
-    <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+    <nav className="flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         {visibleMenuItems.map((item) => (
             <Link
             key={item.href}

@@ -149,7 +149,7 @@ export default function AgendaPage() {
               Novo Agendamento
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[750px]">
+          <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle>Novo Agendamento</DialogTitle>
             </DialogHeader>

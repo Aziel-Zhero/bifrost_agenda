@@ -86,7 +86,7 @@ export default function RelatoriosPage() {
             Visualize e filtre todos os agendamentos do sistema.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center gap-2">
            <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -124,7 +124,7 @@ export default function RelatoriosPage() {
               />
             </PopoverContent>
           </Popover>
-          <Button variant="outline">
+          <Button variant="outline" className="w-full sm:w-auto">
               <Download className="mr-2 h-4 w-4" />
               Exportar Histórico
           </Button>
