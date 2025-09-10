@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from 'date-fns/locale';
 import { User, Calendar as CalendarIcon, Clock, Tag, Pencil } from "lucide-react";
-import type { Client, Service } from "@/types";
+import type { Client, Service, StudioHour } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
 const steps = [
@@ -31,8 +31,6 @@ const steps = [
   { id: 6, name: "Observações" },
   { id: 7, name: "Confirmação" },
 ];
-
-const availableTimes = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"];
 
 type FormData = {
   clientType: 'new' | 'existing';
@@ -65,6 +63,40 @@ export default function NewAppointmentWizard({ onFinish, clients, services }: Ne
     notes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+
+  useEffect(() => {
+    // This is a placeholder for fetching studio hours.
+    // In a real app, you would fetch this from your database.
+    const studioHours: StudioHour[] = [
+      { dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isEnabled: false }, // Domingo
+      { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Segunda
+      { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Terça
+      { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Quarta
+      { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isEnabled: true }, // Quinta
+      { dayOfWeek: 5, startTime: '09:00', endTime: '20:00', isEnabled: true }, // Sexta
+      { dayOfWeek: 6, startTime: '08:00', endTime: '15:00', isEnabled: true }, // Sábado
+    ];
+
+    if (formData.date) {
+      const dayOfWeek = formData.date.getDay();
+      const relevantHours = studioHours.find(h => h.dayOfWeek === dayOfWeek);
+
+      if (relevantHours && relevantHours.isEnabled) {
+        const times = [];
+        const [startHour] = relevantHours.startTime.split(':').map(Number);
+        const [endHour] = relevantHours.endTime.split(':').map(Number);
+        
+        for (let h = startHour; h < endHour; h++) {
+          times.push(`${String(h).padStart(2, '0')}:00`);
+        }
+        setAvailableTimes(times);
+      } else {
+        setAvailableTimes([]);
+      }
+    }
+  }, [formData.date]);
+
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
@@ -109,6 +141,10 @@ export default function NewAppointmentWizard({ onFinish, clients, services }: Ne
         masked += `-${onlyNums.substring(7,11)}`;
       }
       finalValue = masked;
+    }
+     if (field === 'date') {
+      // Reset time when date changes
+      setFormData(prev => ({ ...prev, time: '' }));
     }
     setFormData((prev) => ({ ...prev, [field]: finalValue }));
   };
@@ -308,18 +344,22 @@ export default function NewAppointmentWizard({ onFinish, clients, services }: Ne
             {currentStepInfo.id === 5 && (
                  <div className="flex flex-col items-center justify-center h-full">
                      <p className="text-base text-center text-muted-foreground mb-4">Agora, escolha um horário.</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {availableTimes.map(time => (
-                            <Button 
-                                key={time} 
-                                variant={formData.time === time ? 'default' : 'outline'}
-                                onClick={() => handleFieldChange('time', time)}
-                                className="h-12 text-base"
-                            >
-                                {time}
-                            </Button>
-                        ))}
-                    </div>
+                    {availableTimes.length > 0 ? (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            {availableTimes.map(time => (
+                                <Button 
+                                    key={time} 
+                                    variant={formData.time === time ? 'default' : 'outline'}
+                                    onClick={() => handleFieldChange('time', time)}
+                                    className="h-12 text-base"
+                                >
+                                    {time}
+                                </Button>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground">O estúdio está fechado neste dia.</p>
+                    )}
                 </div>
             )}
             

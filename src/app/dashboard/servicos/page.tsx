@@ -2,14 +2,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlusCircle, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { PlusCircle, MoreHorizontal, Trash2, Edit, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -47,7 +45,7 @@ import type { Service } from "@/types";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FaSmile, FaPaintBrush, FaCut, FaTag, FaHeart, FaStar, FaGift, FaCamera, FaMusic, FaVideo, FaCog, FaSun } from 'react-icons/fa';
+import { FaTag } from 'react-icons/fa';
 import * as FaIcons from 'react-icons/fa';
 import * as BsIcons from 'react-icons/bs';
 
@@ -83,6 +81,7 @@ type FormData = {
 
 
 export default function ServicosPage() {
+  const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -204,78 +203,84 @@ export default function ServicosPage() {
               Adicione, edite ou remova os serviços oferecidos.
             </p>
           </div>
-          <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
-              if (!isOpen) closeForm();
-              else setFormOpen(true);
-          }}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { setSelectedService(null); setFormData({}); setFormOpen(true);}}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Adicionar Serviço
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{selectedService ? "Editar" : "Adicionar"} Serviço</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleFormSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Serviço</Label>
-                  <Input id="name" placeholder="Ex: Maquiagem Social" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required />
-                </div>
-                
-                 <div className="space-y-2">
-                    <Label htmlFor="icon">Ícone</Label>
-                     <Select value={formData.icon || ''} onValueChange={value => setFormData({...formData, icon: value})}>
-                        <SelectTrigger id="icon">
-                             <div className="flex items-center gap-2">
-                                {renderIcon(formData.icon)}
-                                <SelectValue placeholder="Selecione um ícone" />
-                             </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                             {Object.entries(iconCategories).map(([categoryName, {icons}]) => (
-                                <div key={categoryName}>
-                                    <Label className="px-2 py-1.5 text-sm font-semibold">{categoryName}</Label>
-                                    <div className="grid grid-cols-8 gap-1 p-2">
-                                        {icons.map(iconName => {
-                                            const Icon = allIcons[iconName];
-                                            return Icon ? (
-                                                <SelectItem key={iconName} value={iconName} className="flex justify-center items-center p-2 h-10 w-10">
-                                                    <Icon className="h-5 w-5" />
-                                                </SelectItem>
-                                            ) : null;
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2 col-span-2 grid grid-cols-2 gap-4">
-                    <div>
-                        <Label htmlFor="durationHours">Duração (Horas)</Label>
-                        <Input id="durationHours" type="number" min="0" placeholder="1" value={formData.durationHours || ''} onChange={e => setFormData({...formData, durationHours: parseInt(e.target.value) || 0})} />
-                    </div>
-                    <div>
-                        <Label htmlFor="durationMinutes">Duração (Minutos)</Label>
-                        <Input id="durationMinutes" type="number" min="0" step="5" max="59" placeholder="30" value={formData.durationMinutes || ''} onChange={e => setFormData({...formData, durationMinutes: parseInt(e.target.value) || 0})} />
-                    </div>
-                  </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => router.push('/dashboard/perfil-studio')}>
+                <Clock className="mr-2 h-4 w-4" />
+                Horários do Studio
+            </Button>
+            <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+                if (!isOpen) closeForm();
+                else setFormOpen(true);
+            }}>
+              <DialogTrigger asChild>
+                <Button onClick={() => { setSelectedService(null); setFormData({}); setFormOpen(true);}}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adicionar Serviço
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{selectedService ? "Editar" : "Adicionar"} Serviço</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleFormSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Preço (R$)</Label>
-                    <Input id="price" type="number" step="0.01" placeholder="200.00" value={formData.price || ''} onChange={e => setFormData({...formData, price: parseFloat(e.target.value) || 0})} required/>
+                    <Label htmlFor="name">Nome do Serviço</Label>
+                    <Input id="name" placeholder="Ex: Maquiagem Social" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required />
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="ghost" onClick={closeForm}>Cancelar</Button>
-                  <Button type="submit">Salvar</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  
+                   <div className="space-y-2">
+                      <Label htmlFor="icon">Ícone</Label>
+                       <Select value={formData.icon || ''} onValueChange={value => setFormData({...formData, icon: value})}>
+                          <SelectTrigger id="icon">
+                               <div className="flex items-center gap-2">
+                                  {renderIcon(formData.icon)}
+                                  <SelectValue placeholder="Selecione um ícone" />
+                               </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                               {Object.entries(iconCategories).map(([categoryName, {icons}]) => (
+                                  <div key={categoryName}>
+                                      <Label className="px-2 py-1.5 text-sm font-semibold">{categoryName}</Label>
+                                      <div className="grid grid-cols-8 gap-1 p-2">
+                                          {icons.map(iconName => {
+                                              const Icon = allIcons[iconName];
+                                              return Icon ? (
+                                                  <SelectItem key={iconName} value={iconName} className="flex justify-center items-center p-2 h-10 w-10">
+                                                      <Icon className="h-5 w-5" />
+                                                  </SelectItem>
+                                              ) : null;
+                                          })}
+                                      </div>
+                                  </div>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2 col-span-2 grid grid-cols-2 gap-4">
+                      <div>
+                          <Label htmlFor="durationHours">Duração (Horas)</Label>
+                          <Input id="durationHours" type="number" min="0" placeholder="1" value={formData.durationHours || ''} onChange={e => setFormData({...formData, durationHours: parseInt(e.target.value) || 0})} />
+                      </div>
+                      <div>
+                          <Label htmlFor="durationMinutes">Duração (Minutos)</Label>
+                          <Input id="durationMinutes" type="number" min="0" step="5" max="59" placeholder="30" value={formData.durationMinutes || ''} onChange={e => setFormData({...formData, durationMinutes: parseInt(e.target.value) || 0})} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Preço (R$)</Label>
+                      <Input id="price" type="number" step="0.01" placeholder="200.00" value={formData.price || ''} onChange={e => setFormData({...formData, price: parseFloat(e.target.value) || 0})} required/>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="ghost" onClick={closeForm}>Cancelar</Button>
+                    <Button type="submit">Salvar</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <Card>

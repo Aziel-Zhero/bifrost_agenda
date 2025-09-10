@@ -27,6 +27,35 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { StudioHour } from "@/types";
+
+const weekDays = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+const generateTimeOptions = () => {
+    const options = [];
+    for (let h = 5; h <= 23; h++) {
+        for (let m = 0; m < 60; m += 30) {
+            const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            options.push(time);
+        }
+    }
+    return options;
+}
 
 export default function PerfilStudioPage() {
   const { toast } = useToast();
@@ -39,6 +68,34 @@ export default function PerfilStudioPage() {
   });
   const [isConfirmOpen, setConfirmOpen] = useState(false);
   const [isExportOpen, setExportOpen] = useState(false);
+
+  const [studioHours, setStudioHours] = useState<StudioHour[]>([
+    { dayOfWeek: 0, startTime: "09:00", endTime: "18:00", isEnabled: false },
+    { dayOfWeek: 1, startTime: "09:00", endTime: "18:00", isEnabled: true },
+    { dayOfWeek: 2, startTime: "09:00", endTime: "18:00", isEnabled: true },
+    { dayOfWeek: 3, startTime: "09:00", endTime: "18:00", isEnabled: true },
+    { dayOfWeek: 4, startTime: "09:00", endTime: "18:00", isEnabled: true },
+    { dayOfWeek: 5, startTime: "09:00", endTime: "18:00", isEnabled: true },
+    { dayOfWeek: 6, startTime: "09:00", endTime: "18:00", isEnabled: false },
+  ]);
+  const timeOptions = generateTimeOptions();
+
+  const handleHourChange = (day: number, field: 'startTime' | 'endTime' | 'isEnabled', value: string | boolean) => {
+    setStudioHours(prev => 
+        prev.map(hour => 
+            hour.dayOfWeek === day ? {...hour, [field]: value} : hour
+        )
+    )
+  }
+
+  const handleSaveHours = () => {
+    // In a real app, this would save to the database.
+    console.log("Saving studio hours:", studioHours);
+    toast({
+        title: "Horários salvos!",
+        description: "Seu horário de funcionamento foi atualizado.",
+    });
+  }
 
   const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -132,6 +189,44 @@ export default function PerfilStudioPage() {
                 <Input id="studioName" placeholder="Ex: Studio de Beleza da Ana" value={studioName} onChange={e => setStudioName(e.target.value)} />
               </div>
             </CardContent>
+          </Card>
+          
+           <Card>
+             <CardHeader>
+                <CardTitle className="text-lg">Horários de Funcionamento</CardTitle>
+                <CardDescription>Defina quando o estúdio está aberto para agendamentos.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {studioHours.map(hour => (
+                    <div key={hour.dayOfWeek} className="grid grid-cols-3 gap-4 items-center">
+                        <div className="flex items-center space-x-2">
+                             <Switch
+                                id={`enabled-${hour.dayOfWeek}`}
+                                checked={hour.isEnabled}
+                                onCheckedChange={(value) => handleHourChange(hour.dayOfWeek, 'isEnabled', value)}
+                             />
+                             <Label htmlFor={`enabled-${hour.dayOfWeek}`} className="flex-1">{weekDays[hour.dayOfWeek]}</Label>
+                        </div>
+                        <div className="col-span-2 grid grid-cols-2 gap-2">
+                           <Select value={hour.startTime} onValueChange={(value) => handleHourChange(hour.dayOfWeek, 'startTime', value)} disabled={!hour.isEnabled}>
+                               <SelectTrigger><SelectValue/></SelectTrigger>
+                               <SelectContent>
+                                   {timeOptions.map(t => <SelectItem key={`start-${t}`} value={t}>{t}</SelectItem>)}
+                               </SelectContent>
+                           </Select>
+                            <Select value={hour.endTime} onValueChange={(value) => handleHourChange(hour.dayOfWeek, 'endTime', value)} disabled={!hour.isEnabled}>
+                               <SelectTrigger><SelectValue/></SelectTrigger>
+                               <SelectContent>
+                                   {timeOptions.map(t => <SelectItem key={`end-${t}`} value={t}>{t}</SelectItem>)}
+                               </SelectContent>
+                           </Select>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+             <CardFooter className="flex justify-end">
+                <Button onClick={handleSaveHours}>Salvar Horários</Button>
+            </CardFooter>
           </Card>
 
           <Card>
