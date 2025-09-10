@@ -48,8 +48,13 @@ type OverviewData = {
     total: number;
 }
 
-// Fetch only the necessary fields to avoid RLS issues.
-type ClientForKpi = { id: string; created_at: string; };
+// Fetch appointments with client's creation date
+type AppointmentWithClientCreation = Appointment & {
+    clients: {
+        created_at: string;
+    } | null;
+}
+
 
 const kpiIcons = {
   gains: DollarSign,
@@ -67,14 +72,16 @@ export default function DashboardPage() {
     to: endOfMonth(today),
   });
 
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentWithClientCreation[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [clients, setClients] = useState<ClientForKpi[]>([]);
-
+  
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch Appointments
-      const { data: apptData, error: apptError } = await supabase.from('appointments').select(`*, clients(name)`);
+      // Fetch Appointments with the client's created_at date
+      const { data: apptData, error: apptError } = await supabase
+        .from('appointments')
+        .select(`*, clients ( name, created_at )`);
+      
       if (apptError) {
         console.error("Error fetching appointments", apptError);
       } else {
@@ -87,6 +94,7 @@ export default function DashboardPage() {
           status: appt.status,
           admin: 'Admin Master',
           serviceId: appt.service_id,
+          clients: appt.clients // Keep the nested client object
         }));
         setAppointments(formattedAppointments);
       }
@@ -95,11 +103,6 @@ export default function DashboardPage() {
       const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
       if (serviceError) console.error("Error fetching services", serviceError);
       else setServices(serviceData || []);
-      
-      // Fetch Clients - Select only what's needed to prevent RLS issues
-      const { data: clientData, error: clientError } = await supabase.from('clients').select('id, created_at');
-       if (clientError) console.error("Error fetching clients", clientError);
-       else setClients(clientData || []);
     };
     fetchData();
   }, []);
@@ -147,13 +150,18 @@ export default function DashboardPage() {
     
     const totalClients = new Set(completedInPeriod.map(a => a.clientName)).size;
     
-    const newClientsInPeriod = clients.filter(client => {
-        if (!dateRange?.from || !client.created_at) return false;
-        const clientCreationDate = parseISO(client.created_at);
-        const fromDate = startOfDay(dateRange.from);
-        const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
-        return isWithinInterval(clientCreationDate, { start: fromDate, end: toDate });
-    }).length;
+    const newClientsInPeriod = new Set(
+        filteredAppointments
+            .filter(appt => {
+                if (!dateRange?.from || !appt.clients?.created_at) return false;
+                const clientCreationDate = parseISO(appt.clients.created_at);
+                const fromDate = startOfDay(dateRange.from);
+                const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+                return isWithinInterval(clientCreationDate, { start: fromDate, end: toDate });
+            })
+            .map(appt => appt.clientName)
+    ).size;
+
 
     const calculateChange = (current: number, previous: number) => {
         if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -190,7 +198,7 @@ export default function DashboardPage() {
       },
     ]
 
-  }, [filteredAppointments, appointments, services, clients, dateRange]);
+  }, [filteredAppointments, appointments, services, dateRange]);
 
 
   const getTopClients = (): ClientRanking[] => {
@@ -344,5 +352,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
