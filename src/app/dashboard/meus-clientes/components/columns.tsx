@@ -15,6 +15,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Client } from "@/types";
 
+const formatWhatsapp = (phone: string) => {
+    if (!phone) return "N/A";
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+        return `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 7)}-${cleaned.substring(7)}`;
+    }
+     if (cleaned.length === 10) {
+        return `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 6)}-${cleaned.substring(6)}`;
+    }
+    return phone;
+}
+
 export const columns: ColumnDef<Client>[] = [
   {
     accessorKey: "name",
@@ -47,7 +59,7 @@ export const columns: ColumnDef<Client>[] = [
       return (
         <div className="flex items-center gap-2">
           <FaWhatsapp className="text-green-500" />
-          {row.original.whatsapp}
+          {formatWhatsapp(row.original.whatsapp)}
         </div>
       );
     },
