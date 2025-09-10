@@ -43,7 +43,7 @@ import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { deleteUser } from "./actions";
+import { deleteUser, inviteUser } from "./actions";
 
 export default function UsuariosPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -55,7 +55,6 @@ export default function UsuariosPage() {
   
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<UserProfile['role'] | ''>('');
   
   const [selectedRole, setSelectedRole] = useState<UserProfile['role'] | ''>('');
   
@@ -144,7 +143,7 @@ export default function UsuariosPage() {
 
   const handleAddUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName || !newUserEmail || !newUserRole) {
+    if (!newUserName || !newUserEmail) {
       toast({
         title: "Campos incompletos",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -153,34 +152,23 @@ export default function UsuariosPage() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: newUserEmail,
-      password: 'password', // Default password, user should change it
-      options: {
-        data: {
-          full_name: newUserName,
-          role: newUserRole,
-        },
-      },
-    });
+    const { error } = await inviteUser({ email: newUserEmail, name: newUserName });
 
     if (error) {
-      console.error("Error creating user:", error);
+      console.error("Error inviting user:", error);
       toast({
-        title: "Erro ao criar usuário",
-        description: error.message || "Não foi possível adicionar o usuário.",
+        title: "Erro ao convidar usuário",
+        description: error,
         variant: "destructive",
       });
-    } else if (data.user) {
-      // The trigger will create the profile. We just need to refresh the user list.
+    } else {
       await fetchUsers();
       toast({
-        title: "Usuário Adicionado!",
-        description: `${newUserName} foi adicionado. A senha inicial é 'password'.`,
+        title: "Convite Enviado!",
+        description: `Um e-mail de convite foi enviado para ${newUserEmail}.`,
       });
       setNewUserName('');
       setNewUserEmail('');
-      setNewUserRole('');
       setAddFormOpen(false);
     }
   };
@@ -228,9 +216,9 @@ export default function UsuariosPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+                <DialogTitle>Convidar Novo Usuário</DialogTitle>
                 <DialogDescription>
-                  O usuário será criado com uma senha padrão ('password') e deverá alterá-la no primeiro acesso.
+                  Um e-mail de convite será enviado para o usuário, que poderá definir sua própria senha.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddUserSubmit} className="space-y-4">
@@ -242,23 +230,9 @@ export default function UsuariosPage() {
                   <Label htmlFor="email">Email de Acesso</Label>
                   <Input id="email" type="email" placeholder="usuario@email.com" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Tipo de Acesso</Label>
-                  <Select value={newUserRole} onValueChange={(value: UserProfile['role']) => setNewUserRole(value)}>
-                      <SelectTrigger id="role">
-                          <SelectValue placeholder="Selecione um cargo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="Midgard">Midgard</SelectItem>
-                          <SelectItem value="Asgard">Asgard</SelectItem>
-                          <SelectItem value="Heimdall">Heimdall</SelectItem>
-                          <SelectItem value="Bifrost">Bifrost</SelectItem>
-                      </SelectContent>
-                  </Select>
-                </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="ghost" onClick={() => setAddFormOpen(false)}>Cancelar</Button>
-                  <Button type="submit">Salvar Usuário</Button>
+                  <Button type="submit">Enviar Convite</Button>
                 </div>
               </form>
             </DialogContent>
@@ -332,5 +306,3 @@ export default function UsuariosPage() {
     </>
   );
 }
-
-    
