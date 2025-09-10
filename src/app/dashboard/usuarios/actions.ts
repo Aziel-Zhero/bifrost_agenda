@@ -8,7 +8,7 @@ export async function inviteUser({ email, name }: { email: string, name: string 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    const errorMessage = 'Variáveis de ambiente do Supabase (URL ou Service Key) não configuradas no servidor.';
+    const errorMessage = 'Variáveis de ambiente do Supabase (URL ou Service Key) não configuradas no servidor. Adicione SUPABASE_SERVICE_ROLE_KEY ao seu .env.local e reinicie o servidor.';
     console.error(errorMessage);
     return { data: null, error: { message: errorMessage } };
   }
@@ -37,7 +37,7 @@ export async function deleteUser(userId: string) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    const errorMessage = 'Variaveis de ambiente do Supabase (URL ou Service Key) não configuradas no servidor.';
+    const errorMessage = 'Variaveis de ambiente do Supabase (URL ou Service Key) não configuradas no servidor. Adicione SUPABASE_SERVICE_ROLE_KEY ao seu .env.local e reinicie o servidor.';
     console.error(errorMessage);
     return { error: { message: errorMessage } };
   }
