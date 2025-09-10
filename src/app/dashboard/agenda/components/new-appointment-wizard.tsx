@@ -68,31 +68,35 @@ export default function NewAppointmentWizard({ onFinish, clients, services, stud
 
   useEffect(() => {
     if (formData.date && studioHours.length > 0) {
+      // getDay() is safe as it's based on the client's locale interpretation of the date,
+      // which matches what they see on the calendar.
       const dayOfWeek = formData.date.getDay();
       const relevantHours = studioHours.find(h => h.day_of_week === dayOfWeek);
 
       if (relevantHours && relevantHours.is_enabled) {
-        const times = [];
-        const [startHour, startMinute] = relevantHours.start_time.split(':').map(Number);
-        const [endHour, endMinute] = relevantHours.end_time.split(':').map(Number);
-        
-        let currentTime = new Date(formData.date);
-        currentTime.setHours(startHour, startMinute, 0, 0);
+          const times = [];
+          const [startHour, startMinute] = relevantHours.start_time.split(':').map(Number);
+          const [endHour, endMinute] = relevantHours.end_time.split(':').map(Number);
+          
+          // Use a date object just for iteration, but don't rely on it for timezone-sensitive logic.
+          let tempDate = new Date();
+          tempDate.setHours(startHour, startMinute, 0, 0);
+          
+          let endTempDate = new Date();
+          endTempDate.setHours(endHour, endMinute, 0, 0);
 
-        let endTime = new Date(formData.date);
-        endTime.setHours(endHour, endMinute, 0, 0);
-
-        while (currentTime < endTime) {
-            times.push(
-                `${String(currentTime.getHours()).padStart(2, '0')}:${String(currentTime.getMinutes()).padStart(2, '0')}`
-            );
-            // Increment by 1 hour for now, can be based on service duration later
-            currentTime.setHours(currentTime.getHours() + 1);
-        }
-
-        setAvailableTimes(times);
+          // Generate time slots as strings
+          while (tempDate < endTempDate) {
+              times.push(
+                  `${String(tempDate.getHours()).padStart(2, '0')}:${String(tempDate.getMinutes()).padStart(2, '0')}`
+              );
+              // Increment by 1 hour for now.
+              // This can be based on service duration in a future enhancement.
+              tempDate.setHours(tempDate.getHours() + 1);
+          }
+          setAvailableTimes(times);
       } else {
-        setAvailableTimes([]);
+          setAvailableTimes([]);
       }
     }
   }, [formData.date, studioHours]);
@@ -358,7 +362,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, stud
                             ))}
                         </div>
                     ) : (
-                        <p className="text-muted-foreground">O estúdio está fechado neste dia.</p>
+                        <p className="text-muted-foreground">O estúdio está fechado neste dia ou não há horários disponíveis.</p>
                     )}
                 </div>
             )}
