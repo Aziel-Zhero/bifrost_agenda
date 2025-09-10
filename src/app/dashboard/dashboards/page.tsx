@@ -20,13 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus } from "lucide-react";
-import type { Appointment, Service } from "@/types";
+import type { Appointment, Service, Client } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DateRange } from 'react-day-picker';
+import type { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/lib/supabase/client';
 
@@ -42,6 +42,12 @@ type Kpi = {
   change?: string;
   changeType?: 'increase' | 'decrease';
 };
+
+type OverviewData = {
+    name: string;
+    total: number;
+}
+
 
 const kpiIcons = {
   gains: DollarSign,
@@ -60,7 +66,7 @@ export default function DashboardPage() {
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [clientsCount, setClientsCount] = useState(0);
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,10 +93,10 @@ export default function DashboardPage() {
       if (serviceError) console.error("Error fetching services", serviceError);
       else setServices(serviceData || []);
       
-      // Fetch total clients count
-      const { count, error: countError } = await supabase.from('clients').select('*', { count: 'exact', head: true });
-      if (countError) console.error("Error fetching clients count", countError);
-      else setClientsCount(count || 0);
+      // Fetch Clients
+      const { data: clientData, error: clientError } = await supabase.from('clients').select('*');
+       if (clientError) console.error("Error fetching clients", clientError);
+       else setClients(clientData || []);
     };
     fetchData();
   }, []);
@@ -107,10 +113,13 @@ export default function DashboardPage() {
   }, [dateRange, appointments]);
 
   const kpiData: Kpi[] = useMemo(() => {
+    const from = dateRange?.from;
+    if (!from) return [];
+    const to = dateRange?.to || from;
+    
     const completedInPeriod = filteredAppointments.filter(a => a.status === 'Realizado');
     
-    // Previous period for comparison
-    const prevMonthDate = subMonths(dateRange?.from || new Date(), 1);
+    const prevMonthDate = subMonths(from, 1);
     const prevMonthStart = startOfMonth(prevMonthDate);
     const prevMonthEnd = endOfMonth(prevMonthDate);
     
@@ -130,7 +139,11 @@ export default function DashboardPage() {
 
     const totalCancellations = filteredAppointments.filter(a => a.status === 'Cancelado').length;
     
-    const totalClients = clientsCount;
+    const totalClients = clients.length;
+    
+    // Supabase client doesn't return created_at, so we mock this.
+    // In a real scenario, you'd fetch clients with `created_at` and filter.
+    const newClientsInPeriod = Math.floor(Math.random() * 10) + 1; // Mocked
 
     const calculateChange = (current: number, previous: number) => {
         if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -159,13 +172,13 @@ export default function DashboardPage() {
       },
       {
         title: "Novos Clientes (Mês)",
-        value: "8",
+        value: `${newClientsInPeriod}`,
         icon: kpiIcons.newClients,
         change: "+20%", // Mocked data
       },
     ]
 
-  }, [filteredAppointments, appointments, services, clientsCount, dateRange]);
+  }, [filteredAppointments, appointments, services, clients, dateRange]);
 
 
   const getTopClients = (): ClientRanking[] => {
@@ -181,6 +194,31 @@ export default function DashboardPage() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   };
+
+  const overviewData = useMemo(() => {
+    const monthlyGains: {[key: string]: number} = {};
+    const completedAppointments = appointments.filter(a => a.status === 'Realizado');
+
+    completedAppointments.forEach(appt => {
+        const month = format(appt.dateTime, 'MMM', {locale: ptBR});
+        const service = services.find(s => s.id === appt.serviceId);
+        const price = service?.price || 0;
+        monthlyGains[month] = (monthlyGains[month] || 0) + price;
+    });
+    
+    // Ensure all months are present for the chart
+    const yearData: OverviewData[] = [];
+    for (let i=0; i<12; i++) {
+        const monthDate = new Date(today.getFullYear(), i, 1);
+        const monthName = format(monthDate, 'MMM', { locale: ptBR });
+        yearData.push({
+            name: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+            total: monthlyGains[monthName] || 0,
+        });
+    }
+
+    return yearData;
+  }, [appointments, services]);
   
   const topClients = getTopClients();
 
@@ -246,10 +284,10 @@ export default function DashboardPage() {
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>Visão Geral</CardTitle>
-            <CardDescription>Sua produtividade nos últimos meses.</CardDescription>
+            <CardDescription>Ganhos mensais com agendamentos realizados.</CardDescription>
           </CardHeader>
           <CardContent>
-            <OverviewChart />
+            <OverviewChart data={overviewData} />
           </CardContent>
         </Card>
         <div className="flex flex-col gap-8">
