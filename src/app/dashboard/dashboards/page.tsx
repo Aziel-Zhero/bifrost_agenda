@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus } from "lucide-react";
+import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus, CircleDollarSign } from "lucide-react";
 import type { Appointment, Service, Client } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,7 @@ type ClientWithCreatedAt = Client & { created_at: string };
 
 const kpiIcons = {
   gains: DollarSign,
+  losses: CircleDollarSign,
   cancellations: XCircle,
   clients: Users,
   newClients: UserPlus,
@@ -118,7 +119,8 @@ export default function DashboardPage() {
     if (!from) return [];
     
     const completedInPeriod = filteredAppointments.filter(a => a.status === 'Realizado');
-    
+    const cancelledInPeriod = filteredAppointments.filter(a => a.status === 'Cancelado');
+
     const prevMonthDate = subMonths(from, 1);
     const prevMonthStart = startOfMonth(prevMonthDate);
     const prevMonthEnd = endOfMonth(prevMonthDate);
@@ -132,14 +134,17 @@ export default function DashboardPage() {
       return sum + (service?.price || 0);
     }, 0);
 
+    const totalLosses = cancelledInPeriod.reduce((sum, appt) => {
+      const service = services.find(s => s.id === appt.serviceId);
+      return sum + (service?.price || 0);
+    }, 0);
+
     const prevMonthGains = prevMonthAppointments.reduce((sum, appt) => {
         const service = services.find(s => s.id === appt.serviceId);
         return sum + (service?.price || 0);
     }, 0);
-
-    const totalCancellations = filteredAppointments.filter(a => a.status === 'Cancelado').length;
     
-    const totalClients = new Set(filteredAppointments.map(a => a.clientName)).size;
+    const totalClients = new Set(completedInPeriod.map(a => a.clientName)).size;
     
     const newClientsInPeriod = clients.filter(client => {
         if (!dateRange?.from || !client.created_at) return false;
@@ -162,10 +167,10 @@ export default function DashboardPage() {
         icon: kpiIcons.gains,
         change: calculateChange(totalGains, prevMonthGains),
       },
-      {
-        title: "Cancelamentos",
-        value: `${totalCancellations}`,
-        icon: kpiIcons.cancellations,
+       {
+        title: "Perdas (Período)",
+        value: `R$ ${totalLosses.toFixed(2)}`,
+        icon: kpiIcons.losses,
       },
       {
         title: "Clientes Atendidos",
