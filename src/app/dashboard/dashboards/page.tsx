@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus, CircleDollarSign } from "lucide-react";
+import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus, CircleDollarSign, ShieldAlert } from "lucide-react";
 import type { Appointment, Service, Client } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,7 @@ type ClientWithCreatedAt = Client & { created_at: string };
 const kpiIcons = {
   gains: DollarSign,
   losses: CircleDollarSign,
-  cancellations: XCircle,
+  cancellations: ShieldAlert,
   clients: Users,
   newClients: UserPlus,
 };
@@ -96,7 +96,7 @@ export default function DashboardPage() {
       else setServices(serviceData || []);
       
       // Fetch Clients
-      const { data: clientData, error: clientError } = await supabase.from('clients').select('*');
+      const { data: clientData, error: clientError } = await supabase.from('clients').select('*, created_at');
        if (clientError) console.error("Error fetching clients", clientError);
        else setClients(clientData || []);
     };
@@ -168,9 +168,14 @@ export default function DashboardPage() {
         change: calculateChange(totalGains, prevMonthGains),
       },
        {
-        title: "Perdas (Período)",
+        title: "Perdas (Cancelado)",
         value: `R$ ${totalLosses.toFixed(2)}`,
         icon: kpiIcons.losses,
+      },
+       {
+        title: "Cancelamentos",
+        value: `${cancelledInPeriod.length}`,
+        icon: kpiIcons.cancellations,
       },
       {
         title: "Clientes Atendidos",
@@ -275,7 +280,7 @@ export default function DashboardPage() {
             </PopoverContent>
           </Popover>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {kpiData.map((kpi) => (
           <StatsCard
             key={kpi.title}
