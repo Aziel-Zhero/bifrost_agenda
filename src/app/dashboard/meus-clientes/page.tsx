@@ -59,9 +59,7 @@ export default function MeusClientesPage() {
         name: formData.get('name') as string,
         whatsapp: formData.get('whatsapp') as string,
         telegram: formData.get('telegram') as string,
-        email: formData.get('email') as string,
         admin: currentUser.name,
-        avatarUrl: ''
     };
 
     const { data, error } = await supabase.from('clients').insert(newClient).select().single();
@@ -99,19 +97,15 @@ export default function MeusClientesPage() {
             <form onSubmit={handleAddClient} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input id="name" name="name" placeholder="Nome completo do cliente" />
+                <Input id="name" name="name" placeholder="Nome completo do cliente" required/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" />
+                <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" required/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="telegram">Telegram</Label>
                 <Input id="telegram" name="telegram" placeholder="ID ou Telefone" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="cliente@email.com" />
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={() => setFormOpen(false)}>Cancelar</Button>

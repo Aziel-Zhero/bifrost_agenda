@@ -17,7 +17,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -30,9 +29,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { DataTable } from "./components/data-table";
 import type { Client } from "@/types";
@@ -62,18 +58,10 @@ export const getColumns = (
       const client = row.original;
       return (
         <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
-            <div className="flex h-full w-full items-center justify-center rounded-full bg-muted">
-              <User className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="font-medium">{client.name}</span>
-            <span className="text-sm text-muted-foreground">
-              {client.email}
-            </span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+            <User className="h-5 w-5 text-muted-foreground" />
           </div>
+          <span className="font-medium">{client.name}</span>
         </div>
       );
     },
@@ -142,10 +130,8 @@ export default function ClientesPage() {
     const clientData = {
       name: formData.get("name") as string,
       whatsapp: formData.get("whatsapp") as string,
-      email: formData.get("email") as string,
+      telegram: formData.get("telegram") as string,
       admin: formData.get("admin") as string, // This should probably be a select of users
-      telegram: editingClient?.telegram || "",
-      avatarUrl: editingClient?.avatarUrl || "",
     };
 
     if (editingClient) {
@@ -263,14 +249,13 @@ export default function ClientesPage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+               <div className="space-y-2">
+                <Label htmlFor="telegram">Telegram</Label>
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="cliente@email.com"
-                  defaultValue={editingClient?.email}
+                  id="telegram"
+                  name="telegram"
+                  placeholder="ID ou usuário do Telegram"
+                  defaultValue={editingClient?.telegram}
                 />
               </div>
               <div className="space-y-2">
@@ -306,5 +291,3 @@ export default function ClientesPage() {
     </div>
   );
 }
-
-    

@@ -4,8 +4,6 @@ export type Client = {
   name: string;
   whatsapp: string;
   telegram?: string;
-  avatarUrl: string;
-  email: string;
   admin: string;
 };
 
