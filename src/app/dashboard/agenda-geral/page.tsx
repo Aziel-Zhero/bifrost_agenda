@@ -21,14 +21,28 @@ type AdminMap = {
     [id: string]: string;
 }
 
+type AdminColorMap = {
+    [name: string]: { bg: string; text: string };
+}
+
+const colorPalette = [
+    { bg: 'bg-blue-100', text: 'text-blue-800' },
+    { bg: 'bg-purple-100', text: 'text-purple-800' },
+    { bg: 'bg-green-100', text: 'text-green-800' },
+    { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+    { bg: 'bg-pink-100', text: 'text-pink-800' },
+    { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+];
+
 export default function AgendaGeralPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [adminMap, setAdminMap] = useState<AdminMap>({});
+  const [adminColorMap, setAdminColorMap] = useState<AdminColorMap>({});
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch users to create a map of ID -> Name
+      // Fetch users to create a map of ID -> Name and assign colors
       const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, name');
       if (profileError) {
         console.error("Error fetching profiles", profileError);
@@ -38,6 +52,12 @@ export default function AgendaGeralPage() {
             return acc;
         }, {} as AdminMap);
         setAdminMap(newAdminMap);
+
+        const newAdminColorMap = profiles.reduce((acc, profile, index) => {
+            acc[profile.name] = colorPalette[index % colorPalette.length];
+            return acc;
+        }, {} as AdminColorMap);
+        setAdminColorMap(newAdminColorMap);
       }
       
       const { data, error } = await supabase.from('appointments').select('id, date_time, admin_id');
@@ -104,28 +124,31 @@ export default function AgendaGeralPage() {
         <span className="font-semibold">{format(date, 'd')}</span>
         {isPast &&  <Star className="absolute top-1.5 right-1.5 h-4 w-4 text-accent/80" />}
         <div className="mt-1 space-y-1 overflow-y-auto">
-          {visibleAdmins.map(admin => (
-            <Popover key={admin}>
-              <PopoverTrigger asChild>
-                <div className="text-xs bg-primary/10 text-primary font-semibold p-1 rounded-md cursor-pointer hover:bg-primary/20 truncate">
-                  {admin}
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-3">
-                 <div className="space-y-2">
-                    <h4 className="font-semibold">{admin}</h4>
-                    <p className="text-sm text-muted-foreground">
-                        Horários em {format(date, 'dd/MM/yyyy')}
-                    </p>
-                    <ul className="list-disc list-inside">
-                        {dayAppointments[admin].map(time => (
-                            <li key={time} className="text-sm">{time}</li>
-                        ))}
-                    </ul>
-                 </div>
-              </PopoverContent>
-            </Popover>
-          ))}
+          {visibleAdmins.map(admin => {
+             const color = adminColorMap[admin] || colorPalette[0];
+             return (
+                <Popover key={admin}>
+                <PopoverTrigger asChild>
+                    <div className={cn("text-xs font-semibold p-1 rounded-md cursor-pointer hover:opacity-80 truncate", color.bg, color.text)}>
+                    {admin}
+                    </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-3">
+                    <div className="space-y-2">
+                        <h4 className="font-semibold">{admin}</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Horários em {format(date, 'dd/MM/yyyy')}
+                        </p>
+                        <ul className="list-disc list-inside">
+                            {dayAppointments[admin].map(time => (
+                                <li key={time} className="text-sm">{time}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </PopoverContent>
+                </Popover>
+             )
+          })}
           {hiddenAdminsCount > 0 && (
              <div className="text-xs text-muted-foreground p-1 rounded-md">
               + {hiddenAdminsCount} usuários
