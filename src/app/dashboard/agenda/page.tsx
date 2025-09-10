@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Appointment, AppointmentStatus, Service, Client } from "@/types";
+import type { Appointment, AppointmentStatus, Service, Client, StudioHour } from "@/types";
 import { cn } from "@/lib/utils";
 import NewAppointmentWizard from './components/new-appointment-wizard';
 import { Toaster } from "@/components/ui/toaster"
@@ -36,6 +36,7 @@ export default function AgendaPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const [currentUserName, setCurrentUserName] = useState('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function AgendaPage() {
        // Fetch current user's profile name
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setCurrentUserId(user.id);
         const { data: profile, error } = await supabase.from('profiles').select('name').eq('id', user.id).single();
         if (error && error.code !== 'PGRST116') {
             console.error("Error fetching user name", error);
@@ -102,6 +104,11 @@ export default function AgendaPage() {
   };
   
   const handleAppointmentSuccess = async (details: { clientName: string; clientId: string; date: string; time: string; serviceName: string; serviceId: string; notes: string; }) => {
+    if (!currentUserId) {
+        toast({ title: "Erro de autenticação", description: "Usuário não encontrado. Por favor, faça login novamente.", variant: "destructive" });
+        return;
+    }
+    
     const [day, month, year] = details.date.split('/');
     const [hours, minutes] = details.time.split(':');
     const newAppointmentDate = new Date(+year, +month - 1, +day, +hours, +minutes);
@@ -112,7 +119,7 @@ export default function AgendaPage() {
         date_time: newAppointmentDate.toISOString(),
         notes: details.notes,
         status: 'Agendado' as AppointmentStatus,
-        admin_id: 'd09a8a3a-3453-4435-a129-4a949755b64c' // TODO: Replace with actual logged in user ID
+        admin_id: currentUserId
     };
 
     const { data, error } = await supabase
@@ -124,7 +131,7 @@ export default function AgendaPage() {
     if (error) {
         toast({
             title: "Erro ao criar agendamento!",
-            description: error.message,
+            description: "Verifique se todos os dados estão corretos e tente novamente.",
             variant: 'destructive'
         });
         console.error("Error creating appointment", error);
@@ -136,7 +143,7 @@ export default function AgendaPage() {
           dateTime: new Date(data.date_time),
           notes: data.services.name,
           status: 'Agendado',
-          admin: 'Admin Master', // Assuming current user
+          admin: currentUserName, // Set current user's name
           serviceId: data.service_id,
         };
 
