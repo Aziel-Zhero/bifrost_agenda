@@ -241,6 +241,9 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">
             Suas métricas e visão geral do desempenho.
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            As métricas de ganhos e perdas são atualizadas diariamente após a meia-noite.
+          </p>
         </div>
          <Popover>
             <PopoverTrigger asChild>
