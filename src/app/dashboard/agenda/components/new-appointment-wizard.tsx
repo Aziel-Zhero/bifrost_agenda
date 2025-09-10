@@ -19,7 +19,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from 'date-fns/locale';
 import { User, Calendar as CalendarIcon, Clock, Tag, Pencil } from "lucide-react";
-import type { Client, Service, StudioHour } from "@/types";
+import type { Client, Service } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
 const steps = [
@@ -47,11 +47,10 @@ interface NewAppointmentWizardProps {
     onFinish: (details: {clientName: string; clientId: string; date: string; time: string; serviceName: string; serviceId: string; notes: string;}) => void;
     clients: Client[];
     services: Service[];
-    studioHours: StudioHour[];
 }
 
 
-export default function NewAppointmentWizard({ onFinish, clients, services, studioHours }: NewAppointmentWizardProps) {
+export default function NewAppointmentWizard({ onFinish, clients, services }: NewAppointmentWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     clientType: 'existing',
@@ -64,43 +63,6 @@ export default function NewAppointmentWizard({ onFinish, clients, services, stud
     notes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (formData.date && studioHours.length > 0) {
-      // getDay() is safe as it's based on the client's locale interpretation of the date,
-      // which matches what they see on the calendar.
-      const dayOfWeek = formData.date.getDay();
-      const relevantHours = studioHours.find(h => h.day_of_week === dayOfWeek);
-
-      if (relevantHours && relevantHours.is_enabled) {
-          const times = [];
-          const [startHour, startMinute] = relevantHours.start_time.split(':').map(Number);
-          const [endHour, endMinute] = relevantHours.end_time.split(':').map(Number);
-          
-          // Use a date object just for iteration, but don't rely on it for timezone-sensitive logic.
-          let tempDate = new Date();
-          tempDate.setHours(startHour, startMinute, 0, 0);
-          
-          let endTempDate = new Date();
-          endTempDate.setHours(endHour, endMinute, 0, 0);
-
-          // Generate time slots as strings
-          while (tempDate < endTempDate) {
-              times.push(
-                  `${String(tempDate.getHours()).padStart(2, '0')}:${String(tempDate.getMinutes()).padStart(2, '0')}`
-              );
-              // Increment by 1 hour for now.
-              // This can be based on service duration in a future enhancement.
-              tempDate.setHours(tempDate.getHours() + 1);
-          }
-          setAvailableTimes(times);
-      } else {
-          setAvailableTimes([]);
-      }
-    }
-  }, [formData.date, studioHours]);
-
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
@@ -126,7 +88,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, stud
   
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -346,24 +308,15 @@ export default function NewAppointmentWizard({ onFinish, clients, services, stud
 
             {/* Step 5: Time */}
             {currentStepInfo.id === 5 && (
-                 <div className="flex flex-col items-center justify-center h-full">
-                     <p className="text-base text-center text-muted-foreground mb-4">Agora, escolha um horário.</p>
-                    {availableTimes.length > 0 ? (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                            {availableTimes.map(time => (
-                                <Button 
-                                    key={time} 
-                                    variant={formData.time === time ? 'default' : 'outline'}
-                                    onClick={() => handleFieldChange('time', time)}
-                                    className="h-12 text-base"
-                                >
-                                    {time}
-                                </Button>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-muted-foreground">O estúdio está fechado neste dia ou não há horários disponíveis.</p>
-                    )}
+                 <div className="flex flex-col items-center justify-center h-full gap-4">
+                     <p className="text-base text-center text-muted-foreground">Agora, escolha um horário.</p>
+                     <Input 
+                        id="appointment-time"
+                        type="time"
+                        className="w-48 text-center text-lg h-12"
+                        value={formData.time}
+                        onChange={(e) => handleFieldChange('time', e.target.value)}
+                     />
                 </div>
             )}
             
