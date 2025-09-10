@@ -21,14 +21,13 @@ export type Appointment = {
   // Nested properties for joins
   clients: { name: string; created_at: string } | null;
   services: { name: string; price: number } | null;
-  // Deprecated fields to be removed from usage
-  clientName?: string; 
 };
 
 
 export type AppointmentReport = Appointment & {
   whatsapp: string;
   telegram?: string;
+  admin: string;
 }
 
 export type Service = {

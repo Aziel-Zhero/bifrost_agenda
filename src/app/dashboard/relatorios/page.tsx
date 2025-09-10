@@ -17,7 +17,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { columns } from "./components/columns";
 import { DataTable } from "./components/data-table";
 import type { AppointmentReport } from "@/types";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -34,7 +34,8 @@ export default function RelatoriosPage() {
         .select(`
           *,
           clients (*),
-          services (*)
+          services (*),
+          profiles (name)
         `);
 
       if (error) {
@@ -45,14 +46,18 @@ export default function RelatoriosPage() {
       const reports: AppointmentReport[] = data.map((appt: any) => ({
         id: appt.id,
         clientName: appt.clients.name,
-        clientAvatarUrl: appt.clients.avatarUrl,
-        dateTime: new Date(appt.date_time),
+        dateTime: appt.date_time,
         notes: appt.services.name,
         status: appt.status,
-        admin: 'Admin', // Placeholder, you might want to fetch admin name
+        admin: appt.profiles.name,
         serviceId: appt.service_id,
         whatsapp: appt.clients.whatsapp,
         telegram: appt.clients.telegram,
+        clientAvatarUrl: '', // This field is not used currently
+        admin_id: appt.admin_id,
+        client_id: appt.client_id,
+        clients: appt.clients,
+        services: appt.services,
       }));
       setAppointmentReports(reports);
     };
@@ -62,17 +67,18 @@ export default function RelatoriosPage() {
   
   const filteredAppointments = appointmentReports.filter(appt => {
     if (!dateRange || (!dateRange.from && !dateRange.to)) return true;
+    const apptDate = parseISO(appt.dateTime);
     const from = dateRange.from ? new Date(dateRange.from.setHours(0, 0, 0, 0)) : null;
     const to = dateRange.to ? new Date(dateRange.to.setHours(23, 59, 59, 999)) : null;
     
     if (from && to) {
-        return appt.dateTime >= from && appt.dateTime <= to;
+        return apptDate >= from && apptDate <= to;
     }
     if (from) {
-        return appt.dateTime >= from;
+        return apptDate >= from;
     }
     if (to) {
-        return appt.dateTime <= to;
+        return apptDate <= to;
     }
     return true;
   });

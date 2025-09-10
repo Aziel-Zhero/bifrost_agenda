@@ -27,6 +27,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
 import { ptBR } from 'date-fns/locale';
 import { supabase } from "@/lib/supabase/client";
+import { parseISO } from "date-fns";
 
 
 export default function AgendaPage() {
@@ -64,17 +65,7 @@ export default function AgendaPage() {
       if (apptError) {
         console.error("Error fetching appointments", apptError);
       } else {
-        const formattedAppointments = apptData.map((appt: any) => ({
-          id: appt.id,
-          clientName: appt.clients.name,
-          clientAvatarUrl: '',
-          dateTime: new Date(appt.date_time),
-          notes: appt.services.name,
-          status: appt.status,
-          admin: 'Admin Master',
-          serviceId: appt.service_id,
-        }));
-        setAppointments(formattedAppointments);
+        setAppointments(apptData as any[]);
       }
 
        // Fetch Clients
@@ -93,7 +84,7 @@ export default function AgendaPage() {
 
   const selectedDayAppointments = appointments.filter(
     (appt) =>
-      date && appt.dateTime.toDateString() === date.toDateString()
+      date && new Date(appt.dateTime).toDateString() === date.toDateString()
   );
 
   const statusVariant: Record<AppointmentStatus, string> = {
@@ -136,16 +127,7 @@ export default function AgendaPage() {
         });
         console.error("Error creating appointment", error);
     } else if (data) {
-        const newAppointment: Appointment = {
-          id: data.id,
-          clientName: data.clients.name,
-          clientAvatarUrl: '', // Or a default one
-          dateTime: new Date(data.date_time),
-          notes: data.services.name,
-          status: 'Agendado',
-          admin: currentUserName, // Set current user's name
-          serviceId: data.service_id,
-        };
+        const newAppointment: Appointment = data as any;
 
         setAppointments(prev => [...prev, newAppointment]);
         setFormOpen(false);
@@ -210,7 +192,7 @@ export default function AgendaPage() {
             <div className="space-y-4">
               {selectedDayAppointments.length > 0 ? (
                 selectedDayAppointments
-                .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime())
+                .sort((a, b) => parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime())
                 .map((appt: Appointment) => (
                   <div key={appt.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-4">
@@ -218,8 +200,8 @@ export default function AgendaPage() {
                         <User className="h-5 w-5 text-muted-foreground" />
                        </div>
                       <div>
-                        <p className="font-semibold">{appt.clientName}</p>
-                        <p className="text-sm text-muted-foreground">{appt.dateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {appt.notes}</p>
+                        <p className="font-semibold">{appt.clients?.name}</p>
+                        <p className="text-sm text-muted-foreground">{parseISO(appt.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {appt.services?.name}</p>
                       </div>
                     </div>
                     <Badge variant="outline" className={cn('border-none text-xs', statusVariant[appt.status])}>

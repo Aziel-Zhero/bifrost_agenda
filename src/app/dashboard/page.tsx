@@ -6,6 +6,7 @@ import {
   isSameDay,
   isSameWeek,
   isSameMonth,
+  parseISO,
 } from "date-fns";
 import {
   Card,
@@ -36,11 +37,11 @@ export default function DashboardRedirectPage() {
     const fetchAppointments = async () => {
       const { data, error } = await supabase.from("appointments").select(`
           id,
-          clients ( name ),
-          services ( name ),
           date_time,
           notes,
-          status
+          status,
+          clients ( name ),
+          services ( name )
         `);
 
       if (error) {
@@ -48,18 +49,7 @@ export default function DashboardRedirectPage() {
         return;
       }
 
-      const formattedAppointments = data.map((appt: any) => ({
-        id: appt.id,
-        clientName: appt.clients.name,
-        notes: appt.services.name, // The service name is in 'notes' now from the type
-        dateTime: new Date(appt.date_time),
-        status: appt.status,
-        // Add dummy values for fields not in this query
-        clientAvatarUrl: '',
-        admin: 'System', 
-        serviceId: '',
-      }));
-      setAppointments(formattedAppointments);
+      setAppointments(data as any[] || []);
     };
 
     fetchAppointments();
@@ -83,8 +73,8 @@ export default function DashboardRedirectPage() {
     }
     
     return appointments
-      .filter((appt) => checkFunction(appt.dateTime))
-      .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+      .filter((appt) => checkFunction(parseISO(appt.dateTime)))
+      .sort((a, b) => parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime());
   }, [period, appointments]);
 
   const statusVariant: Record<AppointmentStatus, string> = {
@@ -140,13 +130,13 @@ export default function DashboardRedirectPage() {
                 filteredAppointments.map((appt) => (
                   <TableRow key={appt.id}>
                     <TableCell className="font-medium">
-                      {appt.dateTime.toLocaleTimeString("pt-BR", {
+                      {parseISO(appt.dateTime).toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </TableCell>
-                    <TableCell>{appt.clientName}</TableCell>
-                    <TableCell>{appt.notes}</TableCell>
+                    <TableCell>{appt.clients?.name || 'N/A'}</TableCell>
+                    <TableCell>{appt.services?.name || appt.notes}</TableCell>
                      {period === 'day' && <TableCell>{appt.notes}</TableCell>}
                     <TableCell className="text-right">
                        <Badge

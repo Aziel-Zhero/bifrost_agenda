@@ -89,10 +89,10 @@ export default function DashboardPage() {
         console.error("Error fetching appointments", apptError);
       } else {
         // The data is already in a good format, just update the state
-        setAppointments(apptData || []);
+        setAppointments(apptData as any[] || []);
 
         // Extract unique services from the appointments
-         const allServices = apptData.map((appt: any) => appt.services).filter(Boolean);
+         const allServices = (apptData as any[]).map((appt: any) => appt.services).filter(Boolean);
          const uniqueServices = allServices.reduce((acc: Service[], current: Service) => {
             if (!acc.some(item => item.id === current.id)) {
                 acc.push(current);
@@ -112,7 +112,7 @@ export default function DashboardPage() {
     const to = dateRange.to || from; // if no 'to', use 'from'
     
     return appointments.filter(appt => 
-      isWithinInterval(new Date(appt.dateTime), { start: startOfDay(from), end: endOfDay(to) })
+      isWithinInterval(parseISO(appt.dateTime), { start: startOfDay(from), end: endOfDay(to) })
     );
   }, [dateRange, appointments]);
 
@@ -128,7 +128,7 @@ export default function DashboardPage() {
     const prevMonthEnd = endOfMonth(prevMonthDate);
     
     const prevMonthAppointments = appointments.filter(appt => 
-      isWithinInterval(new Date(appt.dateTime), { start: prevMonthStart, end: prevMonthEnd }) && appt.status === 'Realizado'
+      isWithinInterval(parseISO(appt.dateTime), { start: prevMonthStart, end: prevMonthEnd }) && appt.status === 'Realizado'
     );
 
     const totalGains = completedInPeriod.reduce((sum, appt) => {
@@ -216,7 +216,7 @@ export default function DashboardPage() {
     const completedAppointments = appointments.filter(a => a.status === 'Realizado');
 
     completedAppointments.forEach(appt => {
-        const month = format(new Date(appt.dateTime), 'MMM', {locale: ptBR});
+        const month = format(parseISO(appt.dateTime), 'MMM', {locale: ptBR});
         const price = appt.services?.price || 0;
         monthlyGains[month] = (monthlyGains[month] || 0) + price;
     });
