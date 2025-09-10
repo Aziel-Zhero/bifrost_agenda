@@ -139,9 +139,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
             .insert({ 
                 name: formData.newClientName, 
                 whatsapp: whatsappOnlyNumbers, // Send only numbers to DB
-                email: `${formData.newClientName.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '')}@example.com`,
-                avatarUrl: '',
-                admin: currentUserName
+                // The 'admin' field will be set by default value or RLS policy in Supabase.
             })
             .select()
             .single();
