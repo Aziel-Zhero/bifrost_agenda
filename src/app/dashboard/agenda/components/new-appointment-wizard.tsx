@@ -47,10 +47,11 @@ interface NewAppointmentWizardProps {
     onFinish: (details: {clientName: string; clientId: string; date: string; time: string; serviceName: string; serviceId: string; notes: string;}) => void;
     clients: Client[];
     services: Service[];
+    currentUserName: string;
 }
 
 
-export default function NewAppointmentWizard({ onFinish, clients, services }: NewAppointmentWizardProps) {
+export default function NewAppointmentWizard({ onFinish, clients, services, currentUserName }: NewAppointmentWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     clientType: 'existing',
@@ -144,7 +145,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services }: Ne
                 // These are dummy values as they are required by the type but not in the form
                 email: `${formData.newClientName.split(' ')[0].toLowerCase()}@example.com`,
                 avatarUrl: '',
-                admin: 'Admin Master' // Or assign dynamically
+                admin: currentUserName // Use the name of the logged in user
             })
             .select()
             .single();

@@ -35,10 +35,24 @@ export default function AgendaPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
+
+       // Fetch current user's profile name
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile, error } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+        if (error && error.code !== 'PGRST116') {
+            console.error("Error fetching user name", error);
+        } else {
+            setCurrentUserName(profile?.name || user.email || 'Admin');
+        }
+      }
+
+
       // Fetch Appointments
       const { data: apptData, error: apptError } = await supabase.from('appointments').select(`
         *,
@@ -70,6 +84,7 @@ export default function AgendaPage() {
       const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
       if (serviceError) console.error("Error fetching services", serviceError);
       else setServices(serviceData || []);
+
     };
     fetchData();
   }, []);
@@ -153,7 +168,7 @@ export default function AgendaPage() {
             <DialogHeader>
               <DialogTitle>Novo Agendamento</DialogTitle>
             </DialogHeader>
-            <NewAppointmentWizard onFinish={handleAppointmentSuccess} clients={clients} services={services} />
+            <NewAppointmentWizard onFinish={handleAppointmentSuccess} clients={clients} services={services} currentUserName={currentUserName} />
           </DialogContent>
         </Dialog>
       </div>
