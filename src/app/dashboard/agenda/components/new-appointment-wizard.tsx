@@ -138,7 +138,8 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
             .from('clients')
             .insert({ 
                 name: formData.newClientName, 
-                whatsapp: whatsappOnlyNumbers, // Send only numbers to DB
+                whatsapp: whatsappOnlyNumbers,
+                admin: currentUserName, // Associate client with the current user
             })
             .select()
             .single();
@@ -379,3 +380,5 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
     </div>
   );
 }
+
+    
