@@ -137,14 +137,15 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
     
     // If it's a new client, create it first
     if (formData.clientType === 'new') {
+        const whatsappOnlyNumbers = formData.newClientWhatsapp.replace(/\D/g, '');
         const { data: newClient, error } = await supabase
             .from('clients')
             .insert({ 
                 name: formData.newClientName, 
-                whatsapp: formData.newClientWhatsapp,
-                email: `${formData.newClientName.split(' ')[0].toLowerCase()}@example.com`,
+                whatsapp: whatsappOnlyNumbers, // Send only numbers to DB
+                email: `${formData.newClientName.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '')}@example.com`,
                 avatarUrl: '',
-                admin: currentUserName // Use the name of the logged in user
+                admin: currentUserName
             })
             .select()
             .single();
