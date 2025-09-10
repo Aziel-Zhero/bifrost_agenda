@@ -8,9 +8,9 @@ export async function inviteUser({ email, name }: { email: string, name: string 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    const errorMessage = 'Variáveis de ambiente do Supabase não configuradas no servidor.';
+    const errorMessage = 'Variáveis de ambiente do Supabase (URL ou Service Key) não configuradas no servidor.';
     console.error(errorMessage);
-    return { error: errorMessage };
+    return { data: null, error: { message: errorMessage } };
   }
 
   const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
@@ -25,10 +25,10 @@ export async function inviteUser({ email, name }: { email: string, name: string 
 
   if (error) {
     console.error('Error inviting user:', error);
-    return { error: error.message };
+    return { data: null, error };
   }
 
-  return { data };
+  return { data, error: null };
 }
 
 
@@ -37,9 +37,9 @@ export async function deleteUser(userId: string) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    const errorMessage = 'Variáveis de ambiente do Supabase (URL ou Service Key) não configuradas no servidor.';
+    const errorMessage = 'Variaveis de ambiente do Supabase (URL ou Service Key) não configuradas no servidor.';
     console.error(errorMessage);
-    return { error: errorMessage };
+    return { error: { message: errorMessage } };
   }
 
   const supabaseAdmin = createClient(
@@ -53,12 +53,12 @@ export async function deleteUser(userId: string) {
     }
   )
 
-  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
+  const { data, error } = await supabaseAdmin.auth.admin.deleteUser(userId)
   
   if (error) {
     console.error('Error deleting user:', error)
-    return { error: error.message }
+    return { error }
   }
 
-  return { error: null }
+  return { data, error: null }
 }

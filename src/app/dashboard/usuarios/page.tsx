@@ -155,10 +155,10 @@ export default function UsuariosPage() {
     const { error } = await inviteUser({ email: newUserEmail, name: newUserName });
 
     if (error) {
-      console.error("Error inviting user:", error);
+      console.error("Error inviting user:", error.message);
       toast({
         title: "Erro ao convidar usuário",
-        description: error,
+        description: error.message,
         variant: "destructive",
       });
     } else {
@@ -181,7 +181,7 @@ export default function UsuariosPage() {
     if (result.error) {
       toast({
         title: "Erro ao remover usuário",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       });
     } else {
