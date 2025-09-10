@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus, CircleDollarSign, ShieldAlert } from "lucide-react";
-import type { Appointment, Service, Client } from "@/types";
+import type { Appointment, Service } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -48,7 +48,8 @@ type OverviewData = {
     total: number;
 }
 
-type ClientWithCreatedAt = Client & { created_at: string };
+// Fetch only the necessary fields to avoid RLS issues.
+type ClientForKpi = { id: string; created_at: string; };
 
 const kpiIcons = {
   gains: DollarSign,
@@ -68,7 +69,7 @@ export default function DashboardPage() {
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [clients, setClients] = useState<ClientWithCreatedAt[]>([]);
+  const [clients, setClients] = useState<ClientForKpi[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,8 +96,8 @@ export default function DashboardPage() {
       if (serviceError) console.error("Error fetching services", serviceError);
       else setServices(serviceData || []);
       
-      // Fetch Clients
-      const { data: clientData, error: clientError } = await supabase.from('clients').select('*, created_at');
+      // Fetch Clients - Select only what's needed to prevent RLS issues
+      const { data: clientData, error: clientError } = await supabase.from('clients').select('id, created_at');
        if (clientError) console.error("Error fetching clients", clientError);
        else setClients(clientData || []);
     };
