@@ -55,6 +55,8 @@ export type AuditLog = {
 }
 
 export type StudioHour = {
+    id: number;
+    created_at: string;
     day_of_week: number; // 0 = Sunday, 1 = Monday, etc.
     start_time: string; // e.g., "09:00"
     end_time: string;   // e.g., "18:00"
