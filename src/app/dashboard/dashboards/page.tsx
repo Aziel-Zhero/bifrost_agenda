@@ -24,7 +24,7 @@ import type { Appointment, Service, Client } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, subMonths, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
@@ -48,6 +48,7 @@ type OverviewData = {
     total: number;
 }
 
+type ClientWithCreatedAt = Client & { created_at: string };
 
 const kpiIcons = {
   gains: DollarSign,
@@ -66,7 +67,7 @@ export default function DashboardPage() {
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientWithCreatedAt[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,7 +116,6 @@ export default function DashboardPage() {
   const kpiData: Kpi[] = useMemo(() => {
     const from = dateRange?.from;
     if (!from) return [];
-    const to = dateRange?.to || from;
     
     const completedInPeriod = filteredAppointments.filter(a => a.status === 'Realizado');
     
@@ -139,11 +139,15 @@ export default function DashboardPage() {
 
     const totalCancellations = filteredAppointments.filter(a => a.status === 'Cancelado').length;
     
-    const totalClients = clients.length;
+    const totalClients = new Set(filteredAppointments.map(a => a.clientName)).size;
     
-    // Supabase client doesn't return created_at, so we mock this.
-    // In a real scenario, you'd fetch clients with `created_at` and filter.
-    const newClientsInPeriod = Math.floor(Math.random() * 10) + 1; // Mocked
+    const newClientsInPeriod = clients.filter(client => {
+        if (!dateRange?.from || !client.created_at) return false;
+        const clientCreationDate = parseISO(client.created_at);
+        const fromDate = startOfDay(dateRange.from);
+        const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+        return isWithinInterval(clientCreationDate, { start: fromDate, end: toDate });
+    }).length;
 
     const calculateChange = (current: number, previous: number) => {
         if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -162,19 +166,16 @@ export default function DashboardPage() {
         title: "Cancelamentos",
         value: `${totalCancellations}`,
         icon: kpiIcons.cancellations,
-        change: "+5%", // Mocked data
       },
       {
-        title: "Clientes",
+        title: "Clientes Atendidos",
         value: `${totalClients}`,
         icon: kpiIcons.clients,
-        change: "+2%", // Mocked data
       },
       {
-        title: "Novos Clientes (Mês)",
+        title: "Novos Clientes",
         value: `${newClientsInPeriod}`,
         icon: kpiIcons.newClients,
-        change: "+20%", // Mocked data
       },
     ]
 
@@ -218,7 +219,7 @@ export default function DashboardPage() {
     }
 
     return yearData;
-  }, [appointments, services]);
+  }, [appointments, services, today]);
   
   const topClients = getTopClients();
 
@@ -329,3 +330,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

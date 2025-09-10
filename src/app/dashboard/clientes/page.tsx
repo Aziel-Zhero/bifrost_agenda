@@ -162,7 +162,7 @@ export default function ClientesPage() {
           description: error.message,
           variant: "destructive",
         });
-      } else {
+      } else if (data) {
         setClients(
           clients.map((c) => (c.id === editingClient.id ? data : c))
         );
@@ -182,7 +182,7 @@ export default function ClientesPage() {
           description: error.message,
           variant: "destructive",
         });
-      } else {
+      } else if (data) {
         setClients([...clients, data]);
         toast({ title: "Cliente criado com sucesso!" });
         setFormOpen(false);
@@ -306,3 +306,5 @@ export default function ClientesPage() {
     </div>
   );
 }
+
+    
