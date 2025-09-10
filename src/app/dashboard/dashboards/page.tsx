@@ -81,7 +81,7 @@ export default function DashboardPage() {
       // Fetch Appointments with the client's created_at date
       const { data: apptData, error: apptError } = await supabase
         .from('appointments')
-        .select(`*, clients ( name, created_at )`);
+        .select(`*, clients ( name, created_at ), services ( * )`);
       
       if (apptError) {
         console.error("Error fetching appointments", apptError);
@@ -98,12 +98,17 @@ export default function DashboardPage() {
           clients: appt.clients // Keep the nested client object
         }));
         setAppointments(formattedAppointments);
-      }
 
-      // Fetch Services
-      const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
-      if (serviceError) console.error("Error fetching services", serviceError);
-      else setServices(serviceData || []);
+         const allServices = apptData.map((appt: any) => appt.services).filter(Boolean);
+         // Remove duplicates
+         const uniqueServices = allServices.reduce((acc: Service[], current: Service) => {
+            if (!acc.some(item => item.id === current.id)) {
+                acc.push(current);
+            }
+            return acc;
+        }, []);
+        setServices(uniqueServices);
+      }
     };
     fetchData();
   }, []);
@@ -353,5 +358,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
