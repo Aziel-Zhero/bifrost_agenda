@@ -336,22 +336,24 @@ export default function ServicosPage() {
 
        {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
-          <DialogContent>
-               <DialogHeader>
-                    <DialogTitle>Você tem certeza?</DialogTitle>
-                    <DialogDescription>
-                       Esta ação não pode ser desfeita. Isso excluirá permanentemente o serviço
-                       <span className="font-semibold"> {selectedService?.name}</span>.
-                    </DialogDescription>
-               </DialogHeader>
-               <DialogFooter>
-                    <DialogClose asChild>
-                         <Button variant="outline" onClick={() => setDeleteAlertOpen(false)}>Cancelar</Button>
-                    </DialogClose>
-                    <Button variant="destructive" onClick={confirmDelete}>Confirmar Exclusão</Button>
-               </DialogFooter>
-          </DialogContent>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Você tem certeza?</DialogTitle>
+            <DialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o serviço
+              <span className="font-semibold"> {selectedService?.name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" onClick={() => setDeleteAlertOpen(false)}>Cancelar</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={confirmDelete}>Confirmar Exclusão</Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </>
   );
 }
+
+    
