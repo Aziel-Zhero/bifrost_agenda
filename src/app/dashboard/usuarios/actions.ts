@@ -21,6 +21,7 @@ export async function inviteUser({ email, name }: { email: string, name: string 
     data: {
       full_name: name,
     },
+    redirectTo: '/sign-up', // Redirect to the new sign-up completion page
   });
 
   if (inviteError) {
@@ -82,5 +83,3 @@ export async function deleteUser(userId: string) {
 
   return { data, error: null }
 }
-
-    
