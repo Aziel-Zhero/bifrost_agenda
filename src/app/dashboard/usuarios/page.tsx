@@ -158,14 +158,21 @@ export default function UsuariosPage() {
     const { error } = await createUser({ email: newUserEmail, name: newUserName, password: newUserPassword });
 
     if (error) {
-      console.error("Error creating user:", error.message);
-      toast({
-        title: "Erro ao criar usuário",
-        description: error.message,
-        variant: "destructive",
-      });
+        const errorMessage = error.message;
+        console.error("Error creating user:", errorMessage);
+        
+        let toastDescription = "Ocorreu um erro inesperado. Tente novamente.";
+        if (errorMessage.includes("User already registered")) {
+            toastDescription = "Este e-mail já está em uso. Por favor, utilize outro endereço.";
+        }
+
+        toast({
+            title: "Erro ao criar usuário",
+            description: toastDescription,
+            variant: "destructive",
+        });
     } else {
-      await fetchUsers();
+      await fetchUsers(); // Re-fetch users to get the new one
       toast({
         title: "Usuário Criado!",
         description: `${newUserName} foi adicionado ao sistema.`,

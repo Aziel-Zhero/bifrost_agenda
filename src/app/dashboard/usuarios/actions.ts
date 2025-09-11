@@ -21,7 +21,7 @@ export async function createUser({ email, name, password }: { email: string, nam
   const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    email_confirm: true,
+    email_confirm: true, // Auto-confirms the email
     user_metadata: {
       full_name: name,
     },
@@ -32,21 +32,22 @@ export async function createUser({ email, name, password }: { email: string, nam
     return { data: null, error: createError };
   }
 
-  // 2. The trigger on `auth.users` automatically creates a profile in `public.profiles`.
-  // Instead of inserting, we now UPDATE the profile that the trigger created.
+  // 2. The trigger on `auth.users` should automatically create a profile.
+  // We now UPDATE the profile that the trigger created to set the default role.
   if (createData.user) {
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update({
         role: 'Asgard', // Set the default role
+        name: name, // Ensure the name is also set in the profile
+        email: email, // Ensure the email is also set in the profile
         permissions: {}, // Set default empty permissions
       })
-      .eq('id', createData.user.id); // Find the profile by the new user's ID
+      .eq('id', createData.user.id);
 
     if (profileError) {
       console.error('Error updating profile for new user:', profileError);
       // Even if the profile update fails, the user was created.
-      // The role can be assigned manually later.
       // We return the user creation data but log the profile error.
       return { data: createData, error: profileError };
     }
