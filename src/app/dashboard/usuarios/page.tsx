@@ -44,7 +44,7 @@ import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { deleteUser, createUser } from "./actions";
+import { deleteUser, inviteUser } from "./actions";
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -57,7 +57,6 @@ export default function UsuariosPage() {
   
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState('');
   
   const [selectedRole, setSelectedRole] = useState<UserProfile['role'] | ''>('');
   
@@ -146,7 +145,7 @@ export default function UsuariosPage() {
 
   const handleAddUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName || !newUserEmail || !newUserPassword) {
+    if (!newUserName || !newUserEmail) {
       toast({
         title: "Campos incompletos",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -155,31 +154,30 @@ export default function UsuariosPage() {
       return;
     }
 
-    const { error } = await createUser({ email: newUserEmail, name: newUserName, password: newUserPassword });
+    const { error } = await inviteUser({ email: newUserEmail, name: newUserName });
 
     if (error) {
         const errorMessage = error.message;
-        console.error("Error creating user:", errorMessage);
+        console.error("Error inviting user:", errorMessage);
         
         let toastDescription = "Ocorreu um erro inesperado. Tente novamente.";
         if (errorMessage.includes("User already registered")) {
-            toastDescription = "Este e-mail já está em uso. Por favor, utilize outro endereço.";
+            toastDescription = "Este e-mail já está em uso ou foi convidado. Por favor, utilize outro endereço.";
         }
 
         toast({
-            title: "Erro ao criar usuário",
+            title: "Erro ao convidar usuário",
             description: toastDescription,
             variant: "destructive",
         });
     } else {
-      await fetchUsers(); // Re-fetch users to get the new one
+      await fetchUsers(); // Re-fetch users to see pending invite if applicable
       toast({
-        title: "Usuário Criado!",
-        description: `${newUserName} foi adicionado ao sistema.`,
+        title: "Convite Enviado!",
+        description: `Um e-mail de convite foi enviado para ${newUserEmail}.`,
       });
       setNewUserName('');
       setNewUserEmail('');
-      setNewUserPassword('');
       setAddFormOpen(false);
     }
   };
@@ -231,9 +229,9 @@ export default function UsuariosPage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Criar Novo Usuário</DialogTitle>
+                  <DialogTitle>Convidar Novo Usuário</DialogTitle>
                   <DialogDescription>
-                    Você definirá o nome, e-mail e senha inicial para o novo membro.
+                    Um e-mail de convite será enviado para o usuário, que poderá definir sua própria senha.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAddUserSubmit} className="space-y-4">
@@ -245,13 +243,9 @@ export default function UsuariosPage() {
                     <Label htmlFor="email">Email de Acesso</Label>
                     <Input id="email" type="email" placeholder="usuario@email.com" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
                   </div>
-                   <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input id="password" type="password" placeholder="Defina uma senha forte" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} required />
-                  </div>
                   <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="ghost" onClick={() => setAddFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit">Criar Usuário</Button>
+                    <Button type="submit">Enviar Convite</Button>
                   </div>
                 </form>
               </DialogContent>

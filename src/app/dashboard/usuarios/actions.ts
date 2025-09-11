@@ -3,7 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-export async function createUser({ email, name, password }: { email: string, name: string, password: string }) {
+export async function inviteUser({ email, name }: { email: string, name: string }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -17,43 +17,19 @@ export async function createUser({ email, name, password }: { email: string, nam
     auth: { autoRefreshToken: false, persistSession: false }
   });
 
-  // 1. Create the user in the auth schema
-  const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true, // Auto-confirms the email
-    user_metadata: {
+  const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+    data: {
       full_name: name,
     },
+    redirectTo: '/sign-up',
   });
 
-  if (createError) {
-    console.error('Error creating user:', createError);
-    return { data: null, error: createError };
+  if (error) {
+    console.error('Error inviting user:', error);
+    return { data: null, error };
   }
 
-  // 2. The trigger on `auth.users` should automatically create a profile.
-  // We now UPDATE the profile that the trigger created to set the default role.
-  if (createData.user) {
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .update({
-        role: 'Asgard', // Set the default role
-        name: name, // Ensure the name is also set in the profile
-        email: email, // Ensure the email is also set in the profile
-        permissions: {}, // Set default empty permissions
-      })
-      .eq('id', createData.user.id);
-
-    if (profileError) {
-      console.error('Error updating profile for new user:', profileError);
-      // Even if the profile update fails, the user was created.
-      // We return the user creation data but log the profile error.
-      return { data: createData, error: profileError };
-    }
-  }
-
-  return { data: createData, error: null };
+  return { data, error: null };
 }
 
 
