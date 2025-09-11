@@ -12,15 +12,16 @@ export async function signUpUser(formData: FormData) {
         return { error: { message: "Nome, email e senha são obrigatórios." }};
     }
     
-    // O trigger no Supabase irá criar o perfil automaticamente.
-    // Para isso, precisamos passar o nome do usuário nos metadados (options.data)
-    // que o trigger irá usar para popular a tabela 'profiles'.
+    // The Supabase trigger will create the profile automatically.
+    // To ensure the role is set, we pass it in the metadata.
+    // The trigger should be configured to read `raw_user_meta_data->>'role'`
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
                 full_name: name,
+                role: 'Asgard' // Default role for new sign-ups
             }
         }
     });
@@ -34,7 +35,9 @@ export async function signUpUser(formData: FormData) {
         return { error: { message: "Usuário não foi criado no sistema de autenticação." }};
     }
     
-    // O trigger cuida da criação do perfil. Não precisamos inserir em 'profiles' manualmente.
+    // The trigger handles profile creation, and we've included the role in the metadata.
+    // If the trigger isn't set up to handle the role, we might need to update it here,
+    // but for now, we rely on the trigger.
     
     return { data: data.user };
 }
