@@ -111,7 +111,7 @@ export default function DashboardPage() {
     const to = dateRange.to || from; // if no 'to', use 'from'
     
     return appointments.filter(appt => 
-      isWithinInterval(parseISO(appt.dateTime), { start: startOfDay(from), end: endOfDay(to) })
+      appt.dateTime && isWithinInterval(parseISO(appt.dateTime), { start: startOfDay(from), end: endOfDay(to) })
     );
   }, [dateRange, appointments]);
 
@@ -127,7 +127,7 @@ export default function DashboardPage() {
     const prevMonthEnd = endOfMonth(prevMonthDate);
     
     const prevMonthAppointments = appointments.filter(appt => 
-      isWithinInterval(parseISO(appt.dateTime), { start: prevMonthStart, end: prevMonthEnd }) && appt.status === 'Realizado'
+      appt.dateTime && isWithinInterval(parseISO(appt.dateTime), { start: prevMonthStart, end: prevMonthEnd }) && appt.status === 'Realizado'
     );
 
     const totalGains = completedInPeriod.reduce((sum, appt) => {
@@ -147,9 +147,12 @@ export default function DashboardPage() {
     // Logic to find new clients in the selected period
     const allClientsEver = new Map<string, string>();
     [...appointments]
-      .sort((a,b) => parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime())
+      .sort((a,b) => {
+        if (!a.dateTime || !b.dateTime) return 0;
+        return parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime()
+      })
       .forEach(appt => {
-        if(appt.clients?.name && !allClientsEver.has(appt.clients.name)){
+        if(appt.clients?.name && !allClientsEver.has(appt.clients.name) && appt.dateTime){
           allClientsEver.set(appt.clients.name, appt.dateTime);
         }
     });
@@ -158,7 +161,9 @@ export default function DashboardPage() {
         filteredAppointments
             .filter(appt => {
                 if (!dateRange?.from || !appt.clients?.name) return false;
-                const firstAppointmentDate = parseISO(allClientsEver.get(appt.clients.name)!);
+                const firstAppointmentDateString = allClientsEver.get(appt.clients.name);
+                if (!firstAppointmentDateString) return false;
+                const firstAppointmentDate = parseISO(firstAppointmentDateString);
                 const fromDate = startOfDay(dateRange.from);
                 const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
                 return isWithinInterval(firstAppointmentDate, { start: fromDate, end: toDate });
@@ -225,9 +230,11 @@ export default function DashboardPage() {
     const completedAppointments = appointments.filter(a => a.status === 'Realizado');
 
     completedAppointments.forEach(appt => {
-        const monthKey = format(parseISO(appt.dateTime), 'yyyy-MM');
-        const price = appt.services?.price || 0;
-        monthlyGains[monthKey] = (monthlyGains[monthKey] || 0) + price;
+        if (appt.dateTime) {
+            const monthKey = format(parseISO(appt.dateTime), 'yyyy-MM');
+            const price = appt.services?.price || 0;
+            monthlyGains[monthKey] = (monthlyGains[monthKey] || 0) + price;
+        }
     });
 
     const data: OverviewData[] = [];
@@ -360,6 +367,8 @@ export default function DashboardPage() {
     </div>
   );
 }
+    
+
     
 
     
