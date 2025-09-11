@@ -22,7 +22,6 @@ export default function StatsCard({
   iconColor,
   change,
 }: StatsCardProps) {
-  const isPositive = change && !change.startsWith("-");
 
   return (
     <Card>
@@ -36,7 +35,7 @@ export default function StatsCard({
           <p
             className={cn(
               "text-xs text-muted-foreground",
-              isPositive ? "text-emerald-500" : "text-red-500"
+              iconColor
             )}
           >
             {change} vs. último mês
