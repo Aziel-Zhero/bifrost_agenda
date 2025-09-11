@@ -139,7 +139,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={currentUser.avatar_url || ''} alt={currentUser.name} data-ai-hint="person" />
+                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.name} data-ai-hint="person" />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -194,7 +194,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar>
-                  <AvatarImage src={currentUser.avatar_url || ''} alt={currentUser.name} data-ai-hint="person" />
+                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.name} data-ai-hint="person" />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>

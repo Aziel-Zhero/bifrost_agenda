@@ -34,12 +34,12 @@ import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
 
-// This is a helper function that will be used to generate the cropped image blob.
+// This is a helper function that will be used to generate the cropped image data URL.
 function getCroppedImg(
   image: HTMLImageElement,
   crop: PixelCrop,
   rotation = 0
-): Promise<Blob | null> {
+): Promise<string | null> {
   const canvas = document.createElement("canvas");
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
@@ -73,11 +73,8 @@ function getCroppedImg(
   );
   ctx.restore();
 
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob);
-    }, "image/png");
-  });
+  // Return as a Base64 Data URL
+  return Promise.resolve(canvas.toDataURL("image/png"));
 }
 
 
@@ -119,7 +116,7 @@ export default function PerfilPage() {
 
             const { data: profile, error } = await supabase
                 .from('profiles')
-                .select('name, avatar_url')
+                .select('name, avatar')
                 .eq('id', user.id)
                 .single();
             
@@ -136,7 +133,7 @@ export default function PerfilPage() {
                 });
             } else if (profile) {
                 setDisplayName(profile.name);
-                setProfilePic(profile.avatar_url || '');
+                setProfilePic(profile.avatar || '');
             }
         }
     };
@@ -204,40 +201,20 @@ export default function PerfilPage() {
     if (!completedCrop || !imgRef.current || !authUser) return;
 
     try {
-        const blob = await getCroppedImg(imgRef.current, completedCrop, rotation);
-        if (!blob) {
-            throw new Error("Could not create cropped image.");
-        }
-
-        const filePath = `public/${authUser.id}-${Date.now()}.png`;
-        const { error: uploadError } = await supabase.storage
-            .from('avatars')
-            .upload(filePath, blob, {
-                cacheControl: '3600',
-                upsert: true,
-            });
-
-        if (uploadError) {
-            throw uploadError;
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-
-        if (!publicUrl) {
-            throw new Error("Could not get public URL for avatar.");
+        const dataUrl = await getCroppedImg(imgRef.current, completedCrop, rotation);
+        if (!dataUrl) {
+            throw new Error("Não foi possível gerar a imagem cortada.");
         }
         
         const { error: updateError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, avatar_url: publicUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+            .upsert({ id: authUser.id, avatar: dataUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' })
 
         if (updateError) {
             throw updateError;
         }
 
-        setProfilePic(publicUrl);
+        setProfilePic(dataUrl);
         setCropModalOpen(false);
         toast({
             title: 'Foto atualizada!',
@@ -247,9 +224,9 @@ export default function PerfilPage() {
     } catch (error: any) {
         toast({
             title: 'Erro no Upload',
-            description: error.message.includes("Bucket not found") 
-                ? 'O bucket "avatars" não foi encontrado. Verifique se ele foi criado e é público no seu painel do Supabase.'
-                : error.message,
+            description: error.message.includes("violates row-level security policy")
+              ? "A política de segurança não permitiu salvar a foto. Verifique as permissões (RLS) no Supabase."
+              : error.message,
             variant: 'destructive',
         });
     }

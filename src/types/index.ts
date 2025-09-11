@@ -43,7 +43,7 @@ export type UserProfile = {
     id: string;
     name: string;
     email: string;
-    avatar_url?: string;
+    avatar?: string; // Changed from avatar_url to avatar, stores base64
     role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
     permissions: {
       [key: string]: boolean; // key is the route href
@@ -78,3 +78,4 @@ export type RoleSettings = {
     
 
     
+
