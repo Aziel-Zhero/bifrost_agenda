@@ -115,7 +115,8 @@ export default function PerfilPage() {
             setEmail(user.email || '');
 
             // Set fallback name from auth data first
-            setDisplayName(user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário');
+            const initialName = user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário';
+            setDisplayName(initialName);
 
             // Then, try to fetch the profile
             const { data: profile, error } = await supabase
@@ -124,19 +125,32 @@ export default function PerfilPage() {
                 .eq('id', user.id)
                 .single();
             
-            // This error (PGRST116) happens if the user exists in auth but not in profiles. We can safely ignore it.
-            if (error && error.code !== 'PGRST116') {
-                // Do not log the error to the console to avoid confusion.
-                // The fallback data is already set.
+            // If profile doesn't exist, create it. This fixes the RLS issue for users who were invited but didn't have a profile row created.
+            if (error && error.code === 'PGRST116') {
+                const { error: createError } = await supabase
+                    .from('profiles')
+                    .insert({ id: user.id, name: initialName, email: user.email, role: 'Asgard', permissions: {} });
+
+                if (createError) {
+                    console.error("Error auto-creating profile:", createError);
+                    toast({
+                      title: 'Erro de configuração',
+                      description: 'Não foi possível criar seu perfil automaticamente. Contate o suporte.',
+                      variant: 'destructive'
+                    });
+                }
+            } else if (error) {
+                // Handle other errors
+                console.error("Error fetching profile:", error);
             } else if (profile) {
-                // If profile exists, use its data, overwriting the fallback.
+                // If profile exists, use its data
                 setDisplayName(profile.name);
                 setProfilePic(profile.avatar_url || '');
             }
         }
     };
     fetchUserData();
-  }, []);
+  }, [toast]);
 
   const handleSaveChanges = async () => {
     if (!authUser) return;

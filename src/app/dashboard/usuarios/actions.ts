@@ -17,18 +17,38 @@ export async function inviteUser({ email, name }: { email: string, name: string 
     auth: { autoRefreshToken: false, persistSession: false }
   });
 
-  const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+  const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     data: {
       full_name: name,
     },
   });
 
-  if (error) {
-    console.error('Error inviting user:', error);
-    return { data: null, error };
+  if (inviteError) {
+    console.error('Error inviting user:', inviteError);
+    return { data: null, error: inviteError };
   }
 
-  return { data, error: null };
+  // If invite is successful and a user is created, create a profile for them.
+  if (inviteData.user) {
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: inviteData.user.id,
+        name: name,
+        email: email,
+        role: 'Asgard', // Default role for new users
+        permissions: {}, // Default empty permissions
+      });
+
+    if (profileError) {
+      console.error('Error creating profile for invited user:', profileError);
+      // Even if profile creation fails, the invite was sent. We might want to handle this.
+      // For now, we'll return the original invite data but log the profile error.
+      return { data: inviteData, error: profileError };
+    }
+  }
+
+  return { data: inviteData, error: null };
 }
 
 
@@ -62,3 +82,5 @@ export async function deleteUser(userId: string) {
 
   return { data, error: null }
 }
+
+    
