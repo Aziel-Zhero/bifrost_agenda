@@ -161,11 +161,13 @@ export default function AgendaGeralPage() {
   
   return (
     <div className="flex flex-col gap-8">
-       <div>
-        <h1 className="text-2xl font-bold">Agenda Geral</h1>
-        <p className="text-muted-foreground">
-          Visão geral de todos os agendamentos do estúdio.
-        </p>
+       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Agenda Geral</h1>
+          <p className="text-muted-foreground">
+            Visão geral de todos os agendamentos do estúdio.
+          </p>
+        </div>
       </div>
 
        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -176,10 +178,11 @@ export default function AgendaGeralPage() {
           className="w-full p-0"
           locale={ptBR}
           classNames={{
+            caption: "flex justify-center pt-1 relative items-center p-4",
             months: 'h-full',
             month: 'w-full h-full flex flex-col',
             table: 'w-full h-full border-separate border-spacing-0',
-            head_row: 'flex w-full',
+            head_row: 'flex w-full py-4',
             head_cell: 'flex-1 text-muted-foreground rounded-md w-full font-normal text-[0.8rem] capitalize py-2 border-b border-r',
             row: 'flex w-full',
             cell: cn(
