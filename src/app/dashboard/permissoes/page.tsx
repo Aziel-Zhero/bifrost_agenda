@@ -24,7 +24,7 @@ const initialRoles: RoleSettings[] = [
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
     permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: true,
+    isFixed: false,
   },
   {
     name: "Heimdall",
