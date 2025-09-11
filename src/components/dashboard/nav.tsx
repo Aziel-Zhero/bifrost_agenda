@@ -13,6 +13,7 @@ import {
   Globe,
   Users2,
   ShieldCheck,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types";
@@ -24,6 +25,7 @@ export const menuItems = [
   { href: "/dashboard/agenda-geral", label: "Agenda Geral", icon: Globe },
   { href: "/dashboard/servicos", label: "Serviços", icon: ClipboardList },
   { href: "/dashboard/usuarios", label: "Usuários", icon: Users2 },
+  { href: "/dashboard/permissoes", label: "Permissões", icon: Shield },
   { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Histórico", icon: BookText },
   { href: "/dashboard/logs", label: "Logs", icon: ShieldCheck },

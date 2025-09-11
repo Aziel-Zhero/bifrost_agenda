@@ -1,10 +1,12 @@
 
+
 export type Client = {
   id: string;
   name: string;
   whatsapp: string;
   telegram?: string;
   admin: string;
+  created_at?: string;
 };
 
 export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloqueado';
@@ -41,6 +43,7 @@ export type UserProfile = {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string;
     role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
     permissions: {
       [key: string]: boolean; // key is the route href
@@ -64,6 +67,13 @@ export type StudioHour = {
     end_time: string;   // e.g., "18:00"
     is_enabled: boolean;
 }
+
+export type RoleSettings = {
+  name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
+  description: string;
+  permissions: { [key: string]: boolean };
+  isFixed: boolean; // Indicates if permissions can be changed
+};
 
     
 
