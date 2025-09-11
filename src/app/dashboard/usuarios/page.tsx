@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PlusCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { deleteUser, inviteUser } from "./actions";
 
 export default function UsuariosPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isAddFormOpen, setAddFormOpen] = useState(false);
   const [isPermissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
@@ -207,36 +209,41 @@ export default function UsuariosPage() {
               Adicione, edite e defina permissões para sua equipe.
             </p>
           </div>
-          <Dialog open={isAddFormOpen} onOpenChange={setAddFormOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Adicionar Usuário
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Convidar Novo Usuário</DialogTitle>
-                <DialogDescription>
-                  Um e-mail de convite será enviado para o usuário, que poderá definir sua própria senha.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddUserSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input id="name" placeholder="Nome do membro da equipe" value={newUserName} onChange={e => setNewUserName(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email de Acesso</Label>
-                  <Input id="email" type="email" placeholder="usuario@email.com" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="ghost" onClick={() => setAddFormOpen(false)}>Cancelar</Button>
-                  <Button type="submit">Enviar Convite</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button variant="outline" onClick={() => router.push('/sign-up')}>
+                Testar Tela de Senha
+            </Button>
+            <Dialog open={isAddFormOpen} onOpenChange={setAddFormOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adicionar Usuário
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Convidar Novo Usuário</DialogTitle>
+                  <DialogDescription>
+                    Um e-mail de convite será enviado para o usuário, que poderá definir sua própria senha.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleAddUserSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome Completo</Label>
+                    <Input id="name" placeholder="Nome do membro da equipe" value={newUserName} onChange={e => setNewUserName(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email de Acesso</Label>
+                    <Input id="email" type="email" placeholder="usuario@email.com" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="ghost" onClick={() => setAddFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit">Enviar Convite</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <Card>
