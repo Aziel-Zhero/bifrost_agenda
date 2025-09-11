@@ -147,7 +147,7 @@ export default function PerfilPage() {
         // Using upsert will create the profile if it doesn't exist, or update it if it does.
         const { error: profileError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, name: displayName, email: authUser.email, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+            .upsert({ id: authUser.id, name: displayName, updated_at: new Date().toISOString() }, { onConflict: 'id' });
         
         if (profileError) throw profileError;
 
@@ -231,7 +231,7 @@ export default function PerfilPage() {
         // Use upsert here as well to create a profile if one doesn't exist
         const { error: updateError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, avatar_url: publicUrl, name: displayName, email: authUser.email, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+            .upsert({ id: authUser.id, avatar_url: publicUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' })
 
         if (updateError) {
             throw updateError;
@@ -247,7 +247,9 @@ export default function PerfilPage() {
     } catch (error: any) {
         toast({
             title: 'Erro no Upload',
-            description: error.message || 'Não foi possível salvar a nova foto. Verifique se o bucket "avatars" existe e é público.',
+            description: error.message.includes("Bucket not found") 
+                ? 'O bucket "avatars" não foi encontrado. Verifique se ele foi criado e é público no seu painel do Supabase.'
+                : error.message,
             variant: 'destructive',
         });
     }
