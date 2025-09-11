@@ -149,7 +149,7 @@ export default function PerfilPage() {
     try {
         const { data: updatedProfile, error: profileError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, name: displayName, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+            .upsert({ id: authUser.id, name: displayName }, { onConflict: 'id' })
             .select()
             .single();
         
@@ -217,7 +217,7 @@ export default function PerfilPage() {
         
         const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, name: displayName, avatar: dataUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+            .upsert({ id: authUser.id, name: displayName, avatar: dataUrl }, { onConflict: 'id' })
             .select()
             .single();
 
@@ -404,5 +404,3 @@ export default function PerfilPage() {
     </>
   );
 }
-
-    
