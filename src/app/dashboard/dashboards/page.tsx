@@ -24,11 +24,12 @@ import type { Appointment, Service } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, subMonths, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval, subMonths, parseISO, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/lib/supabase/client';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 type ClientRanking = {
   clientName: string;
@@ -76,21 +77,20 @@ export default function DashboardPage() {
 
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const isMobile = useMediaQuery("(max-width: 768px)");
   
   useEffect(() => {
     const fetchData = async () => {
       // Fetch Appointments with nested client and service data
-      // This is more robust against RLS policies than fetching tables separately.
       const { data: apptData, error: apptError } = await supabase
         .from('appointments')
         .select(`*, clients ( name, created_at ), services ( * )`);
       
       if (apptError) {
-        console.error("Error fetching appointments", apptError);
+        console.error("Error fetching appointments:", apptError.message);
       } else {
-        // The data is already in a good format, just update the state
         setAppointments(apptData as any[] || []);
-
+        
         // Extract unique services from the appointments
          const allServices = (apptData as any[]).map((appt: any) => appt.services).filter(Boolean);
          const uniqueServices = allServices.reduce((acc: Service[], current: Service) => {
@@ -216,30 +216,34 @@ export default function DashboardPage() {
     const completedAppointments = appointments.filter(a => a.status === 'Realizado');
 
     completedAppointments.forEach(appt => {
-        const month = format(parseISO(appt.dateTime), 'MMM', {locale: ptBR});
+        const monthKey = format(parseISO(appt.dateTime), 'yyyy-MM');
         const price = appt.services?.price || 0;
-        monthlyGains[month] = (monthlyGains[month] || 0) + price;
+        monthlyGains[monthKey] = (monthlyGains[monthKey] || 0) + price;
     });
+
+    const data: OverviewData[] = [];
+    const monthsToShow = isMobile ? 6 : 12;
+    const startingMonth = isMobile ? subMonths(startOfMonth(today), monthsToShow - 1) : startOfMonth(new Date(today.getFullYear(), 0, 1));
     
-    // Ensure all months are present for the chart
-    const yearData: OverviewData[] = [];
-    for (let i=0; i<12; i++) {
-        const monthDate = new Date(today.getFullYear(), i, 1);
+    for (let i = 0; i < monthsToShow; i++) {
+        const monthDate = addMonths(startingMonth, i);
+        const monthKey = format(monthDate, 'yyyy-MM');
         const monthName = format(monthDate, 'MMM', { locale: ptBR });
-        yearData.push({
+        
+        data.push({
             name: monthName.charAt(0).toUpperCase() + monthName.slice(1),
-            total: monthlyGains[monthName] || 0,
+            total: monthlyGains[monthKey] || 0,
         });
     }
 
-    return yearData;
-  }, [appointments, today]);
+    return data;
+  }, [appointments, today, isMobile]);
   
   const topClients = getTopClients();
 
   return (
     <div className="flex flex-col gap-8">
-       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Meu Dashboard</h1>
           <p className="text-muted-foreground">
