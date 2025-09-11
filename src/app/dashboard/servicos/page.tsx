@@ -197,15 +197,15 @@ export default function ServicosPage() {
   return (
     <>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Gerenciar Serviços</h1>
             <p className="text-muted-foreground">
               Adicione, edite ou remova os serviços oferecidos.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.push('/dashboard/perfil-studio')}>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button variant="outline" onClick={() => router.push('/dashboard/perfil-studio')} className="w-full sm:w-auto">
                 <Clock className="mr-2 h-4 w-4" />
                 Horários do Studio
             </Button>
@@ -214,7 +214,7 @@ export default function ServicosPage() {
                 else setFormOpen(true);
             }}>
               <DialogTrigger asChild>
-                <Button onClick={() => { setSelectedService(null); setFormData({}); setFormOpen(true);}}>
+                <Button onClick={() => { setSelectedService(null); setFormData({}); setFormOpen(true);}} className="w-full sm:w-auto">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Adicionar Serviço
                 </Button>
@@ -355,5 +355,3 @@ export default function ServicosPage() {
     </>
   );
 }
-
-    

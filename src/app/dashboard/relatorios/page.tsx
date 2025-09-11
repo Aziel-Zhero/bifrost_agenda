@@ -85,21 +85,21 @@ export default function RelatoriosPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Histórico de Agendamentos</h1>
           <p className="text-muted-foreground">
             Visualize e filtre todos os agendamentos do sistema.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
            <Popover>
             <PopoverTrigger asChild>
               <Button
                 id="date"
                 variant={"outline"}
                 className={cn(
-                  "w-full sm:w-[300px] justify-start text-left font-normal",
+                  "w-full justify-start text-left font-normal sm:w-[300px]",
                   !dateRange && "text-muted-foreground"
                 )}
               >
