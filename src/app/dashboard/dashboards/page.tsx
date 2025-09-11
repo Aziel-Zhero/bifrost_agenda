@@ -53,7 +53,6 @@ type OverviewData = {
 type AppointmentWithDetails = Appointment & {
     clients: {
         name: string;
-        created_at: string;
     } | null;
     services: Service | null;
 }
@@ -84,7 +83,7 @@ export default function DashboardPage() {
       // Fetch Appointments with nested client and service data
       const { data: apptData, error: apptError } = await supabase
         .from('appointments')
-        .select(`*, clients ( name, created_at ), services ( * )`);
+        .select(`*, clients ( name ), services ( * )`);
       
       if (apptError) {
         console.error("Error fetching appointments:", apptError.message);
@@ -145,14 +144,24 @@ export default function DashboardPage() {
     
     const totalClients = new Set(completedInPeriod.map(a => a.clients?.name)).size;
     
+    // Logic to find new clients in the selected period
+    const allClientsEver = new Map<string, string>();
+    [...appointments]
+      .sort((a,b) => parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime())
+      .forEach(appt => {
+        if(appt.clients?.name && !allClientsEver.has(appt.clients.name)){
+          allClientsEver.set(appt.clients.name, appt.dateTime);
+        }
+    });
+
     const newClientsInPeriod = new Set(
         filteredAppointments
             .filter(appt => {
-                if (!dateRange?.from || !appt.clients?.created_at) return false;
-                const clientCreationDate = parseISO(appt.clients.created_at);
+                if (!dateRange?.from || !appt.clients?.name) return false;
+                const firstAppointmentDate = parseISO(allClientsEver.get(appt.clients.name)!);
                 const fromDate = startOfDay(dateRange.from);
                 const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
-                return isWithinInterval(clientCreationDate, { start: fromDate, end: toDate });
+                return isWithinInterval(firstAppointmentDate, { start: fromDate, end: toDate });
             })
             .map(appt => appt.clients?.name)
     ).size;
@@ -351,5 +360,6 @@ export default function DashboardPage() {
     </div>
   );
 }
+    
 
     

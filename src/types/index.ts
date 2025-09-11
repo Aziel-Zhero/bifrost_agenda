@@ -5,7 +5,6 @@ export type Client = {
   whatsapp: string;
   telegram?: string;
   admin: string;
-  created_at?: string; // Add created_at as optional
 };
 
 export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloqueado';
@@ -19,7 +18,7 @@ export type Appointment = {
   service_id: string;
   client_id: string;
   // Nested properties for joins
-  clients: { name: string; created_at: string } | null;
+  clients: { name: string } | null;
   services: { name: string; price: number } | null;
 };
 
@@ -65,5 +64,7 @@ export type StudioHour = {
     end_time: string;   // e.g., "18:00"
     is_enabled: boolean;
 }
+
+    
 
     
