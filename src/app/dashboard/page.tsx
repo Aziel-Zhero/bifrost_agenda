@@ -73,7 +73,7 @@ export default function DashboardRedirectPage() {
     }
     
     return appointments
-      .filter((appt) => checkFunction(parseISO(appt.dateTime)))
+      .filter((appt) => appt.dateTime && checkFunction(parseISO(appt.dateTime)))
       .sort((a, b) => parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime());
   }, [period, appointments]);
 
