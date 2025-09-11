@@ -122,16 +122,18 @@ export default function PerfilPage() {
             
             if (error && error.code === 'PGRST116') {
                 // This error code means 'No rows found'. The profile doesn't exist yet for this user.
-                // We will create it on first save/update. This is a normal scenario for invited users.
+                // This is a normal scenario for invited users. The profile will be created on first save.
                 console.log('Profile does not exist, it will be created on first update.');
             } else if (error) {
+                // Handle other errors (like RLS) without crashing, but log it.
                 console.error("Error fetching profile:", error);
-                toast({
+                 toast({
                   title: 'Erro ao buscar perfil',
                   description: 'Verifique as permissões de leitura (RLS) para a tabela "profiles" no Supabase.',
                   variant: 'destructive'
                 });
             } else if (profile) {
+                // If profile exists, use its data
                 setDisplayName(profile.name);
                 setProfilePic(profile.avatar || '');
             }
@@ -145,11 +147,18 @@ export default function PerfilPage() {
     setIsSaving(true);
 
     try {
-        const { error: profileError } = await supabase
+        const { data: updatedProfile, error: profileError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, name: displayName, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+            .upsert({ id: authUser.id, name: displayName, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+            .select()
+            .single();
         
         if (profileError) throw profileError;
+
+        if (updatedProfile) {
+            setDisplayName(updatedProfile.name);
+            setProfilePic(updatedProfile.avatar || '');
+        }
 
         if (newPassword) {
             if (newPassword !== confirmPassword) {
@@ -206,15 +215,20 @@ export default function PerfilPage() {
             throw new Error("Não foi possível gerar a imagem cortada.");
         }
         
-        const { error: updateError } = await supabase
+        const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
-            .upsert({ id: authUser.id, avatar: dataUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+            .upsert({ id: authUser.id, name: displayName, avatar: dataUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+            .select()
+            .single();
 
         if (updateError) {
             throw updateError;
         }
+        
+        if (updatedProfile) {
+          setProfilePic(updatedProfile.avatar || '');
+        }
 
-        setProfilePic(dataUrl);
         setCropModalOpen(false);
         toast({
             title: 'Foto atualizada!',
