@@ -23,6 +23,8 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -36,6 +38,7 @@ import type { UserProfile } from "@/types";
 export default function Header() {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isSheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -65,44 +68,43 @@ export default function Header() {
     };
     fetchUser();
   }, []);
+  
+  useEffect(() => {
+    setSheetOpen(false);
+  }, [pathname]);
 
   const visibleMenuItems = currentUser
     ? menuItems.filter(item => {
-        // Heimdall and Bifrost see everything
         if (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost') {
           return true;
         }
-        // For other roles, check permissions. If a permission is explicitly false, hide it. Otherwise, show.
         return currentUser.permissions[item.href] !== false;
       })
     : [];
 
   if (!currentUser) {
     return (
-        <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 px-4 md:px-6">
-            {/* Render a loading state or a skeleton header */}
+        <header className="sticky top-0 z-50 flex h-16 items-center justify-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 px-4 md:px-6">
+             <div className="h-6 w-24 animate-pulse rounded-md bg-white/20" />
         </header>
     );
   }
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 text-white px-4 md:px-6">
-      <div className="flex w-full items-center gap-6">
-        <div className="flex items-center gap-6">
-          <Logo isHeader />
-          <div className="hidden md:block">
-            <Nav currentUser={currentUser} />
-          </div>
-        </div>
-
-        <Sheet>
+      {/* Mobile Header */}
+      <div className="flex md:hidden items-center justify-between w-full">
+        <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 md:hidden hover:bg-white/10">
+            <Button variant="ghost" size="icon" className="shrink-0 hover:bg-white/10">
               <PanelLeft className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
+              <span className="sr-only">Abrir menu de navegação</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="left">
+             <SheetHeader>
+                <SheetTitle className="sr-only">Menu Principal</SheetTitle>
+             </SheetHeader>
              <div className="mb-4">
                 <Logo />
               </div>
@@ -123,6 +125,65 @@ export default function Header() {
             </nav>
           </SheetContent>
         </Sheet>
+
+        <div className="absolute left-1/2 -translate-x-1/2">
+             <Logo isHeader />
+        </div>
+        
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Notificações</span>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={currentUser.avatar_url || ''} alt={currentUser.name} data-ai-hint="person" />
+                  <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+               <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{currentUser.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {currentUser.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+               <DropdownMenuItem asChild>
+                <Link href="/dashboard/perfil">
+                  <User className="mr-2 h-4 w-4" />
+                  Meu Perfil
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                 <Link href="/dashboard/perfil-studio">
+                    <Building className="mr-2 h-4 w-4" />
+                    Perfil do Studio
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden md:flex w-full items-center gap-6">
+        <div className="flex items-center gap-6">
+          <Logo isHeader />
+          <Nav currentUser={currentUser} />
+        </div>
         
         <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
           <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
@@ -133,7 +194,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar>
-                  <AvatarImage src="https://picsum.photos/32/32" alt={currentUser.name} data-ai-hint="person" />
+                  <AvatarImage src={currentUser.avatar_url || ''} alt={currentUser.name} data-ai-hint="person" />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
