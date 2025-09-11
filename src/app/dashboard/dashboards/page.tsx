@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, Calendar as CalendarIcon, DollarSign, XCircle, Users, UserPlus, CircleDollarSign, ShieldAlert } from "lucide-react";
+import { User, Calendar as CalendarIcon, Users, UserPlus, ShieldAlert, TrendingUp, TrendingDown } from "lucide-react";
 import type { Appointment, Service } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ type Kpi = {
   title: string;
   value: string;
   icon: React.ElementType;
+  iconColor: string;
   change?: string;
   changeType?: 'increase' | 'decrease';
 };
@@ -59,8 +60,8 @@ type AppointmentWithDetails = Appointment & {
 
 
 const kpiIcons = {
-  gains: DollarSign,
-  losses: CircleDollarSign,
+  gains: TrendingUp,
+  losses: TrendingDown,
   cancellations: ShieldAlert,
   clients: Users,
   newClients: UserPlus,
@@ -183,27 +184,32 @@ export default function DashboardPage() {
         title: "Ganhos (Período)",
         value: `R$ ${totalGains.toFixed(2)}`,
         icon: kpiIcons.gains,
+        iconColor: "text-green-500",
         change: calculateChange(totalGains, prevMonthGains),
       },
        {
         title: "Perdas (Cancelado)",
         value: `R$ ${totalLosses.toFixed(2)}`,
         icon: kpiIcons.losses,
+        iconColor: "text-yellow-500",
       },
        {
         title: "Cancelamentos",
         value: `${cancelledInPeriod.length}`,
         icon: kpiIcons.cancellations,
+        iconColor: "text-red-500",
       },
       {
         title: "Clientes Atendidos",
         value: `${totalClients}`,
         icon: kpiIcons.clients,
+        iconColor: "text-purple-500",
       },
       {
         title: "Novos Clientes",
         value: `${newClientsInPeriod}`,
         icon: kpiIcons.newClients,
+        iconColor: "text-blue-500",
       },
     ]
 
@@ -314,6 +320,7 @@ export default function DashboardPage() {
             title={kpi.title}
             value={kpi.value}
             icon={kpi.icon}
+            iconColor={kpi.iconColor}
             change={kpi.change}
           />
         ))}

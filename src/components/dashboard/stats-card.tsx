@@ -11,6 +11,7 @@ interface StatsCardProps {
   title: string;
   value: string;
   icon: LucideIcon;
+  iconColor?: string;
   change?: string;
 }
 
@@ -18,6 +19,7 @@ export default function StatsCard({
   title,
   value,
   icon: Icon,
+  iconColor,
   change,
 }: StatsCardProps) {
   const isPositive = change && !change.startsWith("-");
@@ -26,7 +28,7 @@ export default function StatsCard({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className={cn("h-4 w-4 text-muted-foreground", iconColor)} />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
