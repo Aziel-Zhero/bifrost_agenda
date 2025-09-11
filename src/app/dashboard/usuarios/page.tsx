@@ -44,7 +44,7 @@ import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { deleteUser, inviteUser } from "./actions";
+import { deleteUser, createUser } from "./actions";
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -57,6 +57,7 @@ export default function UsuariosPage() {
   
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
   
   const [selectedRole, setSelectedRole] = useState<UserProfile['role'] | ''>('');
   
@@ -145,7 +146,7 @@ export default function UsuariosPage() {
 
   const handleAddUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName || !newUserEmail) {
+    if (!newUserName || !newUserEmail || !newUserPassword) {
       toast({
         title: "Campos incompletos",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -154,23 +155,24 @@ export default function UsuariosPage() {
       return;
     }
 
-    const { error } = await inviteUser({ email: newUserEmail, name: newUserName });
+    const { error } = await createUser({ email: newUserEmail, name: newUserName, password: newUserPassword });
 
     if (error) {
-      console.error("Error inviting user:", error.message);
+      console.error("Error creating user:", error.message);
       toast({
-        title: "Erro ao convidar usuário",
+        title: "Erro ao criar usuário",
         description: error.message,
         variant: "destructive",
       });
     } else {
       await fetchUsers();
       toast({
-        title: "Convite Enviado!",
-        description: `Um e-mail de convite foi enviado para ${newUserEmail}.`,
+        title: "Usuário Criado!",
+        description: `${newUserName} foi adicionado ao sistema.`,
       });
       setNewUserName('');
       setNewUserEmail('');
+      setNewUserPassword('');
       setAddFormOpen(false);
     }
   };
@@ -222,9 +224,9 @@ export default function UsuariosPage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Convidar Novo Usuário</DialogTitle>
+                  <DialogTitle>Criar Novo Usuário</DialogTitle>
                   <DialogDescription>
-                    Um e-mail de convite será enviado para o usuário, que poderá definir sua própria senha.
+                    Você definirá o nome, e-mail e senha inicial para o novo membro.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAddUserSubmit} className="space-y-4">
@@ -236,9 +238,13 @@ export default function UsuariosPage() {
                     <Label htmlFor="email">Email de Acesso</Label>
                     <Input id="email" type="email" placeholder="usuario@email.com" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
                   </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <Input id="password" type="password" placeholder="Defina uma senha forte" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} required />
+                  </div>
                   <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="ghost" onClick={() => setAddFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit">Enviar Convite</Button>
+                    <Button type="submit">Criar Usuário</Button>
                   </div>
                 </form>
               </DialogContent>

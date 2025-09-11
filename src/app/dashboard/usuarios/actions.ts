@@ -3,7 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-export async function inviteUser({ email, name }: { email: string, name: string }) {
+export async function createUser({ email, name, password }: { email: string, name: string, password: string }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -17,24 +17,26 @@ export async function inviteUser({ email, name }: { email: string, name: string 
     auth: { autoRefreshToken: false, persistSession: false }
   });
 
-  const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-    data: {
+  const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // Automatically confirm the email
+    user_metadata: {
       full_name: name,
     },
-    redirectTo: '/sign-up', // Redirect to the new sign-up completion page
   });
 
-  if (inviteError) {
-    console.error('Error inviting user:', inviteError);
-    return { data: null, error: inviteError };
+  if (createError) {
+    console.error('Error creating user:', createError);
+    return { data: null, error: createError };
   }
 
-  // If invite is successful and a user is created, create a profile for them.
-  if (inviteData.user) {
+  // If user creation is successful, create a profile for them.
+  if (createData.user) {
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
-        id: inviteData.user.id,
+        id: createData.user.id,
         name: name,
         email: email,
         role: 'Asgard', // Default role for new users
@@ -42,14 +44,14 @@ export async function inviteUser({ email, name }: { email: string, name: string 
       });
 
     if (profileError) {
-      console.error('Error creating profile for invited user:', profileError);
-      // Even if profile creation fails, the invite was sent. We might want to handle this.
-      // For now, we'll return the original invite data but log the profile error.
-      return { data: inviteData, error: profileError };
+      console.error('Error creating profile for new user:', profileError);
+      // We might want to handle this case, e.g., by deleting the auth user if profile creation fails.
+      // For now, return the original creation data but log the profile error.
+      return { data: createData, error: profileError };
     }
   }
 
-  return { data: inviteData, error: null };
+  return { data: createData, error: null };
 }
 
 
