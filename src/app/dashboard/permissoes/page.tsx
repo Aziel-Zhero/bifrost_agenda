@@ -19,17 +19,19 @@ import type { RoleSettings } from "@/types";
 import { menuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
 
+const allMenuItemsButPerms = menuItems;
+
 const initialRoles: RoleSettings[] = [
   {
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
-    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
+    permissions: allMenuItemsButPerms.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
     isFixed: false,
   },
   {
     name: "Heimdall",
     description: "Administrador mestre do estúdio, com visão ampla e privilegiada, podendo gerenciar todos os usuários e relatórios.",
-    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
+    permissions: allMenuItemsButPerms.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
     isFixed: true,
   },
   {
@@ -42,7 +44,6 @@ const initialRoles: RoleSettings[] = [
         '/dashboard/agenda-geral': false,
         '/dashboard/servicos': true,
         '/dashboard/usuarios': false,
-        '/dashboard/permissoes': false,
         '/dashboard/dashboards': true,
         '/dashboard/relatorios': false,
         '/dashboard/logs': false,
@@ -112,7 +113,7 @@ export default function PermissoesPage() {
                     <CardContent className="space-y-4">
                         <Separator />
                          <h4 className="font-semibold text-base pt-2">Acesso às Páginas</h4>
-                         {menuItems.map(item => (
+                         {allMenuItemsButPerms.map(item => (
                              <div key={item.href} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                                  <div className="flex items-center gap-3">
                                     <item.icon className="h-5 w-5 text-muted-foreground" />

@@ -64,7 +64,7 @@ export default function EditPermissionsDialog({
     setPermissions(prev => ({ ...prev, [href]: value }));
   };
 
-  const isHeimdall = user.role === 'Heimdall';
+  const isHeimdallOrBifrost = user.role === 'Heimdall' || user.role === 'Bifrost';
 
   const handleSave = () => {
     onSave(permissions);
@@ -72,11 +72,11 @@ export default function EditPermissionsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md md:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Permissões</DialogTitle>
           <DialogDescription>
-            Defina quais seções do painel o usuário pode acessar.
+            Defina quais seções o usuário pode acessar no painel.
           </DialogDescription>
         </DialogHeader>
 
@@ -91,34 +91,36 @@ export default function EditPermissionsDialog({
 
             <Separator />
 
-            <div className="space-y-4 mt-4">
-                {isHeimdall && (
-                    <div className="text-sm text-center text-muted-foreground bg-muted p-3 rounded-md">
-                        <p>O cargo <strong>Heimdall</strong> é o guardião e possui acesso irrestrito a todas as áreas do sistema.</p>
+            <div className="mt-4 max-h-[400px] overflow-y-auto pr-2">
+                 {isHeimdallOrBifrost && (
+                    <div className="text-sm text-center text-muted-foreground bg-muted p-3 rounded-md mb-4">
+                        <p>O cargo <strong>{user.role}</strong> possui acesso irrestrito a todas as áreas do sistema.</p>
                     </div>
                 )}
-                {navItems.map(item => (
-                    <div key={item.href} className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="flex items-center gap-3">
-                            <item.icon className="h-5 w-5 text-primary" />
-                            <Label htmlFor={`perm-${item.href}`} className="font-semibold cursor-pointer">
-                                {item.label}
-                            </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {navItems.map(item => (
+                        <div key={item.href} className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="flex items-center space-x-3">
+                                <item.icon className="h-5 w-5 text-muted-foreground" />
+                                <Label htmlFor={`perm-${item.href}`} className="font-medium cursor-pointer">
+                                    {item.label}
+                                </Label>
+                            </div>
+                             <Switch
+                                id={`perm-${item.href}`}
+                                checked={isHeimdallOrBifrost || !!permissions[item.href]}
+                                onCheckedChange={(value) => handlePermissionChange(item.href, value)}
+                                disabled={isHeimdallOrBifrost}
+                            />
                         </div>
-                        <Switch
-                            id={`perm-${item.href}`}
-                            checked={isHeimdall || !!permissions[item.href]}
-                            onCheckedChange={(value) => handlePermissionChange(item.href, value)}
-                            disabled={isHeimdall}
-                        />
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave}>Salvar Permissões</Button>
+          <Button onClick={handleSave} disabled={isHeimdallOrBifrost}>Salvar Permissões</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
