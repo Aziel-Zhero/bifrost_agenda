@@ -102,18 +102,18 @@ export default function UsuariosPage() {
     fetchUsers();
   }, []);
 
-  const handleEditPermissions = (user: UserProfile) => {
+  const onEditPermissions = (user: UserProfile) => {
     setSelectedUser(user);
     setPermissionsDialogOpen(true);
   };
   
-  const handleEditRole = (user: UserProfile) => {
+  const onEditRole = (user: UserProfile) => {
     setSelectedUser(user);
     setSelectedRole(user.role);
     setRoleDialogOpen(true);
   };
 
-   const handleDeleteClick = (user: UserProfile) => {
+   const onDelete = (user: UserProfile) => {
     setSelectedUser(user);
     setDeleteAlertOpen(true);
   };
@@ -202,7 +202,7 @@ export default function UsuariosPage() {
     }
   };
 
-  const handleReinvite = async (user: UserProfile) => {
+  const onReinvite = async (user: UserProfile) => {
     toast({
       title: "Reenviando convite...",
       description: `Enviando um novo convite para ${user.email}.`
