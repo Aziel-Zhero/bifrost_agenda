@@ -44,7 +44,7 @@ import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { deleteUser, inviteUser, reinviteUser } from "./actions";
+import { deleteUser, inviteUser, reinviteUser, getUsers } from "./actions";
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -64,56 +64,30 @@ export default function UsuariosPage() {
 
 
   const fetchUsers = async () => {
-    // We need admin rights to get user list with metadata
-    // This should be an RPC call for security
-    const { data: authUsers, error: authError } = await supabase.rpc('get_all_users');
-    if (authError) {
-      console.error('Error fetching auth users:', authError);
-      toast({ title: 'Erro ao buscar usuários', description: 'Não foi possível carregar a lista de usuários do sistema.', variant: 'destructive'});
-      return;
+    const { data, error } = await getUsers();
+    if (error) {
+        toast({ title: 'Erro ao buscar usuários', description: error.message, variant: 'destructive'});
+    } else {
+        setUsers(data || []);
     }
-
-    const { data: profiles, error: profileError } = await supabase.from('profiles').select('*');
-    if (profileError) {
-      console.error('Error fetching profiles:', profileError);
-      toast({ title: 'Erro ao buscar perfis', description: 'Não foi possível carregar os perfis dos usuários.', variant: 'destructive'});
-      return;
-    }
-
-    const profileMap = new Map(profiles.map(p => [p.id, p]));
-
-    const combinedUsers: UserProfile[] = authUsers.map((authUser: any) => {
-      const profile = profileMap.get(authUser.id);
-      return {
-        id: authUser.id,
-        name: profile?.name || authUser.raw_user_meta_data?.full_name || 'Nome não definido',
-        email: authUser.email || 'Email não encontrado',
-        role: profile?.role || 'Asgard',
-        avatar: profile?.avatar,
-        permissions: profile?.permissions || {},
-        last_sign_in_at: authUser.last_sign_in_at,
-      };
-    });
-
-    setUsers(combinedUsers);
   };
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  const onEditPermissions = (user: UserProfile) => {
+  const handleEditPermissions = (user: UserProfile) => {
     setSelectedUser(user);
     setPermissionsDialogOpen(true);
   };
   
-  const onEditRole = (user: UserProfile) => {
+  const handleEditRole = (user: UserProfile) => {
     setSelectedUser(user);
     setSelectedRole(user.role);
     setRoleDialogOpen(true);
   };
 
-   const onDelete = (user: UserProfile) => {
+   const handleDelete = (user: UserProfile) => {
     setSelectedUser(user);
     setDeleteAlertOpen(true);
   };
@@ -202,7 +176,7 @@ export default function UsuariosPage() {
     }
   };
 
-  const onReinvite = async (user: UserProfile) => {
+  const handleReinvite = async (user: UserProfile) => {
     toast({
       title: "Reenviando convite...",
       description: `Enviando um novo convite para ${user.email}.`
@@ -298,7 +272,7 @@ export default function UsuariosPage() {
 
         <Card>
           <CardContent className="pt-6">
-            <DataTable columns={columns({ onEditPermissions, onEditRole, onDelete, onReinvite })} data={users} />
+            <DataTable columns={columns({ onEditPermissions: handleEditPermissions, onEditRole: handleEditRole, onDelete: handleDelete, onReinvite: handleReinvite })} data={users} />
           </CardContent>
         </Card>
       </div>

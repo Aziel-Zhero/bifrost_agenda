@@ -2,6 +2,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import type { UserProfile } from '@/types';
 
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,6 +21,37 @@ const getRedirectToUrl = () => {
     return process.env.NODE_ENV === 'production' 
         ? 'https://bifrost-agenda.netlify.app/sign-up' 
         : 'http://localhost:9003/sign-up';
+}
+
+export async function getUsers(): Promise<{ data: UserProfile[] | null, error: { message: string } | null }> {
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+
+    if (authError) {
+        return { data: null, error: { message: `Falha ao buscar usuários: ${authError.message}` } };
+    }
+
+    const { data: profiles, error: profileError } = await supabaseAdmin.from('profiles').select('*');
+    if (profileError) {
+        return { data: null, error: { message: `Falha ao buscar perfis: ${profileError.message}` } };
+    }
+    
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+    const combinedUsers: UserProfile[] = authData.users.map((authUser: any) => {
+      const profile = profileMap.get(authUser.id);
+      return {
+        id: authUser.id,
+        name: profile?.name || authUser.user_metadata?.full_name || 'Nome não definido',
+        email: authUser.email || 'Email não encontrado',
+        role: profile?.role || 'Asgard',
+        avatar: profile?.avatar,
+        permissions: profile?.permissions || {},
+        last_sign_in_at: authUser.last_sign_in_at,
+      };
+    });
+
+    return { data: combinedUsers, error: null };
 }
 
 export async function inviteUser({ email, name }: { email: string, name: string }) {
