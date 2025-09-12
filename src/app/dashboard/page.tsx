@@ -60,8 +60,10 @@ export default function DashboardRedirectPage() {
             .eq('id', 1)
             .single();
         
-        if (data) {
+        if (data && data.studio_name) {
             setStudioName(data.studio_name);
+        } else if (error) {
+            console.log("Could not fetch studio name, using default. Error: ", error.message)
         }
     }
 
