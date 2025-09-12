@@ -35,7 +35,6 @@ export default function SignUpForm() {
                 setUser(sessionUser || null);
 
                 if (sessionUser) {
-                    // Fetch the user's profile to check their status
                     const { data: userProfile, error: profileError } = await supabase
                         .from('profiles')
                         .select('*')
@@ -47,11 +46,9 @@ export default function SignUpForm() {
                         setProfile(null);
                     } else {
                         setProfile(userProfile);
-                        // If user is already active, they shouldn't be on this page
-                        if (userProfile.status === 'active') {
-                            setError("Sua conta já está ativa. Você pode fazer login.");
-                            setTimeout(() => router.push('/'), 3000);
-                        }
+                        // A simple check to see if the user is already active could be based on a field
+                        // but since we removed status, we assume if they are on this page, they need to set a password.
+                        // A better check could be implemented if needed.
                     }
                 } else {
                   setError("Convite inválido ou expirado. Por favor, solicite um novo convite.");
@@ -82,7 +79,6 @@ export default function SignUpForm() {
 
         setIsSubmitting(true);
 
-        // 1. Update the user's password
         const { error: updateError } = await supabase.auth.updateUser({ password });
 
         if (updateError) {
@@ -96,22 +92,6 @@ export default function SignUpForm() {
             return;
         }
 
-        // 2. Update the profile status from 'pending' to 'active'
-        if (user) {
-            const { error: profileUpdateError } = await supabase
-                .from('profiles')
-                .update({ status: 'active' })
-                .eq('id', user.id);
-            
-            if (profileUpdateError) {
-                 setError("Sua senha foi definida, mas houve um erro ao ativar seu perfil. Contate o suporte.");
-                 toast({ title: "Erro ao ativar perfil", description: profileUpdateError.message, variant: "destructive" });
-                 setIsSubmitting(false);
-                 return;
-            }
-        }
-
-        // 3. Success
         toast({
             title: "Cadastro Finalizado!",
             description: "Sua senha foi definida com sucesso. Você será redirecionado.",
@@ -166,7 +146,7 @@ export default function SignUpForm() {
                         placeholder="Confirme sua nova senha"
                     />
                      <Button variant="ghost" size="icon" type="button" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmaramPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmitting}>

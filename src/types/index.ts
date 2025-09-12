@@ -45,7 +45,6 @@ export type UserProfile = {
     email: string;
     avatar?: string;
     role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
-    status: 'pending' | 'active';
     permissions: {
       [key: string]: boolean; // key is the route href
     }
@@ -88,6 +87,7 @@ export type RoleSettings = {
     
 
     
+
 
 
 
