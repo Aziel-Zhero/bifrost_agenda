@@ -47,6 +47,8 @@ const initialRoles: RoleSettings[] = [
         '/dashboard/dashboards': true,
         '/dashboard/relatorios': false,
         '/dashboard/logs': false,
+        '/dashboard/perfil': true,
+        '/dashboard/perfil-studio': false,
     },
     isFixed: false,
   },

@@ -13,6 +13,8 @@ import {
   Globe,
   Users2,
   ShieldCheck,
+  User,
+  Building,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types";
@@ -27,27 +29,21 @@ export const menuItems = [
   { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Histórico", icon: BookText },
   { href: "/dashboard/logs", label: "Logs", icon: ShieldCheck },
+  { href: "/dashboard/perfil", label: "Meu Perfil", icon: User },
+  { href: "/dashboard/perfil-studio", label: "Perfil do Studio", icon: Building },
 ];
 
 interface NavProps {
   currentUser: UserProfile;
+  navItems: typeof menuItems;
 }
 
-export default function Nav({ currentUser }: NavProps) {
+export default function Nav({ currentUser, navItems }: NavProps) {
   const pathname = usePathname();
-  
-  const visibleMenuItems = menuItems.filter(item => {
-    // Heimdall and Bifrost see everything
-    if (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost') {
-      return true;
-    }
-    // For other roles, check permissions. If a permission is explicitly false, hide it. Otherwise, show.
-    return currentUser.permissions[item.href] !== false;
-  });
 
   return (
     <nav className="flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-        {visibleMenuItems.map((item) => (
+        {navItems.map((item) => (
             <Link
             key={item.href}
             href={item.href}

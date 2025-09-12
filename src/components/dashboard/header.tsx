@@ -35,6 +35,8 @@ import Nav, { menuItems } from "./nav";
 import { supabase } from "@/lib/supabase/client";
 import type { UserProfile } from "@/types";
 
+const profileMenuItemsHrefs = ['/dashboard/perfil', '/dashboard/perfil-studio'];
+
 export default function Header() {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -73,14 +75,18 @@ export default function Header() {
     setSheetOpen(false);
   }, [pathname]);
 
-  const visibleMenuItems = currentUser
-    ? menuItems.filter(item => {
-        if (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost') {
-          return true;
-        }
-        return currentUser.permissions[item.href] !== false;
-      })
-    : [];
+  const hasPermission = (href: string) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost') {
+      return true;
+    }
+    return currentUser.permissions[href] !== false;
+  };
+  
+  const visibleMenuItems = menuItems.filter(item => hasPermission(item.href));
+  const navMenuItems = visibleMenuItems.filter(item => !profileMenuItemsHrefs.includes(item.href));
+  const profileMenuItems = visibleMenuItems.filter(item => profileMenuItemsHrefs.includes(item.href));
+
 
   if (!currentUser) {
     return (
@@ -154,18 +160,14 @@ export default function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem asChild>
-                <Link href="/dashboard/perfil">
-                  <User className="mr-2 h-4 w-4" />
-                  Meu Perfil
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                 <Link href="/dashboard/perfil-studio">
-                    <Building className="mr-2 h-4 w-4" />
-                    Perfil do Studio
-                </Link>
-              </DropdownMenuItem>
+               {profileMenuItems.map(item => (
+                 <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+               ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/">
@@ -182,7 +184,7 @@ export default function Header() {
       <div className="hidden md:flex w-full items-center gap-6">
         <div className="flex items-center gap-6">
           <Logo isHeader />
-          <Nav currentUser={currentUser} />
+          <Nav currentUser={currentUser} navItems={navMenuItems} />
         </div>
         
         <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
@@ -209,18 +211,14 @@ export default function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem asChild>
-                <Link href="/dashboard/perfil">
-                  <User className="mr-2 h-4 w-4" />
-                  Meu Perfil
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                 <Link href="/dashboard/perfil-studio">
-                    <Building className="mr-2 h-4 w-4" />
-                    Perfil do Studio
-                </Link>
-              </DropdownMenuItem>
+              {profileMenuItems.map(item => (
+                 <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+               ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/">
