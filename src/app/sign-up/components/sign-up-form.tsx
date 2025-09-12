@@ -30,16 +30,19 @@ export default function SignUpForm() {
     const [error, setError] = useState('');
     const [verificationError, setVerificationError] = useState('');
 
-    useEffect(() => {
-        // This listener is crucial. It waits for the Supabase client to process
-        // the token from the URL hash and establish a session.
+     useEffect(() => {
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                setInvitedUser(session.user);
+            }
+        };
+
+        checkSession();
+
         const { data: authListener } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                 // The 'USER_UPDATED' event is often triggered after the initial session is set from the invite link.
-                 // 'SIGNED_IN' can also be relevant. We listen for when a user object becomes available.
-                 // 'INITIAL_SESSION' is also important for when the component loads.
                 if (session?.user && (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "INITIAL_SESSION")) {
-                    // We found the authenticated user from the invite link. Store it.
                     setInvitedUser(session.user);
                 }
             }
@@ -49,6 +52,7 @@ export default function SignUpForm() {
             authListener.subscription.unsubscribe();
         };
     }, []);
+
 
     const handleVerification = () => {
         setVerificationError('');
