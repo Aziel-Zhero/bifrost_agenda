@@ -18,9 +18,10 @@ const getSupabaseAdmin = () => {
 }
 
 const getRedirectToUrl = () => {
-    return process.env.NODE_ENV === 'production' 
-        ? 'https://bifrost-agenda.netlify.app/sign-up' 
-        : 'http://localhost:9003/sign-up';
+    // This should ideally point to your production URL.
+    // For local development, it points to localhost.
+    // Ensure you have NEXT_PUBLIC_SITE_URL in your environment variables for production.
+    return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9003/sign-up';
 }
 
 export async function getUsers(): Promise<{ data: UserProfile[] | null, error: { message: string } | null }> {
@@ -130,4 +131,41 @@ export async function deleteUser(userId: string) {
   }
 
   return { data, error: null }
+}
+
+
+export async function updatePermissionsByRole(role: UserProfile['role'], permissions: UserProfile['permissions']) {
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // 1. Find all users with the specified role
+    const { data: profiles, error: fetchError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('role', role);
+
+    if (fetchError) {
+        console.error(`Error fetching users with role ${role}:`, fetchError);
+        return { error: { message: `Não foi possível buscar usuários para o papel ${role}.` } };
+    }
+
+    if (!profiles || profiles.length === 0) {
+        // No users with this role, so nothing to update.
+        return { data: { message: 'Nenhum usuário encontrado com este papel.' }, error: null };
+    }
+
+    const userIds = profiles.map(p => p.id);
+
+    // 2. Update the permissions for all found users
+    const { data, error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({ permissions })
+        .in('id', userIds)
+        .select(); // .select() to get the updated rows back
+
+    if (updateError) {
+        console.error(`Error updating permissions for role ${role}:`, updateError);
+        return { error: { message: `Falha ao atualizar as permissões: ${updateError.message}` } };
+    }
+
+    return { data, error: null };
 }

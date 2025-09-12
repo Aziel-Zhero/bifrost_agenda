@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -15,23 +15,24 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Shield, Combine, User, Users } from "lucide-react";
-import type { RoleSettings } from "@/types";
+import type { RoleSettings, UserProfile } from "@/types";
 import { menuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
+import { updatePermissionsByRole } from "../usuarios/actions";
+import { supabase } from "@/lib/supabase/client";
 
-const allMenuItemsButPerms = menuItems;
 
 const initialRoles: RoleSettings[] = [
   {
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
-    permissions: allMenuItemsButPerms.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: false,
+    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
+    isFixed: true, // Bifrost permissions should be fixed
   },
   {
     name: "Heimdall",
     description: "Administrador mestre do estúdio, com visão ampla e privilegiada, podendo gerenciar todos os usuários e relatórios.",
-    permissions: allMenuItemsButPerms.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
+    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
     isFixed: true,
   },
   {
@@ -71,6 +72,35 @@ const roleIcons: { [key: string]: React.ElementType } = {
 export default function PermissoesPage() {
     const { toast } = useToast();
     const [roles, setRoles] = useState<RoleSettings[]>(initialRoles);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPermissionsFromUsers = async () => {
+            const { data: users, error } = await supabase.from('profiles').select('role, permissions');
+
+            if (error) {
+                toast({ title: 'Erro ao buscar permissões', description: 'Não foi possível carregar as configurações atuais.', variant: 'destructive' });
+                setIsLoading(false);
+                return;
+            }
+
+            if (users) {
+                const updatedRoles = initialRoles.map(role => {
+                    // Find the first user with this role to use as the source of truth for permissions
+                    const userWithRole = users.find(u => u.role === role.name);
+                    if (userWithRole && userWithRole.permissions && Object.keys(userWithRole.permissions).length > 0) {
+                        return { ...role, permissions: userWithRole.permissions };
+                    }
+                    return role;
+                });
+                setRoles(updatedRoles);
+            }
+            setIsLoading(false);
+        };
+
+        fetchPermissionsFromUsers();
+    }, [toast]);
+
 
     const handlePermissionChange = (roleName: RoleSettings['name'], href: string, value: boolean) => {
         setRoles(prevRoles => prevRoles.map(role => 
@@ -78,15 +108,27 @@ export default function PermissoesPage() {
         ));
     };
     
-    const handleSaveChanges = (roleName: RoleSettings['name']) => {
-        // Here you would typically save the changes to your backend (e.g., Supabase).
-        // For this example, we'll just show a toast notification.
-        console.log(`Saving permissions for ${roleName}:`, roles.find(r => r.name === roleName)?.permissions);
-        toast({
-            title: "Permissões Salvas!",
-            description: `As permissões para o papel ${roleName} foram atualizadas com sucesso.`,
-            className: "bg-green-100 border-green-300 text-green-800"
-        });
+    const handleSaveChanges = async (roleName: RoleSettings['name']) => {
+        const roleToSave = roles.find(r => r.name === roleName);
+        if (!roleToSave) return;
+        
+        setIsLoading(true);
+        const { error } = await updatePermissionsByRole(roleName, roleToSave.permissions);
+        setIsLoading(false);
+
+        if (error) {
+            toast({
+                title: "Erro ao Salvar",
+                description: `Não foi possível atualizar as permissões para o papel ${roleName}. ${error.message}`,
+                variant: "destructive"
+            });
+        } else {
+             toast({
+                title: "Permissões Salvas!",
+                description: `As permissões para o papel ${roleName} foram atualizadas com sucesso.`,
+                className: "bg-green-100 border-green-300 text-green-800"
+            });
+        }
     }
 
   return (
@@ -115,7 +157,7 @@ export default function PermissoesPage() {
                     <CardContent className="space-y-4">
                         <Separator />
                          <h4 className="font-semibold text-base pt-2">Acesso às Páginas</h4>
-                         {allMenuItemsButPerms.map(item => (
+                         {menuItems.map(item => (
                              <div key={item.href} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                                  <div className="flex items-center gap-3">
                                     <item.icon className="h-5 w-5 text-muted-foreground" />
@@ -127,14 +169,16 @@ export default function PermissoesPage() {
                                     id={`perm-${role.name}-${item.href}`}
                                     checked={!!role.permissions[item.href]}
                                     onCheckedChange={(value) => handlePermissionChange(role.name, item.href, value)}
-                                    disabled={role.isFixed}
+                                    disabled={role.isFixed || isLoading}
                                  />
                              </div>
                          ))}
                     </CardContent>
                     {!role.isFixed && (
                         <CardFooter className="flex justify-end border-t pt-6">
-                            <Button onClick={() => handleSaveChanges(role.name)}>Salvar Permissões</Button>
+                            <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading}>
+                                {isLoading ? 'Salvando...' : 'Salvar Permissões'}
+                            </Button>
                         </CardFooter>
                     )}
                 </Card>
