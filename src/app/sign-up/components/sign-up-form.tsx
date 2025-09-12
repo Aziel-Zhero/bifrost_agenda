@@ -34,6 +34,12 @@ export default function SignUpForm() {
                 const sessionUser = session?.user;
                 setUser(sessionUser || null);
 
+                // If user is now logged in and password is set, redirect to dashboard
+                if (event === 'USER_UPDATED' && sessionUser) {
+                    router.push('/dashboard');
+                    return;
+                }
+
                 if (sessionUser) {
                     const { data: userProfile, error: profileError } = await supabase
                         .from('profiles')
@@ -46,9 +52,6 @@ export default function SignUpForm() {
                         setProfile(null);
                     } else {
                         setProfile(userProfile);
-                        // A simple check to see if the user is already active could be based on a field
-                        // but since we removed status, we assume if they are on this page, they need to set a password.
-                        // A better check could be implemented if needed.
                     }
                 } else {
                   setError("Convite inválido ou expirado. Por favor, solicite um novo convite.");
@@ -92,12 +95,13 @@ export default function SignUpForm() {
             return;
         }
 
+        // The onAuthStateChange listener will handle the redirect now
         toast({
             title: "Cadastro Finalizado!",
             description: "Sua senha foi definida com sucesso. Você será redirecionado.",
             className: "bg-green-100 border-green-300 text-green-800"
         });
-        router.push('/dashboard');
+        
         setIsSubmitting(false);
     };
 
@@ -146,7 +150,7 @@ export default function SignUpForm() {
                         placeholder="Confirme sua nova senha"
                     />
                      <Button variant="ghost" size="icon" type="button" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
-                      {showConfirmaramPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
