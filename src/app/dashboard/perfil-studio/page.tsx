@@ -117,7 +117,7 @@ export default function PerfilStudioPage() {
         .upsert({ ...studioProfile, id: 1 }, { onConflict: 'id' });
     
     if (error) {
-        toast({ title: "Erro ao salvar", description: "Não foi possível salvar o perfil do estúdio.", variant: "destructive" });
+        toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
     } else {
         toast({ title: "Perfil do Estúdio Salvo!", description: "As informações do seu negócio foram atualizadas." });
     }
@@ -141,7 +141,7 @@ export default function PerfilStudioPage() {
         console.error("Error saving studio hours:", error);
         toast({
             title: "Erro ao salvar!",
-            description: "Não foi possível atualizar os horários de funcionamento.",
+            description: `Não foi possível atualizar os horários de funcionamento: ${error.message}`,
             variant: "destructive"
         });
     } else {
