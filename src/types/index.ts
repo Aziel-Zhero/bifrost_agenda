@@ -69,6 +69,15 @@ export type StudioHour = {
     is_enabled: boolean;
 }
 
+export type StudioProfile = {
+    id: number; // Should only be one row with id 1
+    created_at: string;
+    studio_name: string;
+    monthly_goal: number;
+    clients_goal: number;
+    new_clients_goal: number;
+}
+
 export type RoleSettings = {
   name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
   description: string;
@@ -79,5 +88,6 @@ export type RoleSettings = {
     
 
     
+
 
 

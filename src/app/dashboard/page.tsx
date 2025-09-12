@@ -31,6 +31,7 @@ type Period = "day" | "week" | "month";
 export default function DashboardRedirectPage() {
   const [period, setPeriod] = useState<Period>("day");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [studioName, setStudioName] = useState("seu estúdio");
   const today = useMemo(() => new Date(), []);
 
   useEffect(() => {
@@ -52,7 +53,20 @@ export default function DashboardRedirectPage() {
       setAppointments(data as any[] || []);
     };
 
+    const fetchStudioName = async () => {
+        const { data, error } = await supabase
+            .from('studio_profile')
+            .select('studio_name')
+            .eq('id', 1)
+            .single();
+        
+        if (data) {
+            setStudioName(data.studio_name);
+        }
+    }
+
     fetchAppointments();
+    fetchStudioName();
   }, []);
 
   const filteredAppointments = useMemo(() => {
@@ -101,7 +115,7 @@ export default function DashboardRedirectPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Make-off do Período</h1>
+          <h1 className="text-2xl font-bold">Bem-vindo ao {studioName}</h1>
           <p className="text-muted-foreground">{getPeriodTitle()}</p>
         </div>
         <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">

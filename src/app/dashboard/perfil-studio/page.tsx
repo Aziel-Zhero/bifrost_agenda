@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { StudioHour } from "@/types";
+import type { StudioHour, StudioProfile } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
 const weekDays = [
@@ -61,12 +61,9 @@ const generateTimeOptions = () => {
 export default function PerfilStudioPage() {
   const { toast } = useToast();
   const [isEditingGoals, setIsEditingGoals] = useState(false);
-  const [studioName, setStudioName] = useState("Bifrost");
-  const [goals, setGoals] = useState({
-    monthlyGoal: "500",
-    clientsGoal: "32",
-    newClientsGoal: "25",
-  });
+  
+  const [studioProfile, setStudioProfile] = useState<Partial<StudioProfile>>({ studio_name: "Bifrost" });
+  
   const [isConfirmOpen, setConfirmOpen] = useState(false);
   const [isExportOpen, setExportOpen] = useState(false);
 
@@ -82,20 +79,50 @@ export default function PerfilStudioPage() {
   const timeOptions = generateTimeOptions();
 
   useEffect(() => {
+    const fetchStudioProfile = async () => {
+        const { data, error } = await supabase
+            .from('studio_profile')
+            .select('*')
+            .eq('id', 1)
+            .single();
+        if (data) {
+            setStudioProfile(data);
+        } else {
+            console.log("No studio profile found, using defaults. Error:", error?.message);
+        }
+    };
+
     const fetchHours = async () => {
       const { data, error } = await supabase.from('studio_hours').select('*');
       if (error) {
-        // This is not a critical error if the table doesn't exist yet.
-        // The default state will be used.
         console.log("Could not fetch studio hours, might be first time setup:", error.message);
       } else if (data && data.length > 0) {
-        // Sort data to ensure it matches the weekDays array order
         const sortedData = data.sort((a, b) => a.day_of_week - b.day_of_week);
         setStudioHours(sortedData);
       }
     };
+    
+    fetchStudioProfile();
     fetchHours();
   }, []);
+
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setStudioProfile(prev => ({...prev, [id]: value}));
+  }
+
+  const handleSaveStudioProfile = async () => {
+    const { error } = await supabase
+        .from('studio_profile')
+        .upsert({ ...studioProfile, id: 1 }, { onConflict: 'id' });
+    
+    if (error) {
+        toast({ title: "Erro ao salvar", description: "Não foi possível salvar o perfil do estúdio.", variant: "destructive" });
+    } else {
+        toast({ title: "Perfil do Estúdio Salvo!", description: "As informações do seu negócio foram atualizadas." });
+    }
+  }
+
 
   const handleHourChange = (day: number, field: 'start_time' | 'end_time' | 'is_enabled', value: string | boolean) => {
     setStudioHours(prev => 
@@ -106,7 +133,6 @@ export default function PerfilStudioPage() {
   }
 
   const handleSaveHours = async () => {
-    // Using upsert to either insert a new row or update an existing one based on day_of_week
     const { error } = await supabase.from('studio_hours').upsert(studioHours, {
         onConflict: 'day_of_week'
     });
@@ -125,14 +151,9 @@ export default function PerfilStudioPage() {
         });
     }
   }
-
-  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setGoals(prev => ({...prev, [id]: value}));
-  }
   
   const handleSaveGoals = () => {
-    // This function will be called after all confirmations
+    handleSaveStudioProfile(); // Save goals along with other profile data
     setIsEditingGoals(false);
     toast({
       title: "Sucesso!",
@@ -143,9 +164,8 @@ export default function PerfilStudioPage() {
 
   const handleExportAndSave = () => {
     const today = format(new Date(), 'ddMMyyyy');
-    const filename = `${studioName.replace(/\s/g, '')}_${today}.csv`;
+    const filename = `${studioProfile.studio_name?.replace(/\s/g, '') || 'Studio'}_${today}.csv`;
     
-    // Mocked dashboard data for export
     const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     const monthlyData = months.slice(0, new Date().getMonth() + 1).map(month => ({
         month,
@@ -214,10 +234,13 @@ export default function PerfilStudioPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="studioName">Nome do Studio</Label>
-                <Input id="studioName" placeholder="Ex: Studio de Beleza da Ana" value={studioName} onChange={e => setStudioName(e.target.value)} />
+                <Label htmlFor="studio_name">Nome do Studio</Label>
+                <Input id="studio_name" placeholder="Ex: Studio de Beleza da Ana" value={studioProfile.studio_name || ''} onChange={handleProfileChange} />
               </div>
             </CardContent>
+            <CardFooter className="flex justify-end">
+                <Button onClick={handleSaveStudioProfile}>Salvar Nome</Button>
+            </CardFooter>
           </Card>
           
            <Card>
@@ -265,16 +288,16 @@ export default function PerfilStudioPage() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="monthlyGoal">Meta de Ganhos (R$)</Label>
-                    <Input id="monthlyGoal" type="number" value={goals.monthlyGoal} onChange={handleGoalChange} disabled={!isEditingGoals} />
+                    <Label htmlFor="monthly_goal">Meta de Ganhos (R$)</Label>
+                    <Input id="monthly_goal" type="number" value={studioProfile.monthly_goal || ''} onChange={handleProfileChange} disabled={!isEditingGoals} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="clientsGoal">Meta de Clientes Atendidos</Label>
-                    <Input id="clientsGoal" type="number" value={goals.clientsGoal} onChange={handleGoalChange} disabled={!isEditingGoals} />
+                    <Label htmlFor="clients_goal">Meta de Clientes Atendidos</Label>
+                    <Input id="clients_goal" type="number" value={studioProfile.clients_goal || ''} onChange={handleProfileChange} disabled={!isEditingGoals} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="newClientsGoal">Meta de Novos Clientes</Label>
-                    <Input id="newClientsGoal" type="number" value={goals.newClientsGoal} onChange={handleGoalChange} disabled={!isEditingGoals} />
+                    <Label htmlFor="new_clients_goal">Meta de Novos Clientes</Label>
+                    <Input id="new_clients_goal" type="number" value={studioProfile.new_clients_goal || ''} onChange={handleProfileChange} disabled={!isEditingGoals} />
                 </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
