@@ -160,14 +160,9 @@ export default function UsuariosPage() {
         const errorMessage = error.message;
         console.error("Error inviting user:", errorMessage);
         
-        let toastDescription = "Ocorreu um erro inesperado. Tente novamente.";
-        if (errorMessage.includes("User already registered")) {
-            toastDescription = "Este e-mail já está em uso ou foi convidado. Por favor, utilize outro endereço.";
-        }
-
         toast({
             title: "Erro ao convidar usuário",
-            description: toastDescription,
+            description: errorMessage,
             variant: "destructive",
         });
     } else {
@@ -216,8 +211,8 @@ export default function UsuariosPage() {
               Adicione, edite e defina permissões para sua equipe.
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button variant="outline" onClick={() => router.push('/sign-up')}>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+            <Button variant="outline" onClick={() => router.push('/sign-up')} className="w-full sm:w-auto">
                 Testar Tela de Senha
             </Button>
             <Dialog open={isAddFormOpen} onOpenChange={setAddFormOpen}>

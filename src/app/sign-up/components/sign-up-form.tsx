@@ -10,16 +10,15 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import type { UserProfile } from "@/types";
 
 export default function SignUpForm() {
     const router = useRouter();
     const { toast } = useToast();
 
-    const [invitedUser, setInvitedUser] = useState<User | null>(null);
-    const [isVerified, setIsVerified] = useState(false);
-
-    const [nameInput, setNameInput] = useState('');
-    const [emailInput, setEmailInput] = useState('');
+    const [user, setUser] = useState<User | null>(null);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,53 +27,44 @@ export default function SignUpForm() {
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [verificationError, setVerificationError] = useState('');
 
      useEffect(() => {
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                setInvitedUser(session.user);
-            }
-        };
-
-        checkSession();
-
         const { data: authListener } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                if (session?.user && (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "INITIAL_SESSION")) {
-                    setInvitedUser(session.user);
+                const sessionUser = session?.user;
+                setUser(sessionUser || null);
+
+                if (sessionUser) {
+                    // Fetch the user's profile to check their status
+                    const { data: userProfile, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', sessionUser.id)
+                        .single();
+                    
+                    if (profileError) {
+                        setError("Não foi possível encontrar um perfil válido para este convite.");
+                        setProfile(null);
+                    } else {
+                        setProfile(userProfile);
+                        // If user is already active, they shouldn't be on this page
+                        if (userProfile.status === 'active') {
+                            setError("Sua conta já está ativa. Você pode fazer login.");
+                            setTimeout(() => router.push('/'), 3000);
+                        }
+                    }
+                } else {
+                  setError("Convite inválido ou expirado. Por favor, solicite um novo convite.");
                 }
+                setIsLoading(false);
             }
         );
 
         return () => {
             authListener.subscription.unsubscribe();
         };
-    }, []);
+    }, [router]);
 
-
-    const handleVerification = () => {
-        setVerificationError('');
-        if (!invitedUser) {
-            setVerificationError("Convite inválido ou expirado. Por favor, tente abrir o link do e-mail novamente.");
-            return;
-        }
-
-        // Normalize inputs for comparison
-        const isEmailMatch = emailInput.trim().toLowerCase() === invitedUser.email?.toLowerCase();
-        const isNameMatch = nameInput.trim().toLowerCase() === invitedUser.user_metadata.full_name?.toLowerCase();
-        
-        if (isEmailMatch && isNameMatch) {
-            setIsVerified(true);
-            toast({
-                title: "Usuário verificado!",
-                description: "Agora você pode definir sua senha.",
-            })
-        } else {
-            setVerificationError("O nome ou e-mail não corresponde ao convite. Verifique os dados e tente novamente.");
-        }
-    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,6 +82,7 @@ export default function SignUpForm() {
 
         setIsSubmitting(true);
 
+        // 1. Update the user's password
         const { error: updateError } = await supabase.auth.updateUser({ password });
 
         if (updateError) {
@@ -101,93 +92,87 @@ export default function SignUpForm() {
                 description: updateError.message,
                 variant: "destructive",
             });
-        } else {
-            toast({
-                title: "Cadastro Finalizado!",
-                description: "Sua senha foi definida com sucesso. Você será redirecionado.",
-                className: "bg-green-100 border-green-300 text-green-800"
-            });
-            router.push('/dashboard');
+            setIsSubmitting(false);
+            return;
         }
 
+        // 2. Update the profile status from 'pending' to 'active'
+        if (user) {
+            const { error: profileUpdateError } = await supabase
+                .from('profiles')
+                .update({ status: 'active' })
+                .eq('id', user.id);
+            
+            if (profileUpdateError) {
+                 setError("Sua senha foi definida, mas houve um erro ao ativar seu perfil. Contate o suporte.");
+                 toast({ title: "Erro ao ativar perfil", description: profileUpdateError.message, variant: "destructive" });
+                 setIsSubmitting(false);
+                 return;
+            }
+        }
+
+        // 3. Success
+        toast({
+            title: "Cadastro Finalizado!",
+            description: "Sua senha foi definida com sucesso. Você será redirecionado.",
+            className: "bg-green-100 border-green-300 text-green-800"
+        });
+        router.push('/dashboard');
         setIsSubmitting(false);
     };
 
+    if (isLoading) {
+        return <div className="text-center text-muted-foreground">Verificando convite...</div>
+    }
+
+    if (error) {
+        return <p className="text-sm text-center text-destructive">{error}</p>
+    }
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {!isVerified ? (
-                 <>
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Nome</Label>
-                        <Input 
-                            id="name" 
-                            value={nameInput} 
-                            onChange={e => setNameInput(e.target.value)}
-                            placeholder="Seu nome completo"
-                            required
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input 
-                            id="email" 
-                            type="email"
-                            value={emailInput}
-                            onChange={e => setEmailInput(e.target.value)}
-                            placeholder="seu@email.com"
-                            required
-                        />
-                    </div>
-                    {verificationError && <p className="text-sm text-destructive">{verificationError}</p>}
-                    <Button type="button" className="w-full" onClick={handleVerification} disabled={!nameInput || !emailInput}>
-                       Verificar Identidade
+             <>
+                <div className="space-y-2">
+                    <Label htmlFor="verified-name">Nome</Label>
+                    <Input id="verified-name" value={profile?.name || ''} disabled />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="verified-email">Email</Label>
+                    <Input id="verified-email" type="email" value={profile?.email || ''} disabled />
+                </div>
+                <div className="space-y-2 relative">
+                    <Label htmlFor="password">Senha</Label>
+                    <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="Crie sua senha"
+                        autoFocus
+                    />
+                     <Button variant="ghost" size="icon" type="button" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowPassword(prev => !prev)}>
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
-                 </>
-            ) : (
-                <>
-                    <div className="space-y-2">
-                        <Label htmlFor="verified-name">Nome</Label>
-                        <Input id="verified-name" value={invitedUser?.user_metadata.full_name || ''} disabled />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="verified-email">Email</Label>
-                        <Input id="verified-email" type="email" value={invitedUser?.email || ''} disabled />
-                    </div>
-                    <div className="space-y-2 relative">
-                        <Label htmlFor="password">Senha</Label>
-                        <Input
-                            id="password"
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            placeholder="Crie sua senha"
-                            autoFocus
-                        />
-                         <Button variant="ghost" size="icon" type="button" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowPassword(prev => !prev)}>
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                    </div>
-                    <div className="space-y-2 relative">
-                        <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                        <Input
-                            id="confirmPassword"
-                            type={showConfirmPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                            placeholder="Confirme sua nova senha"
-                        />
-                         <Button variant="ghost" size="icon" type="button" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                    </div>
-                    {error && <p className="text-sm text-destructive">{error}</p>}
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                        {isSubmitting ? 'Salvando...' : 'Finalizar Cadastro'}
+                </div>
+                <div className="space-y-2 relative">
+                    <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                    <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        placeholder="Confirme sua nova senha"
+                    />
+                     <Button variant="ghost" size="icon" type="button" className="absolute bottom-1 right-1 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
-                </>
-            )}
+                </div>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? 'Salvando...' : 'Finalizar Cadastro'}
+                </Button>
+            </>
         </form>
     );
 }
