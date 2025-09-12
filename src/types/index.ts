@@ -47,7 +47,8 @@ export type UserProfile = {
     role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
     permissions: {
       [key: string]: boolean; // key is the route href
-    }
+    },
+    last_sign_in_at?: string;
 }
 
 export type AuditLog = {
@@ -87,6 +88,7 @@ export type RoleSettings = {
     
 
     
+
 
 
 

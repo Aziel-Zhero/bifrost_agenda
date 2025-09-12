@@ -2,7 +2,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, User, Shield } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, User, Shield, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,10 +28,11 @@ type ColumnsProps = {
   onEditPermissions: (user: UserProfile) => void;
   onEditRole: (user: UserProfile) => void;
   onDelete: (user: UserProfile) => void;
+  onReinvite: (user: UserProfile) => void;
 };
 
 
-export const columns = ({ onEditPermissions, onEditRole, onDelete }: ColumnsProps): ColumnDef<UserProfile>[] => [
+export const columns = ({ onEditPermissions, onEditRole, onDelete, onReinvite }: ColumnsProps): ColumnDef<UserProfile>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -71,9 +72,23 @@ export const columns = ({ onEditPermissions, onEditRole, onDelete }: ColumnsProp
     }
   },
   {
+    accessorKey: 'last_sign_in_at',
+    header: 'Status',
+    cell: ({ row }) => {
+      const lastSignIn = row.original.last_sign_in_at;
+      return lastSignIn ? (
+        <Badge variant="secondary">Ativo</Badge>
+      ) : (
+        <Badge variant="outline" className="text-amber-600 border-amber-500">Pendente</Badge>
+      );
+    },
+  },
+  {
     id: "actions",
     cell: ({ row }) => {
       const user = row.original;
+      const isPending = !user.last_sign_in_at;
+
       return (
         <div className="text-right">
           <DropdownMenu>
@@ -85,6 +100,12 @@ export const columns = ({ onEditPermissions, onEditRole, onDelete }: ColumnsProp
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
+              {isPending && (
+                <DropdownMenuItem onClick={() => onReinvite(user)}>
+                    <Send className="mr-2 h-4 w-4"/>
+                    Reenviar Convite
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => onEditRole(user)}>
                 Alterar Tipo de Acesso
               </DropdownMenuItem>
@@ -102,5 +123,3 @@ export const columns = ({ onEditPermissions, onEditRole, onDelete }: ColumnsProp
     },
   },
 ];
-
-    

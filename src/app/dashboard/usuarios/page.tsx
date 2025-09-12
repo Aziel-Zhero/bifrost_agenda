@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PlusCircle, ShieldCheck } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -44,7 +44,7 @@ import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { deleteUser, inviteUser } from "./actions";
+import { deleteUser, inviteUser, reinviteUser } from "./actions";
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -64,13 +64,38 @@ export default function UsuariosPage() {
 
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from('profiles').select('*');
-    if (error) {
-      console.error('Error fetching users:', error);
-    } else if (data) {
-      const usersWithPermissions = data.map(u => ({...u, permissions: u.permissions || {}}))
-      setUsers(usersWithPermissions);
+    // We need admin rights to get user list with metadata
+    // This should be an RPC call for security
+    const { data: authUsers, error: authError } = await supabase.rpc('get_all_users');
+    if (authError) {
+      console.error('Error fetching auth users:', authError);
+      toast({ title: 'Erro ao buscar usuários', description: 'Não foi possível carregar a lista de usuários do sistema.', variant: 'destructive'});
+      return;
     }
+
+    const { data: profiles, error: profileError } = await supabase.from('profiles').select('*');
+    if (profileError) {
+      console.error('Error fetching profiles:', profileError);
+      toast({ title: 'Erro ao buscar perfis', description: 'Não foi possível carregar os perfis dos usuários.', variant: 'destructive'});
+      return;
+    }
+
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+    const combinedUsers: UserProfile[] = authUsers.map((authUser: any) => {
+      const profile = profileMap.get(authUser.id);
+      return {
+        id: authUser.id,
+        name: profile?.name || authUser.raw_user_meta_data?.full_name || 'Nome não definido',
+        email: authUser.email || 'Email não encontrado',
+        role: profile?.role || 'Asgard',
+        avatar: profile?.avatar,
+        permissions: profile?.permissions || {},
+        last_sign_in_at: authUser.last_sign_in_at,
+      };
+    });
+
+    setUsers(combinedUsers);
   };
 
   useEffect(() => {
@@ -166,7 +191,7 @@ export default function UsuariosPage() {
             variant: "destructive",
         });
     } else {
-      await fetchUsers(); // Re-fetch users to see pending invite if applicable
+      await fetchUsers(); // Re-fetch users to see pending invite
       toast({
         title: "Convite Enviado!",
         description: `Um e-mail de convite foi enviado para ${newUserEmail}.`,
@@ -174,6 +199,29 @@ export default function UsuariosPage() {
       setNewUserName('');
       setNewUserEmail('');
       setAddFormOpen(false);
+    }
+  };
+
+  const handleReinvite = async (user: UserProfile) => {
+    toast({
+      title: "Reenviando convite...",
+      description: `Enviando um novo convite para ${user.email}.`
+    });
+
+    const { error } = await reinviteUser(user.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao reenviar",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Convite Reenviado!",
+        description: `Um novo convite foi enviado para ${user.email}.`,
+        className: 'bg-green-100 border-green-300'
+      });
     }
   };
 
@@ -212,8 +260,8 @@ export default function UsuariosPage() {
             </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-            <Button variant="outline" onClick={() => router.push('/sign-up')} className="w-full sm:w-auto">
-                Testar Tela de Senha
+            <Button variant="outline" onClick={() => router.push('/dashboard/permissoes')} className="w-full sm:w-auto">
+                Gerenciar Papéis
             </Button>
             <Dialog open={isAddFormOpen} onOpenChange={setAddFormOpen}>
               <DialogTrigger asChild>
@@ -250,7 +298,7 @@ export default function UsuariosPage() {
 
         <Card>
           <CardContent className="pt-6">
-            <DataTable columns={columns({ onEditPermissions: handleEditPermissions, onEditRole: handleEditRole, onDelete: handleDeleteClick })} data={users} />
+            <DataTable columns={columns({ onEditPermissions, onEditRole, onDelete, onReinvite })} data={users} />
           </CardContent>
         </Card>
       </div>
