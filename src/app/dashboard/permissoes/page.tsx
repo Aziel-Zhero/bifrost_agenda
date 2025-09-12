@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Combine, User, Users, Globe, BookText, Contact, ClipboardList, ShieldCheck, Building, LayoutDashboard, CalendarDays, Home } from "lucide-react";
-import type { RoleSettings, UserProfile } from "@/types";
+import { Shield, Combine, User, Users } from "lucide-react";
+import type { RoleSettings } from "@/types";
 import { menuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
 import { updatePermissionsByRole } from "../usuarios/actions";
@@ -88,25 +88,26 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
-                    const userWithRole = users.find(u => u.role === role.name);
+                    // Find a user with this role that has a non-empty permissions object
+                    const userWithRole = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
                     
-                    if (userWithRole && userWithRole.permissions && Object.keys(userWithRole.permissions).length > 0) {
-                        const currentPermissions = { ...userWithRole.permissions };
+                    if (userWithRole) {
+                        const completePermissions: { [key: string]: boolean } = {};
                         
                         // Ensure all menu items have a permission entry
                         menuItems.forEach(item => {
-                            if (typeof currentPermissions[item.href] === 'undefined') {
-                                // For Asgard, default to false if undefined, for others, respect their logic
-                                if (role.name === 'Asgard') {
-                                     currentPermissions[item.href] = initialRoles.find(r => r.name === 'Asgard')?.permissions[item.href] || false;
-                                } else {
-                                     currentPermissions[item.href] = role.isFixed; // true for Bifrost/Heimdall
-                                }
+                            // If permission exists in DB, use it. Otherwise, use initial default for that role.
+                            if (typeof userWithRole.permissions[item.href] !== 'undefined') {
+                                completePermissions[item.href] = userWithRole.permissions[item.href];
+                            } else {
+                                const initialRole = initialRoles.find(r => r.name === role.name);
+                                completePermissions[item.href] = initialRole?.permissions[item.href] ?? false;
                             }
                         });
 
-                        return { ...role, permissions: currentPermissions };
+                        return { ...role, permissions: completePermissions };
                     }
+                    // If no user has permissions set for this role, return the initial default role settings
                     return role;
                 });
                 setRoles(updatedRoles);
@@ -141,7 +142,7 @@ export default function PermissoesPage() {
         } else {
              toast({
                 title: "Permissões Salvas!",
-                description: `As permissões para o papel ${roleName} foram atualizadas com sucesso.`,
+                description: `As permissões para o papel ${roleName} foram atualizadas com sucesso. Os usuários precisarão recarregar a página para ver as mudanças.`,
                 className: "bg-green-100 border-green-300 text-green-800"
             });
         }
@@ -204,5 +205,3 @@ export default function PermissoesPage() {
     </div>
   );
 }
-
-    
