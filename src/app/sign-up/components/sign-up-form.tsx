@@ -37,6 +37,7 @@ export default function SignUpForm() {
             async (event, session) => {
                  // The 'USER_UPDATED' event is often triggered after the initial session is set from the invite link.
                  // 'SIGNED_IN' can also be relevant. We listen for when a user object becomes available.
+                 // 'INITIAL_SESSION' is also important for when the component loads.
                 if (session?.user && (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "INITIAL_SESSION")) {
                     // We found the authenticated user from the invite link. Store it.
                     setInvitedUser(session.user);
