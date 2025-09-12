@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Combine, User, Users } from "lucide-react";
+import { Shield, Combine, User, Users, Globe, BookText, Contact, ClipboardList, ShieldCheck, Building, LayoutDashboard, CalendarDays, Home } from "lucide-react";
 import type { RoleSettings, UserProfile } from "@/types";
 import { menuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +50,8 @@ const initialRoles: RoleSettings[] = [
         '/dashboard/logs': false,
         '/dashboard/perfil': true,
         '/dashboard/perfil-studio': false,
+        '/dashboard/clientes': false,
+        '/dashboard/permissoes': false,
     },
     isFixed: false,
   },
@@ -85,11 +87,25 @@ export default function PermissoesPage() {
             }
 
             if (users) {
-                const updatedRoles = initialRoles.map(role => {
-                    // Find the first user with this role to use as the source of truth for permissions
+                const updatedRoles = [...initialRoles].map(role => {
                     const userWithRole = users.find(u => u.role === role.name);
+                    
                     if (userWithRole && userWithRole.permissions && Object.keys(userWithRole.permissions).length > 0) {
-                        return { ...role, permissions: userWithRole.permissions };
+                        const currentPermissions = { ...userWithRole.permissions };
+                        
+                        // Ensure all menu items have a permission entry
+                        menuItems.forEach(item => {
+                            if (typeof currentPermissions[item.href] === 'undefined') {
+                                // For Asgard, default to false if undefined, for others, respect their logic
+                                if (role.name === 'Asgard') {
+                                     currentPermissions[item.href] = initialRoles.find(r => r.name === 'Asgard')?.permissions[item.href] || false;
+                                } else {
+                                     currentPermissions[item.href] = role.isFixed; // true for Bifrost/Heimdall
+                                }
+                            }
+                        });
+
+                        return { ...role, permissions: currentPermissions };
                     }
                     return role;
                 });
@@ -188,3 +204,5 @@ export default function PermissoesPage() {
     </div>
   );
 }
+
+    
