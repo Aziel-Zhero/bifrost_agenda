@@ -17,11 +17,16 @@ export async function inviteUser({ email, name }: { email: string, name: string 
     auth: { autoRefreshToken: false, persistSession: false }
   });
 
+  // Use the full production URL to ensure the redirect works correctly from the email.
+  const redirectTo = process.env.NODE_ENV === 'production' 
+    ? 'https://bifrost-agenda.netlify.app/sign-up' 
+    : 'http://localhost:9003/sign-up';
+
   const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     data: {
       full_name: name,
     },
-    redirectTo: '/sign-up',
+    redirectTo: redirectTo,
   });
 
   if (inviteError) {
@@ -37,17 +42,17 @@ export async function inviteUser({ email, name }: { email: string, name: string 
     // Pre-create the profile with a 'pending' status
      const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert({
+      .upsert({
         id: inviteData.user.id,
         name: name,
         email: email,
         role: 'Asgard', // Default role
         status: 'pending', // Mark as pending
         permissions: {},
-      });
+      }, { onConflict: 'id' });
     
     if (profileError) {
-        console.error("Error creating profile for invited user:", profileError);
+        console.error("Error creating/updating profile for invited user:", profileError);
         // We might need to handle this, e.g., by deleting the invited user if profile creation fails.
         // For now, we log the error.
         return { data: null, error: { message: "O convite foi enviado, mas houve um erro ao criar o perfil do usuário." } };
