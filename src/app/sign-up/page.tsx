@@ -21,7 +21,7 @@ export default function SignUpPage() {
                     <CardTitle className="pt-4 text-2xl font-bold">
                         Bifrost Central
                     </CardTitle>
-                    <CardDescription>Finalize seu cadastro definindo uma senha.</CardDescription>
+                    <CardDescription>Verifique sua identidade e defina sua senha de acesso.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SignUpForm />
