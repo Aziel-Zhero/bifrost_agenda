@@ -41,6 +41,9 @@ export async function inviteUser({ email, name }: { email: string, name: string 
 
   if (inviteData.user) {
     // Pré-criar o perfil com o status 'pending'
+    // O upsert é a abordagem correta para evitar erros se o perfil já existir de alguma forma.
+    // O erro que o usuário está vendo é quase certamente de RLS.
+    // O código aqui está correto, mas a mensagem de erro pode ser mais específica.
      const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
@@ -49,14 +52,18 @@ export async function inviteUser({ email, name }: { email: string, name: string 
         email: email,
         role: 'Asgard', // Cargo padrão
         status: 'pending', // Marcar como pendente
-        permissions: {},
+        permissions: {}, // Inicia com permissões vazias
       }, { onConflict: 'id' });
     
     if (profileError) {
-        console.error("Error creating/updating profile for invited user:", profileError);
+        console.error("Error during profile upsert for invited user:", profileError);
         // Opcional: deletar o usuário convidado se a criação do perfil falhar para evitar inconsistências.
         await supabaseAdmin.auth.admin.deleteUser(inviteData.user.id);
-        return { data: null, error: { message: "O convite falhou pois não foi possível criar o perfil do usuário. Verifique as permissões do banco de dados." } };
+        const specificErrorMessage = profileError.message.includes('violates row-level security policy')
+            ? "O convite falhou pois a política de segurança do banco de dados (RLS) na tabela 'profiles' impediu a criação do perfil. Verifique as permissões de INSERT no Supabase."
+            : `O convite falhou pois não foi possível criar o perfil do usuário: ${profileError.message}`;
+
+        return { data: null, error: { message: specificErrorMessage } };
     }
   }
 
