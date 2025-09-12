@@ -34,12 +34,6 @@ export default function SignUpForm() {
                 const sessionUser = session?.user;
                 setUser(sessionUser || null);
 
-                // If user is now logged in and password is set, redirect to dashboard
-                if (event === 'USER_UPDATED' && sessionUser) {
-                    router.push('/dashboard');
-                    return;
-                }
-
                 if (sessionUser) {
                     const { data: userProfile, error: profileError } = await supabase
                         .from('profiles')
@@ -95,14 +89,14 @@ export default function SignUpForm() {
             return;
         }
 
-        // The onAuthStateChange listener will handle the redirect now
         toast({
             title: "Cadastro Finalizado!",
             description: "Sua senha foi definida com sucesso. Você será redirecionado.",
             className: "bg-green-100 border-green-300 text-green-800"
         });
         
-        setIsSubmitting(false);
+        // Explicitly redirect to dashboard on success
+        router.push('/dashboard');
     };
 
     if (isLoading) {
