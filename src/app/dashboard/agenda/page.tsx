@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlusCircle, User } from "lucide-react";
+import { PlusCircle, User, MoreHorizontal, Check, X, Calendar as CalendarIconLucide } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -12,6 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -146,6 +152,29 @@ export default function AgendaPage() {
     }
   };
 
+  const handleStatusChange = async (appointmentId: string, newStatus: AppointmentStatus) => {
+    const { data, error } = await supabase
+      .from('appointments')
+      .update({ status: newStatus })
+      .eq('id', appointmentId)
+      .select(`*, clients (name), services (name)`)
+      .single();
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: `Não foi possível alterar o status: ${error.message}`,
+        variant: "destructive",
+      });
+    } else if (data) {
+      setAppointments(prev => prev.map(appt => appt.id === appointmentId ? (data as any) : appt));
+      toast({
+        title: "Status Atualizado!",
+        description: `O agendamento foi marcado como "${newStatus}".`,
+      });
+    }
+  };
+
 
   return (
     <>
@@ -181,6 +210,7 @@ export default function AgendaPage() {
               classNames={{
                 day_selected:
                   "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
+                day_today: "bg-accent text-accent-foreground rounded-full",
               }}
             />
           </CardContent>
@@ -211,9 +241,33 @@ export default function AgendaPage() {
                         <p className="text-sm text-muted-foreground">{parseISO(appt.date_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {appt.services?.name}</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={cn('border-none text-xs', statusVariant[appt.status])}>
-                      {appt.status}
-                    </Badge>
+                     <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={cn('border-none text-xs', statusVariant[appt.status])}>
+                          {appt.status}
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Abrir menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleStatusChange(appt.id, 'Realizado')}>
+                              <Check className="mr-2 h-4 w-4" />
+                              Marcar como Realizado
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(appt.id, 'Cancelado')} className="text-destructive">
+                              <X className="mr-2 h-4 w-4" />
+                              Marcar como Cancelado
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleStatusChange(appt.id, 'Agendado')}>
+                              <CalendarIconLucide className="mr-2 h-4 w-4" />
+                              Reverter para Agendado
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -229,3 +283,4 @@ export default function AgendaPage() {
     </>
   );
 }
+
