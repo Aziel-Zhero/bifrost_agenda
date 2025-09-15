@@ -47,28 +47,32 @@ export default function AgendaPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
-        const { data: profile, error } = await supabase.from('profiles').select('name').eq('id', user.id).single();
-        if (error && error.code !== 'PGRST116') {
-            console.error("Error fetching user name", error);
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error("Error fetching user name", profileError);
         } else {
             setCurrentUserName(profile?.name || user.email || 'Admin');
         }
+        
+        // Fetch Appointments only for the current user
+        const { data: apptData, error: apptError } = await supabase
+            .from('appointments')
+            .select(`
+                *,
+                clients ( name ),
+                services ( name )
+            `)
+            .eq('admin_id', user.id);
+
+        if (apptError) {
+            console.error("Error fetching appointments", apptError);
+        } else {
+            setAppointments(apptData as any[]);
+        }
+
       }
 
-
-      // Fetch Appointments
-      const { data: apptData, error: apptError } = await supabase.from('appointments').select(`
-        *,
-        clients ( name ),
-        services ( name )
-      `);
-      if (apptError) {
-        console.error("Error fetching appointments", apptError);
-      } else {
-        setAppointments(apptData as any[]);
-      }
-
-       // Fetch Clients
+       // Fetch Clients only for the current user (or all if admin - adjust if needed)
       const { data: clientData, error: clientError } = await supabase.from('clients').select('*');
       if (clientError) console.error("Error fetching clients", clientError);
       else setClients(clientData || []);
@@ -222,3 +226,5 @@ export default function AgendaPage() {
     </>
   );
 }
+
+    
