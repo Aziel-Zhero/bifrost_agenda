@@ -49,9 +49,6 @@ export function Logo({ isHeader = false }: LogoProps) {
         <path d="M11 26C11 24.3431 12.3431 23 14 23H18C19.6569 23 21 24.3431 21 26V27H11V26Z" fill="url(#grad2)"/>
         </g>
       </svg>
-      <span className={cn("text-xl font-semibold tracking-tight", isHeader ? "text-white" : "text-foreground")}>
-        Agenda
-      </span>
     </div>
   );
 }
