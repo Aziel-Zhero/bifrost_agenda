@@ -35,43 +35,44 @@ export default function DashboardRedirectPage() {
   const today = useMemo(() => new Date(), []);
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      const { data, error } = await supabase.from("appointments").select(`
-          id,
-          date_time,
-          notes,
-          status,
-          clients ( name ),
-          services ( name )
-        `);
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Fetch profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileData && profileData.name) {
+          setUserName(profileData.name);
+        } else if (profileError && profileError.code !== 'PGRST116') {
+          console.log("Could not fetch user name, using default. Error: ", profileError.message);
+        }
 
-      if (error) {
-        console.error("Error fetching appointments:", error);
-        return;
+        // Fetch appointments for the current user
+        const { data: appointmentData, error: appointmentError } = await supabase
+          .from("appointments")
+          .select(`
+            id,
+            date_time,
+            notes,
+            status,
+            clients ( name ),
+            services ( name )
+          `)
+          .eq('admin_id', user.id);
+
+        if (appointmentError) {
+          console.error("Error fetching appointments:", appointmentError);
+          return;
+        }
+        setAppointments(appointmentData as any[] || []);
       }
-
-      setAppointments(data as any[] || []);
     };
 
-    const fetchUserProfile = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('name')
-                .eq('id', user.id)
-                .single();
-            
-            if (data && data.name) {
-                setUserName(data.name);
-            } else if (error && error.code !== 'PGRST116') {
-                console.log("Could not fetch user name, using default. Error: ", error.message)
-            }
-        }
-    }
-
-    fetchAppointments();
-    fetchUserProfile();
+    fetchUserData();
   }, []);
 
   const filteredAppointments = useMemo(() => {
