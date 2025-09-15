@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Sistema central de agendamentos',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#3498DB' },
-    { media: '(prefers-color-scheme: dark)', color: '#111827' },
+    { media: '(prefers-color-scheme: dark)', color: '#1e293b' },
   ],
 };
 
@@ -22,7 +22,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+        <link rel="icon" href="/logo_calendario.png" type="image/png" />
       </head>
       <body className="font-body antialiased">
         {children}
