@@ -36,6 +36,7 @@ type FormData = {
   clientType: 'new' | 'existing';
   newClientName: string;
   newClientWhatsapp: string;
+  newClientTelegram: string;
   existingClientId: string;
   serviceId: string;
   date: Date | undefined;
@@ -58,6 +59,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
     date: new Date(),
     newClientName: '',
     newClientWhatsapp: '',
+    newClientTelegram: '',
     existingClientId: '',
     serviceId: '',
     time: '',
@@ -89,7 +91,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
   
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      setCurrentStep(currentStep + 1);
     }
   };
 
@@ -139,6 +141,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
             .insert({ 
                 name: formData.newClientName, 
                 whatsapp: whatsappOnlyNumbers,
+                telegram: formData.newClientTelegram || null,
                 admin: currentUserName, // Associate client with the current user
             })
             .select()
@@ -179,7 +182,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
       <h3 className="text-xl font-medium text-center">
         {currentStepInfo.name}
       </h3>
-      <div className="overflow-hidden relative h-[350px] sm:h-80">
+      <div className="overflow-hidden relative h-[380px] sm:h-[350px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -203,6 +206,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
                         clientType: value, 
                         newClientName: '',
                         newClientWhatsapp: '',
+                        newClientTelegram: '',
                         existingClientId: '',
                       }));
                   }}
@@ -241,6 +245,18 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
                         onChange={e => handleFieldChange('newClientWhatsapp', e.target.value)} 
                         maxLength={15}
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newClientTelegram">Chat ID do Telegram (Opcional)</Label>
+                      <Input 
+                        id="newClientTelegram" 
+                        placeholder="ID numérico do chat" 
+                        value={formData.newClientTelegram} 
+                        onChange={e => handleFieldChange('newClientTelegram', e.target.value)} 
+                      />
+                       <p className="text-xs text-muted-foreground pt-1">
+                            Use o bot <code className="font-mono p-1 bg-muted rounded-sm">@userinfobot</code> no Telegram para obter o ID.
+                        </p>
                     </div>
                   </>
                 ) : (
