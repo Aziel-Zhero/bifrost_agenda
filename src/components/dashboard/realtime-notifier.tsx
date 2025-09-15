@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Bell } from "lucide-react";
 import type { Appointment } from "@/types";
-import { notifyOnNewAppointment } from "@/app/actions";
 
 
 export default function RealtimeNotifier() {
@@ -30,18 +29,13 @@ export default function RealtimeNotifier() {
             table: "appointments" 
         },
         (payload) => {
-          const newAppointment = payload.new as Appointment;
+          // A notificação para Telegram agora é chamada diretamente na criação do agendamento.
+          // Este componente foca apenas em notificar o usuário na tela (UI).
           
-          // Trigger the server action to handle the notification logic securely
-          if (newAppointment?.id) {
-             // We don't await this so it doesn't block the UI toast notification
-             notifyOnNewAppointment(newAppointment.id);
-          }
-
           toast({
             title: (
               <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-accent" />
+                <Bell className="h-5 w-5 text-primary" />
                 <span className="font-semibold">Novo Agendamento!</span>
               </div>
             ),
