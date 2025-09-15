@@ -87,14 +87,10 @@ export type RoleSettings = {
   isFixed: boolean; // Indicates if permissions can be changed
 };
 
-    
-
-    
-
-
-
-
-
-
-
-    
+export type GaiaLog = {
+  id: number;
+  created_at: string;
+  message_content: string;
+  sent_to: string;
+  status: string;
+};

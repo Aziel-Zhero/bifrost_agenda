@@ -2,6 +2,7 @@
 'use server';
 
 import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { sendTelegramNotification } from "@/services/notification-service";
 
 export async function signUpUser(formData: FormData) {
@@ -16,7 +17,7 @@ export async function signUpUser(formData: FormData) {
     // The Supabase trigger will create the profile automatically.
     // To ensure the role is set, we pass it in the metadata.
     // The trigger should be configured to read `raw_user_meta_data->>'role'`
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = supabase.auth.signUp({
         email,
         password,
         options: {
@@ -46,10 +47,16 @@ export async function signUpUser(formData: FormData) {
 
 export async function notifyOnNewAppointment(appointmentId: string) {
     console.log("Server Action: Received new appointment ID:", appointmentId);
+    
+    // We need a client instance on the server to interact with the DB
+    // The client from /lib/supabase/client has the user's session, which we don't need here.
+    const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // Fetch appointment details to create a rich notification message.
-    // Note: We use the service role key here to bypass RLS if needed, assuming this action is secure.
-     const { data: appointment, error } = await supabase
+     const { data: appointment, error } = await supabaseAdmin
         .from('appointments')
         .select(`
             *,
@@ -65,34 +72,37 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         return;
     }
 
+    const logToDb = async (message: string, to: string, status: string) => {
+        await supabaseAdmin.from('gaia_logs').insert({
+            message_content: message,
+            sent_to: to,
+            status: status,
+        });
+    };
+
     if (appointment) {
         const clientName = appointment.clients?.name || 'Viajante';
         const serviceName = appointment.services?.name || 'Jornada';
         const adminName = appointment.profiles?.name || 'um guardião de Asgard';
         const dateTime = new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'});
+        const studioChatId = process.env.TELEGRAM_CHAT_ID;
 
         // Notification for the admin/studio group with a mythological tone
         const studioMessage = `🛡️ *Pelos corvos de Odin!* 🛡️\n\nUm novo destino foi traçado na Grande Agenda. A Bifrost se abre para um novo encontro.\n\n*Profissional:* ${adminName}\n*Viajante:* ${clientName}\n*Jornada:* ${serviceName}\n*Quando:* ${dateTime}\n\nQue os Deuses guiem este momento!`;
 
-        try {
-            // The TELEGRAM_CHAT_ID in .env should be for the studio's group
-            await sendTelegramNotification(studioMessage, process.env.TELEGRAM_CHAT_ID);
-            console.log("Server Action: Studio Telegram notification sent successfully.");
-        } catch (e: any) {
-            console.error("Server Action: Failed to send studio Telegram notification:", e.message);
+        if (studioChatId) {
+            const { success, message } = await sendTelegramNotification(studioMessage, studioChatId);
+            await logToDb(studioMessage, `Grupo do Studio (${studioChatId})`, success ? 'Enviado' : `Falhou: ${message}`);
+            console.log(`Server Action: Studio Telegram notification attempt. Success: ${success}`);
         }
 
         // Notification for the client, if they have a Telegram ID
         const clientTelegramId = appointment.clients?.telegram;
         if (clientTelegramId) {
              const clientMessage = `Saudações, ${clientName}! ✨\n\nSou a GAIA, e trago notícias dos reinos! Um encontro foi marcado pelos destinos e sua jornada está confirmada.\n\n*Serviço:* ${serviceName}\n*Com:* ${adminName}\n*Quando:* ${dateTime}\n\nAs estrelas aguardam ansiosamente por você!`;
-             try {
-                await sendTelegramNotification(clientMessage, clientTelegramId);
-                console.log(`Server Action: Client Telegram notification sent successfully to ID ${clientTelegramId}.`);
-            } catch (e: any)
-             {
-                console.error(`Server Action: Failed to send client Telegram notification to ID ${clientTelegramId}:`, e.message);
-            }
+            const { success, message } = await sendTelegramNotification(clientMessage, clientTelegramId);
+            await logToDb(clientMessage, `${clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
+            console.log(`Server Action: Client Telegram notification attempt to ${clientTelegramId}. Success: ${success}`);
         }
     }
 }

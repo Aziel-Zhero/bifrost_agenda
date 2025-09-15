@@ -9,8 +9,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, CheckCircle } from "lucide-react";
+import { CheckCircle, Bot } from "lucide-react";
 import { FaTelegram } from "react-icons/fa";
+import GaiaLogTable from "./components/log-table";
 
 export default function BotsPage() {
   return (
@@ -19,7 +20,7 @@ export default function BotsPage() {
         <div>
           <h1 className="text-2xl font-bold">Automações e Bots</h1>
           <p className="text-muted-foreground">
-            Monitore o status dos seus bots de notificação.
+            Monitore o status e a atividade dos seus bots de notificação.
           </p>
         </div>
       </div>
@@ -62,6 +63,18 @@ export default function BotsPage() {
              </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Monitor de Atividade da GAIA</CardTitle>
+          <CardDescription>
+            Últimas notificações enviadas pelo bot do Telegram. A lista é atualizada automaticamente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GaiaLogTable />
+        </CardContent>
+      </Card>
     </div>
   );
 }

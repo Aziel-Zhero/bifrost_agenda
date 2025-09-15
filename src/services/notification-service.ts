@@ -3,15 +3,19 @@
  * Service for sending notifications to external platforms like Telegram.
  */
 
-export async function sendTelegramNotification(message: string, chatId?: string): Promise<void> {
+interface NotificationResult {
+  success: boolean;
+  message: string;
+}
+
+export async function sendTelegramNotification(message: string, chatId?: string): Promise<NotificationResult> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID;
 
   if (!botToken || !targetChatId) {
-    console.error("As variáveis de ambiente do Telegram (TELEGRAM_BOT_TOKEN e um TELEGRAM_CHAT_ID) não estão configuradas ou não foi fornecido um ID de chat.");
-    // We don't throw an error here to prevent the main flow from crashing if notifications are not set up.
-    // Instead, we log the error and return.
-    return;
+    const errorMsg = "As variáveis de ambiente do Telegram (TELEGRAM_BOT_TOKEN e um TELEGRAM_CHAT_ID) não estão configuradas ou não foi fornecido um ID de chat.";
+    console.error(errorMsg);
+    return { success: false, message: errorMsg };
   }
 
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
@@ -34,16 +38,15 @@ export async function sendTelegramNotification(message: string, chatId?: string)
     const result = await response.json();
 
     if (!result.ok) {
-      // Log the error but don't let it crash the main application flow
       console.error('Falha ao enviar notificação para o Telegram:', result.description);
-      // We can re-throw if we want the caller to handle it, but for notifications it's often better to fail silently for non-critical notifications.
-      // For this case we won't re-throw.
+      return { success: false, message: result.description };
     } else {
       console.log(`Notificação do Telegram enviada com sucesso para o chat ID: ${targetChatId}!`);
+      return { success: true, message: 'Enviado com sucesso.' };
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro de rede ou fetch ao contatar a API do Telegram:', error);
-     // We don't re-throw here either to keep the main application running.
+    return { success: false, message: error.message || 'Erro de rede' };
   }
 }
