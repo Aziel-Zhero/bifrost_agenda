@@ -71,9 +71,13 @@ export default function AgendaPage() {
         }
 
         // Fetch Clients only for the current user (or all if admin - adjust if needed)
-        const { data: clientData, error: clientError } = await supabase.from('clients').select('*').eq('admin', profile?.name || user.email);
-        if (clientError) console.error("Error fetching clients", clientError);
-        else setClients(clientData || []);
+        const clientQueryUser = profile?.name || user.email;
+        if (clientQueryUser) {
+          const { data: clientData, error: clientError } = await supabase.from('clients').select('*').eq('admin', clientQueryUser);
+          if (clientError) console.error("Error fetching clients", clientError);
+          else setClients(clientData || []);
+        }
+
 
        // Fetch Services
        const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
@@ -176,7 +180,7 @@ export default function AgendaPage() {
               locale={ptBR}
               classNames={{
                 day_selected:
-                  "text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
+                  "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
               }}
             />
           </CardContent>
