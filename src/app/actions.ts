@@ -100,7 +100,7 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         if (clientTelegramId) {
              const clientMessage = `Saudações, ${clientName}! ✨\n\nSou a GAIA, e trago notícias dos reinos! Um encontro foi marcado pelos destinos e sua jornada está confirmada.\n\n*Serviço:* ${serviceName}\n*Com:* ${adminName}\n*Quando:* ${dateTime}\n\nAs estrelas aguardam ansiosamente por você!`;
             const { success, message } = await sendTelegramNotification(clientMessage, clientTelegramId);
-            await logToDb(clientMessage, `${clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
+            await logToDb(clientMessage, `Cliente: ${clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
             console.log(`Server Action: Client Telegram notification attempt to ${clientTelegramId}. Success: ${success}`);
         }
     }

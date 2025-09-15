@@ -13,7 +13,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,15 +39,17 @@ export default function MeusClientesPage() {
           const { data: profile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
           setCurrentUser({ ...user, name: profile?.name || user.email });
           
-          const { data, error } = await supabase
-              .from('clients')
-              .select('*')
-              .eq('admin', profile?.name || user.email);
-              
-          if (error) {
-              console.error("Error fetching clients:", error);
-          } else {
-              setMyClients(data || []);
+          if (profile?.name || user.email) {
+            const { data, error } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('admin', profile?.name || user.email);
+                
+            if (error) {
+                console.error("Error fetching clients:", error);
+            } else {
+                setMyClients(data || []);
+            }
           }
       }
     };
@@ -73,6 +75,10 @@ export default function MeusClientesPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      toast({ title: "Erro", description: "Usuário não autenticado.", variant: "destructive"});
+      return;
+    }
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const clientData = {
         name: formData.get('name') as string,
@@ -168,12 +174,15 @@ export default function MeusClientesPage() {
                 <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" value={whatsapp} onChange={handleWhatsappChange} maxLength={15} required/>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="telegram">Telegram (Opcional)</Label>
-                <Input id="telegram" name="telegram" placeholder="ID ou Telefone" defaultValue={editingClient?.telegram || ''} />
+                <Label htmlFor="telegram">Telegram Chat ID (Opcional)</Label>
+                <Input id="telegram" name="telegram" placeholder="ID numérico do chat com o bot" defaultValue={editingClient?.telegram || ''} />
+                <p className="text-xs text-muted-foreground">
+                    Peça para o cliente enviar uma mensagem ao bot e use o `@userinfobot` para obter o ID.
+                </p>
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={closeForm}>Cancelar</Button>
-                <Button type="submit" className="bg-accent hover:bg-accent/90">Salvar</Button>
+                <Button type="submit">Salvar</Button>
               </div>
             </form>
           </DialogContent>
