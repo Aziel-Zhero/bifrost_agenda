@@ -67,13 +67,13 @@ export async function notifyOnNewAppointment(appointmentId: string) {
     }
 
     if (appointment) {
-        const clientName = appointment.clients?.name || 'Cliente desconhecido';
-        const serviceName = appointment.services?.name || 'Serviço não especificado';
-        const adminName = appointment.profiles?.name || 'Admin';
+        const clientName = appointment.clients?.name || 'Viajante';
+        const serviceName = appointment.services?.name || 'Jornada';
+        const adminName = appointment.profiles?.name || 'um guardião de Asgard';
         const dateTime = new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'});
 
-        // Notification for the admin/studio group
-        const studioMessage = `🗓️ *Novo Agendamento!* 🗓️\n\n*Profissional:* ${adminName}\n*Cliente:* ${clientName}\n*Serviço:* ${serviceName}\n*Quando:* ${dateTime}\n\nUm novo cliente foi agendado na agenda geral.`;
+        // Notification for the admin/studio group with a mythological tone
+        const studioMessage = `🛡️ *Pelos corvos de Odin!* 🛡️\n\nUm novo destino foi traçado na Grande Agenda. A Bifrost se abre para um novo encontro.\n\n*Profissional:* ${adminName}\n*Viajante:* ${clientName}\n*Jornada:* ${serviceName}\n*Quando:* ${dateTime}\n\nQue os Deuses guiem este momento!`;
 
         try {
             // The TELEGRAM_CHAT_ID in .env should be for the studio's group
@@ -86,7 +86,7 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         // Notification for the client, if they have a Telegram ID
         const clientTelegramId = appointment.clients?.telegram;
         if (clientTelegramId) {
-             const clientMessage = `Olá, ${clientName}! ✨\n\nSeu agendamento foi *confirmado* com sucesso!\n\n*Serviço:* ${serviceName}\n*Profissional:* ${adminName}\n*Quando:* ${dateTime}\n\nMal podemos esperar para te ver!`;
+             const clientMessage = `Saudações, ${clientName}! ✨\n\nSou a GAIA, e trago notícias dos reinos! Um encontro foi marcado pelos destinos e sua jornada está confirmada.\n\n*Serviço:* ${serviceName}\n*Com:* ${adminName}\n*Quando:* ${dateTime}\n\nAs estrelas aguardam ansiosamente por você!`;
              try {
                 await sendTelegramNotification(clientMessage, clientTelegramId);
                 console.log(`Server Action: Client Telegram notification sent successfully to ID ${clientTelegramId}.`);
