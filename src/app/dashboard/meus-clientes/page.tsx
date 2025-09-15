@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { columns } from "./components/columns";
+import { getColumns } from "./components/columns";
 import { DataTable } from "@/app/dashboard/clientes/components/data-table";
 import { supabase } from "@/lib/supabase/client";
 import type { Client } from "@/types";
@@ -30,6 +30,7 @@ export default function MeusClientesPage() {
   const [myClients, setMyClients] = useState<Client[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [whatsapp, setWhatsapp] = useState('');
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   useEffect(() => {
     const fetchUserAndClients = async () => {
@@ -70,27 +71,68 @@ export default function MeusClientesPage() {
   };
 
 
-  const handleAddClient = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const newClient = {
+    const clientData = {
         name: formData.get('name') as string,
         whatsapp: (formData.get('whatsapp') as string).replace(/\D/g, ''),
         telegram: formData.get('telegram') as string,
         admin: currentUser.name,
     };
 
-    const { data, error } = await supabase.from('clients').insert(newClient).select().single();
+    if (editingClient) {
+        // Update logic
+        const { data, error } = await supabase.from('clients').update(clientData).eq('id', editingClient.id).select().single();
+        if (error) {
+            toast({ title: "Erro ao atualizar cliente", description: error.message, variant: "destructive" });
+        } else if (data) {
+            setMyClients(prev => prev.map(c => c.id === data.id ? data : c));
+            toast({ title: "Cliente Atualizado!", description: `${data.name} foi atualizado.`, className: "bg-green-100" });
+        }
 
+    } else {
+        // Create logic
+        const { data, error } = await supabase.from('clients').insert(clientData).select().single();
+        if (error) {
+            toast({ title: "Erro ao adicionar cliente", description: error.message, variant: "destructive" });
+        } else if (data) {
+            setMyClients(prev => [...prev, data]);
+            toast({ title: "Cliente Adicionado!", description: `${data.name} foi adicionado à sua lista.`, className: "bg-green-100" });
+        }
+    }
+    
+    closeForm();
+  };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setWhatsapp(client.whatsapp); // Mask it for display
+    setFormOpen(true);
+  };
+
+  const handleDelete = async (client: Client) => {
+    // Ideally, show a confirmation dialog first
+    const { error } = await supabase.from("clients").delete().eq("id", client.id);
     if (error) {
-        toast({ title: "Erro ao adicionar cliente", description: error.message, variant: "destructive" });
-    } else if (data) {
-        setMyClients(prev => [...prev, data]);
-        toast({ title: "Cliente Adicionado!", description: `${data.name} foi adicionado à sua lista.`, className: "bg-green-100" });
-        setFormOpen(false);
-        setWhatsapp(''); // Reset whatsapp state
+       toast({
+          title: "Erro ao excluir",
+          description: error.message,
+          variant: "destructive",
+        });
+    } else {
+        setMyClients(myClients.filter(c => c.id !== client.id));
+        toast({ title: "Cliente excluído com sucesso!" });
     }
   };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingClient(null);
+    setWhatsapp('');
+  }
+  
+  const columns = getColumns({ onEdit: handleEdit, onDelete: handleDelete });
 
 
   return (
@@ -103,37 +145,35 @@ export default function MeusClientesPage() {
           </p>
         </div>
         <Dialog open={isFormOpen} onOpenChange={isOpen => {
-          setFormOpen(isOpen);
-          if (!isOpen) {
-            setWhatsapp('');
-          }
+          if (!isOpen) closeForm();
+          else setFormOpen(true);
         }}>
           <DialogTrigger asChild>
-            <Button>
+             <Button onClick={() => { setEditingClient(null); setFormOpen(true); }}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Adicionar Cliente
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Adicionar Novo Cliente</DialogTitle>
+              <DialogTitle>{editingClient ? 'Editar' : 'Adicionar'} Cliente</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleAddClient} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input id="name" name="name" placeholder="Nome completo do cliente" required/>
+                <Input id="name" name="name" placeholder="Nome completo do cliente" defaultValue={editingClient?.name} required/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp</Label>
                 <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" value={whatsapp} onChange={handleWhatsappChange} maxLength={15} required/>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="telegram">Telegram</Label>
-                <Input id="telegram" name="telegram" placeholder="ID ou Telefone" />
+                <Label htmlFor="telegram">Telegram (Opcional)</Label>
+                <Input id="telegram" name="telegram" placeholder="ID ou Telefone" defaultValue={editingClient?.telegram || ''} />
               </div>
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setFormOpen(false)}>Cancelar</Button>
-                <Button type="submit" className="bg-accent hover:bg-accent/90">Salvar Cliente</Button>
+                <Button type="button" variant="ghost" onClick={closeForm}>Cancelar</Button>
+                <Button type="submit" className="bg-accent hover:bg-accent/90">Salvar</Button>
               </div>
             </form>
           </DialogContent>

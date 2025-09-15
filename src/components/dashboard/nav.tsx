@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   User,
   Building,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types";
@@ -29,6 +30,7 @@ export const menuItems = [
   { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Histórico", icon: BookText },
   { href: "/dashboard/logs", label: "Logs", icon: ShieldCheck },
+  { href: "/dashboard/bots", label: "Bots", icon: Bot },
   { href: "/dashboard/perfil", label: "Meu Perfil", icon: User },
   { href: "/dashboard/perfil-studio", label: "Perfil do Studio", icon: Building },
 ];

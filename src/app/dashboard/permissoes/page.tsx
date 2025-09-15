@@ -26,20 +26,7 @@ const initialRoles: RoleSettings[] = [
   {
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
-    permissions: {
-      '/dashboard': false,
-      '/dashboard/meus-clientes': false,
-      '/dashboard/agenda': false,
-      '/dashboard/agenda-geral': true,
-      '/dashboard/servicos': false,
-      '/dashboard/usuarios': false,
-      '/dashboard/dashboards': false,
-      '/dashboard/relatorios': false,
-      '/dashboard/logs': false,
-      '/dashboard/perfil': false,
-      '/dashboard/perfil-studio': false,
-      '/dashboard/clientes': false,
-    },
+    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
     isFixed: true,
   },
   {
@@ -61,6 +48,7 @@ const initialRoles: RoleSettings[] = [
         '/dashboard/dashboards': true,
         '/dashboard/relatorios': false,
         '/dashboard/logs': false,
+        '/dashboard/bots': false,
         '/dashboard/perfil': true,
         '/dashboard/perfil-studio': true,
         '/dashboard/clientes': false,
@@ -70,20 +58,7 @@ const initialRoles: RoleSettings[] = [
   {
     name: "Midgard",
     description: "Representa a esfera dos clientes finais. Não possuem acesso ao painel de administração.",
-    permissions: {
-        '/dashboard': true,
-        '/dashboard/meus-clientes': true,
-        '/dashboard/agenda': false,
-        '/dashboard/agenda-geral': true,
-        '/dashboard/servicos': true,
-        '/dashboard/usuarios': false,
-        '/dashboard/dashboards': true,
-        '/dashboard/relatorios': false,
-        '/dashboard/logs': false,
-        '/dashboard/perfil': true,
-        '/dashboard/perfil-studio': true,
-        '/dashboard/clientes': false,
-    },
+    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: false }), {}),
     isFixed: true,
   },
 ];
@@ -115,17 +90,13 @@ export default function PermissoesPage() {
                 const updatedRoles = [...initialRoles].map(role => {
                     const userWithRole = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
                     
-                    // Use database permissions if they exist, otherwise use initial defaults for the role
                     const dbPermissions = userWithRole ? userWithRole.permissions : role.permissions;
                     const completePermissions: { [key: string]: boolean } = {};
                     
-                    // Ensure every menu item has a defined permission.
                     menuItems.forEach(item => {
-                        // If the permission is defined in the DB, use it.
                         if (typeof dbPermissions[item.href] !== 'undefined') {
                             completePermissions[item.href] = dbPermissions[item.href];
                         } else {
-                            // Otherwise, use the default from initialRoles for that role.
                             completePermissions[item.href] = role.permissions[item.href] ?? false;
                         }
                     });

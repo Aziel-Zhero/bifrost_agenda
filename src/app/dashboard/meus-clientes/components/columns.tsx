@@ -2,7 +2,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, User } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, User, Edit, Trash2 } from "lucide-react";
 import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Client } from "@/types";
+
+type ColumnsProps = {
+  onEdit: (client: Client) => void;
+  onDelete: (client: Client) => void;
+};
+
 
 const formatWhatsapp = (phone: string) => {
     if (!phone) return "N/A";
@@ -27,7 +33,7 @@ const formatWhatsapp = (phone: string) => {
     return phone;
 }
 
-export const columns: ColumnDef<Client>[] = [
+export const getColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Client>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -81,6 +87,7 @@ export const columns: ColumnDef<Client>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
+      const client = row.original;
       return (
         <div className="text-right">
           <DropdownMenu>
@@ -92,8 +99,15 @@ export const columns: ColumnDef<Client>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
-              <DropdownMenuItem>Editar</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem onClick={() => onEdit(client)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => onDelete(client)}
+              >
+                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
               </DropdownMenuItem>
             </DropdownMenuContent>
