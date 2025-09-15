@@ -40,7 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import EditPermissionsDialog from "./components/edit-permissions-dialog";
 import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -50,7 +49,6 @@ export default function UsuariosPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isAddFormOpen, setAddFormOpen] = useState(false);
-  const [isPermissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [isRoleDialogOpen, setRoleDialogOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -76,9 +74,8 @@ export default function UsuariosPage() {
     fetchUsers();
   }, []);
 
-  const handleEditPermissions = (user: UserProfile) => {
-    setSelectedUser(user);
-    setPermissionsDialogOpen(true);
+  const handleEditPermissions = () => {
+    router.push('/dashboard/permissoes');
   };
   
   const handleEditRole = (user: UserProfile) => {
@@ -90,31 +87,6 @@ export default function UsuariosPage() {
    const handleDelete = (user: UserProfile) => {
     setSelectedUser(user);
     setDeleteAlertOpen(true);
-  };
-  
-  const handlePermissionsSave = async (updatedPermissions: UserProfile['permissions']) => {
-    if (selectedUser) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ permissions: updatedPermissions })
-          .eq('id', selectedUser.id)
-
-        if (error) {
-            toast({
-              title: "Erro ao salvar",
-              description: "Não foi possível atualizar as permissões.",
-              variant: "destructive",
-            });
-            console.error('Error updating permissions:', error);
-        } else {
-             setUsers(users.map(u => u.id === selectedUser.id ? { ...u, permissions: updatedPermissions } : u));
-             toast({
-              title: "Sucesso!",
-              description: "Permissões do usuário atualizadas.",
-            });
-        }
-    }
-    setPermissionsDialogOpen(false);
   };
   
   const handleRoleSave = async () => {
@@ -277,16 +249,6 @@ export default function UsuariosPage() {
         </Card>
       </div>
       
-      {selectedUser && (
-        <EditPermissionsDialog
-          isOpen={isPermissionsDialogOpen}
-          onOpenChange={setPermissionsDialogOpen}
-          user={selectedUser}
-          menuItems={menuItems}
-          onSave={handlePermissionsSave}
-        />
-      )}
-
       {selectedUser && (
         <Dialog open={isRoleDialogOpen} onOpenChange={setRoleDialogOpen}>
             <DialogContent>
