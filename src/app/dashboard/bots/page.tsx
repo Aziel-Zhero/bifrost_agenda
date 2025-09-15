@@ -1,19 +1,61 @@
 
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Bot } from "lucide-react";
+import { CheckCircle, Bot, Send } from "lucide-react";
 import { FaTelegram } from "react-icons/fa";
 import GaiaLogTable from "./components/log-table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { sendTestTelegramMessage } from "@/app/actions";
+
 
 export default function BotsPage() {
+    const { toast } = useToast();
+    const [testChatId, setTestChatId] = useState('');
+    const [isTesting, setIsTesting] = useState(false);
+
+    const handleTestSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!testChatId) {
+            toast({
+                title: "ID do Chat ausente",
+                description: "Por favor, insira um ID de Chat do Telegram para testar.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setIsTesting(true);
+        const { success, message } = await sendTestTelegramMessage(testChatId);
+        setIsTesting(false);
+
+        if (success) {
+            toast({
+                title: "Mensagem de Teste Enviada!",
+                description: `Uma mensagem foi enviada para o Chat ID: ${testChatId}.`,
+                className: "bg-green-100 border-green-300 text-green-800"
+            });
+        } else {
+             toast({
+                title: "Falha no Envio",
+                description: `Não foi possível enviar a mensagem: ${message}`,
+                variant: "destructive"
+            });
+        }
+    };
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -64,17 +106,51 @@ export default function BotsPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Monitor de Atividade da GAIA</CardTitle>
-          <CardDescription>
-            Últimas notificações enviadas pelo bot do Telegram. A lista é atualizada automaticamente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GaiaLogTable />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+            <CardHeader>
+            <CardTitle>Testar Notificações da GAIA</CardTitle>
+            <CardDescription>
+                Envie uma mensagem de teste para qualquer ID de chat do Telegram para verificar se o serviço está funcionando.
+            </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleTestSubmit}>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="test-chat-id">ID do Chat do Telegram</Label>
+                        <Input
+                            id="test-chat-id"
+                            placeholder="Insira o ID do chat de destino"
+                            value={testChatId}
+                            onChange={(e) => setTestChatId(e.target.value)}
+                        />
+                         <p className="text-xs text-muted-foreground">
+                            Use o `@userinfobot` no Telegram para descobrir seu ID.
+                        </p>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit" disabled={isTesting}>
+                        {isTesting ? "Enviando..." : <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Enviar Mensagem de Teste
+                        </>}
+                    </Button>
+                </CardFooter>
+            </form>
+        </Card>
+        <Card>
+            <CardHeader>
+            <CardTitle>Monitor de Atividade da GAIA</CardTitle>
+            <CardDescription>
+                Últimas notificações enviadas pelo bot do Telegram. A lista é atualizada automaticamente.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <GaiaLogTable />
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

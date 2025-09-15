@@ -105,3 +105,25 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         }
     }
 }
+
+
+export async function sendTestTelegramMessage(chatId: string): Promise<{ success: boolean; message: string }> {
+  const testMessage = `👋 Olá! Esta é uma mensagem de teste da GAIA. Se você recebeu isso, a conexão com o Telegram está funcionando perfeitamente! ✨`;
+  
+  const result = await sendTelegramNotification(testMessage, chatId);
+
+  // Also log this test message
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  await supabaseAdmin.from('gaia_logs').insert({
+    message_content: testMessage,
+    sent_to: `Teste para ID: ${chatId}`,
+    status: result.success ? 'Enviado' : `Falhou: ${result.message}`,
+  });
+  
+  return result;
+}
+
