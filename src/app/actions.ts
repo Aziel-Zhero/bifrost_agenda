@@ -1,8 +1,8 @@
 
 'use server';
 
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from "@/lib/supabase/client";
-import { createClient } from "@/lib/supabase/client";
 import { sendTelegramNotification } from "@/services/notification-service";
 
 export async function signUpUser(formData: FormData) {
@@ -49,7 +49,6 @@ export async function notifyOnNewAppointment(appointmentId: string) {
     console.log("Server Action: Received new appointment ID:", appointmentId);
     
     // We need a client instance on the server to interact with the DB
-    // The client from /lib/supabase/client has the user's session, which we don't need here.
     const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
