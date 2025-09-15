@@ -40,16 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { menuItems } from "@/components/dashboard/nav";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { deleteUser, inviteUser, reinviteUser, getUsers } from "./actions";
+import EditPermissionsDialog from "./components/edit-permissions-dialog";
 
 export default function UsuariosPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isAddFormOpen, setAddFormOpen] = useState(false);
   const [isRoleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [isPermissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   
@@ -74,8 +75,9 @@ export default function UsuariosPage() {
     fetchUsers();
   }, []);
 
-  const handleEditPermissions = () => {
-    router.push('/dashboard/permissoes');
+  const handleEditPermissions = (user: UserProfile) => {
+    setSelectedUser(user);
+    setPermissionsDialogOpen(true);
   };
   
   const handleEditRole = (user: UserProfile) => {
@@ -113,6 +115,23 @@ export default function UsuariosPage() {
     }
     setRoleDialogOpen(false);
   };
+
+   const handlePermissionsSave = async (permissions: UserProfile['permissions']) => {
+    if (selectedUser) {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ permissions })
+            .eq('id', selectedUser.id);
+
+        if (error) {
+            toast({ title: "Erro ao Salvar Permissões", description: error.message, variant: "destructive" });
+        } else {
+            setUsers(users.map(u => u.id === selectedUser.id ? { ...u, permissions } : u));
+            toast({ title: "Permissões Salvas!", description: `As permissões de ${selectedUser.name} foram atualizadas.` });
+        }
+    }
+    setPermissionsDialogOpen(false);
+};
 
   const handleAddUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,6 +297,15 @@ export default function UsuariosPage() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+      )}
+
+      {selectedUser && (
+        <EditPermissionsDialog
+          isOpen={isPermissionsDialogOpen}
+          onOpenChange={setPermissionsDialogOpen}
+          user={selectedUser}
+          onSave={handlePermissionsSave}
+        />
       )}
 
       {selectedUser && (

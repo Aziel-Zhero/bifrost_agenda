@@ -16,21 +16,24 @@ import {
   User,
   Building,
   Bot,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types";
 
 export const menuItems = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/dashboard/clientes", label: "Clientes", icon: Contact },
+  { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/dashboard/agenda-geral", label: "Agenda Geral", icon: Globe },
+  { href: "/dashboard/clientes", label: "Clientes", icon: Contact },
   { href: "/dashboard/servicos", label: "Serviços", icon: ClipboardList },
-  { href: "/dashboard/usuarios", label: "Usuários", icon: Users2 },
-  { href: "/dashboard/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { href: "/dashboard/relatorios", label: "Relatórios", icon: BookText },
-  { href: "/dashboard/logs", label: "Logs", icon: ShieldCheck },
+  { href: "/dashboard/usuarios", label: "Usuários", icon: Users2 },
+  { href: "/dashboard/perfil-studio", label: "Perfil do Studio", icon: Building },
+  { href: "/dashboard/permissoes", label: "Permissões", icon: Shield },
   { href: "/dashboard/bots", label: "Bots", icon: Bot },
+  { href: "/dashboard/logs", label: "Logs", icon: ShieldCheck },
 ];
 
 interface NavProps {

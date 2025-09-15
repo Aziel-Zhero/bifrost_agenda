@@ -38,7 +38,7 @@ const initialRoles: RoleSettings[] = [
     description: "Administradores ou profissionais do estúdio. Têm acesso às ferramentas para gerenciar seus próprios clientes e agendamentos.",
     permissions: allMenuItems.reduce((acc, item) => ({
       ...acc,
-      [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/dashboards'].includes(item.href)
+      [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
     }), {}),
   },
   {
@@ -161,14 +161,14 @@ export default function PermissoesPage() {
                                         id={`perm-${role.name}-${item.href}`}
                                         checked={!!role.permissions[item.href]}
                                         onCheckedChange={(value) => handlePermissionChange(role.name, item.href, value)}
-                                        disabled={isLoading}
+                                        disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}
                                     />
                                 </div>
                             ))
                          }
                     </CardContent>
                     <CardFooter className="flex justify-end border-t pt-6">
-                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading}>
+                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}>
                             {isLoading ? 'Salvando...' : `Salvar Permissões de ${role.name}`}
                         </Button>
                     </CardFooter>
@@ -179,4 +179,3 @@ export default function PermissoesPage() {
     </div>
   );
 }
-

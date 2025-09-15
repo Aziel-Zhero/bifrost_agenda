@@ -23,7 +23,6 @@ interface EditPermissionsDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   user: UserProfile | null;
-  menuItems: typeof menuItems;
   onSave: (permissions: UserProfile['permissions']) => void;
 }
 
@@ -31,7 +30,6 @@ export default function EditPermissionsDialog({
   isOpen,
   onOpenChange,
   user,
-  menuItems: navItems,
   onSave,
 }: EditPermissionsDialogProps) {
   const [permissions, setPermissions] = useState<UserProfile['permissions']>({});
@@ -41,7 +39,7 @@ export default function EditPermissionsDialog({
         const initialPermissions = { ...user.permissions };
         let needsUpdate = false;
         
-        navItems.forEach(item => {
+        menuItems.forEach(item => {
             if (typeof initialPermissions[item.href] === 'undefined') {
                 initialPermissions[item.href] = (user.role === 'Heimdall' || user.role === 'Bifrost');
                 needsUpdate = true;
@@ -54,7 +52,7 @@ export default function EditPermissionsDialog({
             setPermissions(user.permissions || initialPermissions);
         }
     }
-  }, [user, navItems]);
+  }, [user]);
 
   if (!user) {
     return null;
@@ -98,7 +96,7 @@ export default function EditPermissionsDialog({
                     </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {navItems.map(item => (
+                    {menuItems.map(item => (
                         <div key={item.href} className="flex flex-row items-center justify-between rounded-lg border p-3">
                             <div className="flex items-center space-x-3">
                                 <item.icon className="h-5 w-5 text-muted-foreground" />

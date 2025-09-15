@@ -100,25 +100,16 @@ export default function Header() {
     if (!currentUser) return false;
     const isAdmin = currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost';
     
-    // Admins can see everything
     if (isAdmin) return true;
 
-    // For non-admins, they only see what is explicitly set to true.
-    // If a permission is undefined or false, they don't have access.
     return currentUser.permissions[href] === true;
   };
   
-  const visibleMenuItems = menuItems.filter(item => hasPermission(item.href));
-  
-  const navMenuItems = visibleMenuItems.filter(item => item.href !== '/dashboard/perfil');
+  const visibleNavItems = menuItems.filter(item => hasPermission(item.href));
   
   const userDropdownItems = [
     { href: "/dashboard/perfil", label: "Meu Perfil", icon: User },
   ];
-  if (currentUser && (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost')) {
-    userDropdownItems.push({ href: "/dashboard/perfil-studio", label: "Perfil do Studio", icon: Building });
-    userDropdownItems.push({ href: "/dashboard/permissoes", label: "Permissões", icon: Shield });
-  }
 
   const handleNotificationClick = (notificationId: string, href?: string) => {
     markAsRead(notificationId);
@@ -155,7 +146,7 @@ export default function Header() {
                 <Logo isHeader/>
               </div>
             <nav className="grid gap-6 text-lg font-medium">
-              {[...visibleMenuItems, ...userDropdownItems.filter(item => item.href !== '/dashboard/perfil')].map((item) => (
+              {[...visibleNavItems, ...userDropdownItems].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -250,7 +241,7 @@ export default function Header() {
       <div className="hidden md:flex w-full items-center gap-6">
         <div className="flex items-center gap-6">
           <Logo isHeader />
-          <Nav currentUser={currentUser} navItems={navMenuItems} />
+          <Nav currentUser={currentUser} navItems={visibleNavItems} />
         </div>
         
         <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
