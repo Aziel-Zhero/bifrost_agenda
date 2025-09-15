@@ -20,7 +20,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         {/* Theme Color Meta Tags */}
         <meta name="theme-color" content="#3B82F6" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="#3B82F6" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="msapplication-navbutton-color" content="#3B82F6" />
       </head>
       <body className="font-body antialiased">
