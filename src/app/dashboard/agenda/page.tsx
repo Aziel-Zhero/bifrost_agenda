@@ -74,9 +74,9 @@ export default function AgendaPage() {
       else setClients(clientData || []);
 
        // Fetch Services
-      const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
-      if (serviceError) console.error("Error fetching services", serviceError);
-      else setServices(serviceData || []);
+       const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
+       if (serviceError) console.error("Error fetching services", serviceError);
+       else setServices(serviceData || []);
 
     };
     fetchData();
@@ -164,12 +164,12 @@ export default function AgendaPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <Card className="lg:col-span-2">
-           <CardContent className="p-2 flex justify-center">
+           <CardContent className="p-0 flex justify-center pt-4">
             <Calendar
               mode="single"
               selected={date}
               onSelect={setDate}
-              className="w-full"
+              className="w-auto"
               locale={ptBR}
               classNames={{
                 day_selected:
