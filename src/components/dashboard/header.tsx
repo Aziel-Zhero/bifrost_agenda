@@ -143,7 +143,7 @@ export default function Header() {
                 <Logo />
               </div>
             <nav className="grid gap-6 text-lg font-medium">
-              {visibleMenuItems.map((item) => (
+              {[...visibleMenuItems, ...userDropdownItems.filter(item => item.href !== '/dashboard/perfil')].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

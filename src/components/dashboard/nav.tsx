@@ -31,9 +31,6 @@ export const menuItems = [
   { href: "/dashboard/relatorios", label: "Relatórios", icon: BookText },
   { href: "/dashboard/logs", label: "Logs", icon: ShieldCheck },
   { href: "/dashboard/bots", label: "Bots", icon: Bot },
-  { href: "/dashboard/perfil", label: "Meu Perfil", icon: User },
-  { href: "/dashboard/permissoes", label: "Permissões", icon: ShieldCheck },
-  { href: "/dashboard/perfil-studio", label: "Perfil do Studio", icon: Building },
 ];
 
 interface NavProps {
