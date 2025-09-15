@@ -70,21 +70,20 @@ export default function AgendaPage() {
             setAppointments(apptData as any[]);
         }
 
-      }
-
-       // Fetch Clients only for the current user (or all if admin - adjust if needed)
-      const { data: clientData, error: clientError } = await supabase.from('clients').select('*');
-      if (clientError) console.error("Error fetching clients", clientError);
-      else setClients(clientData || []);
+        // Fetch Clients only for the current user (or all if admin - adjust if needed)
+        const { data: clientData, error: clientError } = await supabase.from('clients').select('*').eq('admin', profile?.name || user.email);
+        if (clientError) console.error("Error fetching clients", clientError);
+        else setClients(clientData || []);
 
        // Fetch Services
        const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
        if (serviceError) console.error("Error fetching services", serviceError);
        else setServices(serviceData || []);
 
+      }
     };
     fetchData();
-  }, []);
+  }, [toast]);
 
   const selectedDayAppointments = appointments.filter(
     (appt) =>
@@ -168,7 +167,7 @@ export default function AgendaPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <Card className="lg:col-span-2">
-           <CardContent className="p-0 flex justify-center pt-4">
+           <CardContent className="p-0 flex justify-center pt-6">
             <Calendar
               mode="single"
               selected={date}
@@ -177,7 +176,7 @@ export default function AgendaPage() {
               locale={ptBR}
               classNames={{
                 day_selected:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                  "text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
               }}
             />
           </CardContent>
@@ -226,5 +225,3 @@ export default function AgendaPage() {
     </>
   );
 }
-
-    
