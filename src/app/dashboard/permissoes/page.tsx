@@ -33,7 +33,7 @@ const initialRoles: RoleSettings[] = [
     name: "Heimdall",
     description: "Administrador mestre do estúdio, com visão ampla e privilegiada, podendo gerenciar todos os usuários e relatórios.",
     permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: true,
+    isFixed: false,
   },
   {
     name: "Asgard",
