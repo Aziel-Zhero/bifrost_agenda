@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Bifrost Central',
+  title: 'Agenda',
   description: 'Sistema central de agendamentos',
 };
 

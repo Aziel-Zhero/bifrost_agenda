@@ -19,7 +19,7 @@ export default function SignUpPage() {
                 <CardHeader className="items-center text-center">
                     <Logo />
                     <CardTitle className="pt-4 text-2xl font-bold">
-                        Bifrost Central
+                        Agenda
                     </CardTitle>
                     <CardDescription>Verifique sua identidade e defina sua senha de acesso.</CardDescription>
                 </CardHeader>

@@ -56,7 +56,7 @@ export default function LoginPage() {
         <CardHeader className="items-center text-center">
           <Logo />
           <CardTitle className="pt-4 text-2xl font-bold">
-            Bifrost Central
+            Agenda
           </CardTitle>
           <CardDescription>Faça login para acessar a agenda</CardDescription>
         </CardHeader>
