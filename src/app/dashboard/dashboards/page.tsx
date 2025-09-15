@@ -76,7 +76,6 @@ export default function DashboardPage() {
   });
 
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
   
   useEffect(() => {
@@ -90,16 +89,6 @@ export default function DashboardPage() {
         console.error("Error fetching appointments:", apptError.message);
       } else {
         setAppointments(apptData as any[] || []);
-        
-        // Extract unique services from the appointments
-         const allServices = (apptData as any[]).map((appt: any) => appt.services).filter(Boolean);
-         const uniqueServices = allServices.reduce((acc: Service[], current: Service) => {
-            if (!acc.some(item => item.id === current.id)) {
-                acc.push(current);
-            }
-            return acc;
-        }, []);
-        setServices(uniqueServices);
       }
     };
     fetchData();
@@ -112,7 +101,7 @@ export default function DashboardPage() {
     const to = dateRange.to || from; // if no 'to', use 'from'
     
     return appointments.filter(appt => 
-      appt.dateTime && isWithinInterval(parseISO(appt.dateTime), { start: startOfDay(from), end: endOfDay(to) })
+      appt.date_time && isWithinInterval(parseISO(appt.date_time), { start: startOfDay(from), end: endOfDay(to) })
     );
   }, [dateRange, appointments]);
 
@@ -140,7 +129,7 @@ export default function DashboardPage() {
     const prevMonthEnd = endOfMonth(prevMonthDate);
     
     const prevMonthAppointments = appointments.filter(appt => 
-      appt.dateTime && isWithinInterval(parseISO(appt.dateTime), { start: prevMonthStart, end: prevMonthEnd })
+      appt.date_time && isWithinInterval(parseISO(appt.date_time), { start: prevMonthStart, end: prevMonthEnd })
     );
     const prevMonthCompleted = prevMonthAppointments.filter(a => a.status === 'Realizado');
     const prevMonthCancelled = prevMonthAppointments.filter(a => a.status === 'Cancelado');
@@ -152,12 +141,12 @@ export default function DashboardPage() {
     const allClientsEver = new Map<string, string>();
     [...appointments]
       .sort((a,b) => {
-        if (!a.dateTime || !b.dateTime) return 0;
-        return parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime()
+        if (!a.date_time || !b.date_time) return 0;
+        return parseISO(a.date_time).getTime() - parseISO(b.date_time).getTime()
       })
       .forEach(appt => {
-        if(appt.clients?.name && !allClientsEver.has(appt.clients.name) && appt.dateTime){
-          allClientsEver.set(appt.clients.name, appt.dateTime);
+        if(appt.clients?.name && !allClientsEver.has(appt.clients.name) && appt.date_time){
+          allClientsEver.set(appt.clients.name, appt.date_time);
         }
     });
 
@@ -216,7 +205,7 @@ export default function DashboardPage() {
       },
     ]
 
-  }, [filteredAppointments, appointments, services, dateRange]);
+  }, [filteredAppointments, appointments, dateRange]);
 
 
   const getTopClients = (): ClientRanking[] => {
@@ -239,8 +228,8 @@ export default function DashboardPage() {
     const completedAppointments = appointments.filter(a => a.status === 'Realizado');
 
     completedAppointments.forEach(appt => {
-        if (appt.dateTime) {
-            const monthKey = format(parseISO(appt.dateTime), 'yyyy-MM');
+        if (appt.date_time) {
+            const monthKey = format(parseISO(appt.date_time), 'yyyy-MM');
             const price = appt.services?.price || 0;
             monthlyGains[monthKey] = (monthlyGains[monthKey] || 0) + price;
         }
@@ -382,4 +371,3 @@ export default function DashboardPage() {
     
 
     
-

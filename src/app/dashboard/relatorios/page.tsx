@@ -44,20 +44,17 @@ export default function RelatoriosPage() {
       }
 
       const reports: AppointmentReport[] = data.map((appt: any) => ({
+        ...appt,
         id: appt.id,
-        clientName: appt.clients.name,
+        clientName: appt.clients?.name || 'N/A',
         dateTime: appt.date_time,
-        notes: appt.services.name,
+        notes: appt.services?.name || 'N/A',
         status: appt.status,
-        admin: appt.profiles.name,
+        admin: appt.profiles?.name || 'N/A',
         serviceId: appt.service_id,
-        whatsapp: appt.clients.whatsapp,
-        telegram: appt.clients.telegram,
+        whatsapp: appt.clients?.whatsapp || 'N/A',
+        telegram: appt.clients?.telegram || 'N/A',
         clientAvatarUrl: '', // This field is not used currently
-        admin_id: appt.admin_id,
-        client_id: appt.client_id,
-        clients: appt.clients,
-        services: appt.services,
       }));
       setAppointmentReports(reports);
     };

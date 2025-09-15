@@ -3,7 +3,6 @@
 
 import { supabase } from "@/lib/supabase/client";
 import { sendTelegramNotification } from "@/services/notification-service";
-import type { Appointment, Service, Client } from "@/types";
 
 export async function signUpUser(formData: FormData) {
     const name = formData.get('name') as string;

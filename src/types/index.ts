@@ -13,19 +13,21 @@ export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloque
 
 export type Appointment = {
   id: string;
-  dateTime: string; // Changed to string to match Supabase return
+  date_time: string; // Changed to string to match Supabase return
   notes: string;
   status: AppointmentStatus;
   admin_id: string;
   service_id: string;
   client_id: string;
   // Nested properties for joins
-  clients: { name: string } | null;
+  clients: { name: string, telegram?: string } | null;
   services: { name: string; price: number } | null;
+  profiles?: { name: string } | null;
 };
 
 
 export type AppointmentReport = Appointment & {
+  clientName: string;
   whatsapp: string;
   telegram?: string;
   admin: string;

@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Appointment, AppointmentStatus, Service, Client, StudioHour } from "@/types";
+import type { Appointment, AppointmentStatus, Service, Client } from "@/types";
 import { cn } from "@/lib/utils";
 import NewAppointmentWizard from './components/new-appointment-wizard';
 import { Toaster } from "@/components/ui/toaster"
@@ -84,7 +84,7 @@ export default function AgendaPage() {
 
   const selectedDayAppointments = appointments.filter(
     (appt) =>
-      date && new Date(appt.dateTime).toDateString() === date.toDateString()
+      date && new Date(appt.date_time).toDateString() === date.toDateString()
   );
 
   const statusVariant: Record<AppointmentStatus, string> = {
@@ -192,7 +192,7 @@ export default function AgendaPage() {
             <div className="space-y-4">
               {selectedDayAppointments.length > 0 ? (
                 selectedDayAppointments
-                .sort((a, b) => parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime())
+                .sort((a, b) => parseISO(a.date_time).getTime() - parseISO(b.date_time).getTime())
                 .map((appt: Appointment) => (
                   <div key={appt.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-4">
@@ -201,7 +201,7 @@ export default function AgendaPage() {
                        </div>
                       <div>
                         <p className="font-semibold">{appt.clients?.name}</p>
-                        <p className="text-sm text-muted-foreground">{parseISO(appt.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {appt.services?.name}</p>
+                        <p className="text-sm text-muted-foreground">{parseISO(appt.date_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {appt.services?.name}</p>
                       </div>
                     </div>
                     <Badge variant="outline" className={cn('border-none text-xs', statusVariant[appt.status])}>

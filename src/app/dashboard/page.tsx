@@ -62,7 +62,8 @@ export default function DashboardRedirectPage() {
         
         if (data && data.studio_name) {
             setStudioName(data.studio_name);
-        } else if (error) {
+        } else if (error && error.code !== 'PGRST116') {
+             // PGRST116 means no rows found, which is fine, we'll use the default.
             console.log("Could not fetch studio name, using default. Error: ", error.message)
         }
     }
@@ -89,8 +90,8 @@ export default function DashboardRedirectPage() {
     }
     
     return appointments
-      .filter((appt) => appt.dateTime && checkFunction(parseISO(appt.dateTime)))
-      .sort((a, b) => parseISO(a.dateTime).getTime() - parseISO(b.dateTime).getTime());
+      .filter((appt) => appt.date_time && checkFunction(parseISO(appt.date_time)))
+      .sort((a, b) => parseISO(a.date_time).getTime() - parseISO(b.date_time).getTime());
   }, [period, appointments]);
 
   const statusVariant: Record<AppointmentStatus, string> = {
@@ -146,7 +147,7 @@ export default function DashboardRedirectPage() {
                 filteredAppointments.map((appt) => (
                   <TableRow key={appt.id}>
                     <TableCell className="font-medium">
-                      {parseISO(appt.dateTime).toLocaleTimeString("pt-BR", {
+                      {parseISO(appt.date_time).toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
