@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { isSameDay, format, isBefore, startOfToday } from 'date-fns';
+import { isSameDay, format, isBefore, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,7 +36,7 @@ const colorPalette = [
 
 export default function AgendaGeralPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
   const [adminMap, setAdminMap] = useState<AdminMap>({});
   const [adminColorMap, setAdminColorMap] = useState<AdminColorMap>({});
 
@@ -64,17 +64,7 @@ export default function AgendaGeralPage() {
        if (error) {
         console.error("Error fetching appointments", error);
       } else {
-        const formattedAppointments = data.map((appt: any) => ({
-          id: appt.id,
-          dateTime: new Date(appt.date_time),
-          admin: appt.admin_id,
-          clientName: '',
-          clientAvatarUrl: '',
-          notes: '',
-          status: 'Agendado',
-          serviceId: '',
-        }));
-        setAppointments(formattedAppointments);
+        setAppointments(data || []);
       }
     };
     fetchData();
@@ -82,15 +72,15 @@ export default function AgendaGeralPage() {
 
   const appointmentsByDay = useMemo(() => {
     return appointments.reduce((acc, appt) => {
-      const day = format(appt.dateTime, 'yyyy-MM-dd');
+      const day = format(parseISO(appt.date_time), 'yyyy-MM-dd');
       if (!acc[day]) {
         acc[day] = {};
       }
-      const adminName = adminMap[appt.admin] || `Usuário (${appt.admin.substring(0, 4)})`;
+      const adminName = adminMap[appt.admin_id] || `Usuário (${appt.admin_id.substring(0, 4)})`;
       if (!acc[day][adminName]) {
         acc[day][adminName] = [];
       }
-      acc[day][adminName].push(format(appt.dateTime, 'HH:mm'));
+      acc[day][adminName].push(format(parseISO(appt.date_time), 'HH:mm'));
       acc[day][adminName].sort();
       return acc;
     }, {} as AppointmentsByDay);
