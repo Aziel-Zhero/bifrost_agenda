@@ -21,10 +21,6 @@ import { useToast } from "@/hooks/use-toast";
 import { updatePermissionsByRole } from "../usuarios/actions";
 import { supabase } from "@/lib/supabase/client";
 
-// Exclude admin-only pages from the permissions list for non-admin roles
-const adminOnlyHrefs = ['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/dashboards'];
-
-const menuItems = allMenuItems.filter(item => !adminOnlyHrefs.includes(item.href) && item.href !== '/dashboard/perfil');
 
 const initialRoles: RoleSettings[] = [
   {
@@ -42,14 +38,10 @@ const initialRoles: RoleSettings[] = [
   {
     name: "Asgard",
     description: "Administradores ou profissionais do estúdio. Têm acesso às ferramentas para gerenciar seus próprios clientes e agendamentos.",
-    permissions: {
-        '/dashboard': true,
-        '/dashboard/clientes': true,
-        '/dashboard/agenda': true,
-        '/dashboard/agenda-geral': true,
-        '/dashboard/servicos': true,
-        '/dashboard/perfil': true,
-    },
+    permissions: allMenuItems.reduce((acc, item) => ({
+      ...acc,
+      [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/dashboards'].includes(item.href)
+    }), {}),
     isFixed: false,
   },
   {
@@ -85,7 +77,6 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
-                    // We only care about Asgard for custom permissions
                     if (role.name !== 'Asgard') return role;
 
                     const asgardUserWithPermissions = users.find(u => u.role === 'Asgard' && u.permissions && Object.keys(u.permissions).length > 0);
@@ -94,12 +85,7 @@ export default function PermissoesPage() {
                     const completePermissions: { [key: string]: boolean } = {};
                     
                     allMenuItems.forEach(item => {
-                        // Set permission from DB if exists, otherwise from initial config
-                        if (typeof dbPermissions[item.href] !== 'undefined') {
-                            completePermissions[item.href] = dbPermissions[item.href];
-                        } else {
-                            completePermissions[item.href] = role.permissions[item.href] ?? false;
-                        }
+                        completePermissions[item.href] = dbPermissions[item.href] ?? role.permissions[item.href] ?? false;
                     });
 
                     return { ...role, permissions: completePermissions };
@@ -173,7 +159,7 @@ export default function PermissoesPage() {
                                 As permissões para o papel <strong>{role.name}</strong> são fixas e não podem ser alteradas.
                              </div>
                          ) : (
-                            menuItems.map(item => (
+                            allMenuItems.map(item => (
                                 <div key={item.href} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <div className="flex items-center gap-3">
                                         <item.icon className="h-5 w-5 text-muted-foreground" />

@@ -95,6 +95,9 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex-col gap-4 text-sm">
+             <a href="/sign-up" className="text-xs text-muted-foreground underline hover:text-primary">
+                Finalizar cadastro de novo usuário? Clique aqui.
+            </a>
             <p className="text-xs text-muted-foreground">Apenas usuários autorizados podem acessar.</p>
         </CardFooter>
       </Card>

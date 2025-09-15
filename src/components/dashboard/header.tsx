@@ -37,12 +37,6 @@ import { supabase } from "@/lib/supabase/client";
 import type { UserProfile } from "@/types";
 
 
-// These are profile-related and should be accessible to the user
-const profileMenuItemsHrefs = ['/dashboard/perfil'];
-
-// These are admin-only pages, accessible only by specific roles
-const adminOnlyHrefs = ['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/dashboards'];
-
 export default function Header() {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -101,17 +95,15 @@ export default function Header() {
     // Admins can see everything
     if (isAdmin) return true;
 
-    // If it's an admin-only page, non-admins can't see it
-    if (adminOnlyHrefs.includes(href)) return false;
-
-    // For regular pages, check individual permissions
-    return currentUser.permissions[href] !== false;
+    // For non-admins, they only see what is explicitly set to true.
+    // If a permission is undefined or false, they don't have access.
+    return currentUser.permissions[href] === true;
   };
   
   const visibleMenuItems = menuItems.filter(item => hasPermission(item.href));
   
   // Separate profile-related items for the user dropdown
-  const navMenuItems = visibleMenuItems.filter(item => !profileMenuItemsHrefs.includes(item.href));
+  const navMenuItems = visibleMenuItems.filter(item => item.href !== '/dashboard/perfil');
   
   // Create a separate list for what appears in the user's own profile dropdown menu.
   // All users should see "Meu Perfil". Admins see "Perfil do Studio".
@@ -205,7 +197,7 @@ export default function Header() {
                   </DropdownMenuItem>
                ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem onClick={() => supabase.auth.signOut()} asChild>
                 <Link href="/">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
@@ -256,7 +248,7 @@ export default function Header() {
                   </DropdownMenuItem>
                ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem onClick={() => supabase.auth.signOut()} asChild>
                 <Link href="/">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
