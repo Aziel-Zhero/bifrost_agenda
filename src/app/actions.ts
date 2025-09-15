@@ -54,7 +54,7 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         .from('appointments')
         .select(`
             *,
-            clients (name),
+            clients (name, telegram),
             services (name),
             profiles (name)
         `)
@@ -72,13 +72,28 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         const adminName = appointment.profiles?.name || 'Admin';
         const dateTime = new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'});
 
-        const message = `🗓️ *Novo Agendamento!* 🗓️\n\n*Profissional:* ${adminName}\n*Cliente:* ${clientName}\n*Serviço:* ${serviceName}\n*Quando:* ${dateTime}\n\nUm novo cliente foi agendado na agenda geral.`;
+        // Notification for the admin/studio group
+        const studioMessage = `🗓️ *Novo Agendamento!* 🗓️\n\n*Profissional:* ${adminName}\n*Cliente:* ${clientName}\n*Serviço:* ${serviceName}\n*Quando:* ${dateTime}\n\nUm novo cliente foi agendado na agenda geral.`;
 
         try {
-            await sendTelegramNotification(message);
-            console.log("Server Action: Telegram notification sent successfully.");
+            // The TELEGRAM_CHAT_ID in .env should be for the studio's group
+            await sendTelegramNotification(studioMessage, process.env.TELEGRAM_CHAT_ID);
+            console.log("Server Action: Studio Telegram notification sent successfully.");
         } catch (e: any) {
-            console.error("Server Action: Failed to send Telegram notification:", e.message);
+            console.error("Server Action: Failed to send studio Telegram notification:", e.message);
+        }
+
+        // Notification for the client, if they have a Telegram ID
+        const clientTelegramId = appointment.clients?.telegram;
+        if (clientTelegramId) {
+             const clientMessage = `Olá, ${clientName}! ✨\n\nSeu agendamento foi *confirmado* com sucesso!\n\n*Serviço:* ${serviceName}\n*Profissional:* ${adminName}\n*Quando:* ${dateTime}\n\nMal podemos esperar para te ver!`;
+             try {
+                await sendTelegramNotification(clientMessage, clientTelegramId);
+                console.log(`Server Action: Client Telegram notification sent successfully to ID ${clientTelegramId}.`);
+            } catch (e: any)
+             {
+                console.error(`Server Action: Failed to send client Telegram notification to ID ${clientTelegramId}:`, e.message);
+            }
         }
     }
 }
