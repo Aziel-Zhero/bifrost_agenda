@@ -122,36 +122,12 @@ export async function reinviteUser(userId: string) {
 
 export async function deleteUser(userId: string) {
   const supabaseAdmin = getSupabaseAdmin();
-
-  // First, get user details to log them before deletion
-  const { data: userToDelete, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
-  
-  if (getUserError) {
-    console.error('Error fetching user before deletion:', getUserError);
-    return { error: getUserError };
-  }
   
   const { data, error } = await supabaseAdmin.auth.admin.deleteUser(userId);
   
   if (error) {
     console.error('Error deleting user:', error);
     return { error };
-  }
-
-  // If deletion is successful, insert a log entry
-  const logPayload = {
-    message: 'User deleted',
-    record: {
-      email: userToDelete.user.email,
-      id: userToDelete.user.id,
-    }
-  };
-
-  const { error: logError } = await supabaseAdmin.from('audit_log').insert({ payload: logPayload });
-
-  if (logError) {
-    console.error('Failed to write to audit log after user deletion:', logError);
-    // Don't return this error to the client, as the main action (deletion) was successful.
   }
 
   return { data, error: null };
@@ -198,8 +174,10 @@ export async function updatePermissionsByRole(role: UserProfile['role'], permiss
 export async function getAuditLogs(): Promise<{ data: AuditLog[] | null, error: { message: string } | null }> {
     const supabaseAdmin = getSupabaseAdmin();
 
+    // The `supabase_audit.record_events` table contains the audit trail.
     const { data, error } = await supabaseAdmin
-        .from('audit_log') // Querying our custom audit_log table now
+        .schema('supabase_audit')
+        .from('record_events') 
         .select('id, payload, created_at')
         .order('created_at', { ascending: false });
 
@@ -209,11 +187,25 @@ export async function getAuditLogs(): Promise<{ data: AuditLog[] | null, error: 
     }
     
     // The payload comes as a JSON object, but the timestamp needs to be a Date object.
-    const logs: AuditLog[] = data.map((log: any) => ({
-        id: log.id,
-        payload: log.payload,
-        timestamp: new Date(log.created_at)
-    }));
+    const logs: AuditLog[] = data.map((log: any) => {
+        let message = log.payload?.action ? `Action: ${log.payload.action}` : 'Ação desconhecida';
+        let record = {};
+
+        // Customize message for specific actions
+        if (log.payload?.action === 'auth.user_deleted') {
+            message = 'User deleted';
+            record = { email: log.payload.record_data?.email, id: log.payload.record_id };
+        }
+
+        return {
+            id: log.id,
+            payload: {
+                message: message,
+                record: record,
+            },
+            timestamp: new Date(log.created_at)
+        }
+    });
 
     return { data: logs, error: null };
 }
