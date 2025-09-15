@@ -162,9 +162,9 @@ export default function AgendaPage() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <CardContent className="p-0">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+        <Card className="lg:col-span-2">
+           <CardContent className="p-2 flex justify-center">
             <Calendar
               mode="single"
               selected={date}
@@ -178,7 +178,7 @@ export default function AgendaPage() {
             />
           </CardContent>
         </Card>
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>
               Agendamentos para{" "}
