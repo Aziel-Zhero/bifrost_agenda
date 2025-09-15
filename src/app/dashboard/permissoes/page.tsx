@@ -26,8 +26,21 @@ const initialRoles: RoleSettings[] = [
   {
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
-    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: true, 
+    permissions: {
+      '/dashboard': false,
+      '/dashboard/meus-clientes': false,
+      '/dashboard/agenda': false,
+      '/dashboard/agenda-geral': true,
+      '/dashboard/servicos': false,
+      '/dashboard/usuarios': false,
+      '/dashboard/dashboards': false,
+      '/dashboard/relatorios': false,
+      '/dashboard/logs': false,
+      '/dashboard/perfil': false,
+      '/dashboard/perfil-studio': false,
+      '/dashboard/clientes': false,
+    },
+    isFixed: true,
   },
   {
     name: "Heimdall",
@@ -42,14 +55,14 @@ const initialRoles: RoleSettings[] = [
         '/dashboard': true,
         '/dashboard/meus-clientes': true,
         '/dashboard/agenda': true,
-        '/dashboard/agenda-geral': false,
+        '/dashboard/agenda-geral': true,
         '/dashboard/servicos': true,
         '/dashboard/usuarios': false,
-        '/dashboard/dashboards': true,
+        '/dashboard/dashboards': false,
         '/dashboard/relatorios': false,
         '/dashboard/logs': false,
         '/dashboard/perfil': true,
-        '/dashboard/perfil-studio': false,
+        '/dashboard/perfil-studio': true,
         '/dashboard/clientes': false,
     },
     isFixed: false,
@@ -57,7 +70,20 @@ const initialRoles: RoleSettings[] = [
   {
     name: "Midgard",
     description: "Representa a esfera dos clientes finais. Não possuem acesso ao painel de administração.",
-    permissions: {},
+    permissions: {
+        '/dashboard': true,
+        '/dashboard/meus-clientes': true,
+        '/dashboard/agenda': false,
+        '/dashboard/agenda-geral': true,
+        '/dashboard/servicos': true,
+        '/dashboard/usuarios': false,
+        '/dashboard/dashboards': false,
+        '/dashboard/relatorios': false,
+        '/dashboard/logs': false,
+        '/dashboard/perfil': true,
+        '/dashboard/perfil-studio': true,
+        '/dashboard/clientes': false,
+    },
     isFixed: true,
   },
 ];
@@ -87,12 +113,9 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
-                    // For fixed roles, we always use the complete permission set from initialRoles.
-                    if (role.isFixed) return role;
-
-                    // Find a user with the current role to get the base permissions.
                     const userWithRole = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
                     
+                    // Use database permissions if they exist, otherwise use initial defaults for the role
                     const dbPermissions = userWithRole ? userWithRole.permissions : role.permissions;
                     const completePermissions: { [key: string]: boolean } = {};
                     
