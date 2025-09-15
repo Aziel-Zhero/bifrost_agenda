@@ -125,7 +125,7 @@ export default function BotsPage() {
                             onChange={(e) => setTestChatId(e.target.value)}
                         />
                          <p className="text-xs text-muted-foreground">
-                            Use o `@userinfobot` no Telegram para descobrir seu ID.
+                            Use o bot <code className="font-mono p-1 bg-muted rounded-sm">@userinfobot</code> no Telegram para descobrir seu ID de chat.
                         </p>
                     </div>
                 </CardContent>
