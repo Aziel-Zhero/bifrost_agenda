@@ -98,4 +98,7 @@
     .status-bloqueado {
        @apply bg-gray-200 text-gray-800;
     }
+    .status-reagendado {
+        @apply bg-yellow-100 text-yellow-800;
+    }
 }

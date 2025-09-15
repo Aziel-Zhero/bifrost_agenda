@@ -9,7 +9,7 @@ export type Client = {
   created_at?: string;
 };
 
-export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloqueado';
+export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloqueado' | 'Reagendado';
 
 export type Appointment = {
   id: string;
@@ -107,4 +107,5 @@ export type AppointmentReminder = {
     sent_at: string;
     status: string;
 };
+
 

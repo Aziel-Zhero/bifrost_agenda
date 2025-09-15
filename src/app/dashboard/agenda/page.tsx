@@ -2,9 +2,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlusCircle, User, MoreHorizontal, Check, X, Calendar as CalendarIconLucide } from "lucide-react";
+import { PlusCircle, User, MoreHorizontal, Check, X, Calendar as CalendarIconLucide, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -25,6 +27,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import type { Appointment, AppointmentStatus, Service, Client } from "@/types";
 import { cn } from "@/lib/utils";
@@ -33,7 +37,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
 import { ptBR } from 'date-fns/locale';
 import { supabase } from "@/lib/supabase/client";
-import { parseISO } from "date-fns";
+import { parseISO, format } from "date-fns";
 import { notifyOnNewAppointment } from "@/app/actions";
 
 
@@ -45,6 +49,12 @@ export default function AgendaPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [currentUserName, setCurrentUserName] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  const [isRescheduleOpen, setRescheduleOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [newDate, setNewDate] = useState<Date | undefined>(new Date());
+  const [newTime, setNewTime] = useState('');
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -105,6 +115,7 @@ export default function AgendaPage() {
     Agendado: "status-agendado",
     Realizado: "status-realizado",
     Cancelado: "status-cancelado",
+    Reagendado: "status-reagendado",
     Bloqueado: "status-bloqueado",
   };
   
@@ -144,7 +155,7 @@ export default function AgendaPage() {
         const newAppointment: Appointment = data as any;
         
         // Trigger notification
-        notifyOnNewAppointment(newAppointment.id);
+        await notifyOnNewAppointment(newAppointment.id);
 
         setAppointments(prev => [...prev, newAppointment]);
         setFormOpen(false);
@@ -178,6 +189,52 @@ export default function AgendaPage() {
       });
     }
   };
+
+  const openRescheduleDialog = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    const apptDate = parseISO(appointment.date_time);
+    setNewDate(apptDate);
+    setNewTime(format(apptDate, 'HH:mm'));
+    setRescheduleOpen(true);
+  }
+
+  const handleReschedule = async () => {
+    if (!selectedAppointment || !newDate || !newTime) {
+      toast({ title: "Dados incompletos", description: "Por favor, selecione uma nova data e hora.", variant: "destructive" });
+      return;
+    }
+
+    const [hours, minutes] = newTime.split(':');
+    const rescheduledDateTime = new Date(newDate);
+    rescheduledDateTime.setHours(parseInt(hours), parseInt(minutes));
+    
+    const { data, error } = await supabase
+      .from('appointments')
+      .update({ 
+        status: 'Reagendado',
+        date_time: rescheduledDateTime.toISOString() 
+      })
+      .eq('id', selectedAppointment.id)
+      .select(`*, clients (name), services (name)`)
+      .single();
+
+    if (error) {
+      toast({
+        title: "Erro ao reagendar",
+        description: `Não foi possível reagendar: ${error.message}`,
+        variant: "destructive",
+      });
+    } else if (data) {
+      setAppointments(prev => prev.map(appt => appt.id === selectedAppointment.id ? (data as any) : appt));
+      toast({
+        title: "Agendamento Reagendado!",
+        description: `O agendamento foi reagendado para ${format(rescheduledDateTime, 'dd/MM/yyyy')} às ${newTime}.`,
+        className: 'bg-yellow-100 border-yellow-300 text-yellow-800'
+      });
+    }
+    setRescheduleOpen(false);
+    setSelectedAppointment(null);
+  }
 
 
   return (
@@ -261,6 +318,10 @@ export default function AgendaPage() {
                               <Check className="mr-2 h-4 w-4" />
                               Marcar como Realizado
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openRescheduleDialog(appt)}>
+                              <Repeat className="mr-2 h-4 w-4" />
+                              Reagendar
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusChange(appt.id, 'Cancelado')} className="text-destructive">
                               <X className="mr-2 h-4 w-4" />
                               Marcar como Cancelado
@@ -284,6 +345,40 @@ export default function AgendaPage() {
         </Card>
       </div>
     </div>
+     <Dialog open={isRescheduleOpen} onOpenChange={setRescheduleOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Reagendar Horário</DialogTitle>
+                <DialogDescription>
+                    Selecione a nova data e hora para o agendamento de <span className="font-semibold">{selectedAppointment?.clients?.name}</span>.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+                <div className="flex justify-center">
+                    <Calendar
+                        mode="single"
+                        selected={newDate}
+                        onSelect={setNewDate}
+                        locale={ptBR}
+                        disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="reschedule-time">Novo Horário</Label>
+                    <Input
+                        id="reschedule-time"
+                        type="time"
+                        value={newTime}
+                        onChange={(e) => setNewTime(e.target.value)}
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setRescheduleOpen(false)}>Cancelar</Button>
+                <Button onClick={handleReschedule}>Confirmar Reagendamento</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     </>
   );
 }
