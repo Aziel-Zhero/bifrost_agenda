@@ -90,7 +90,7 @@ export type RoleSettings = {
   name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
   description: string;
   permissions: { [key: string]: boolean };
-  isFixed: boolean; // Indicates if permissions can be changed
+  isFixed?: boolean; // Indicates if permissions can be changed
 };
 
 export type GaiaLog = {
@@ -107,3 +107,4 @@ export type AppointmentReminder = {
     sent_at: string;
     status: string;
 };
+

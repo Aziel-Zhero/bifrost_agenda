@@ -27,13 +27,11 @@ const initialRoles: RoleSettings[] = [
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: true,
   },
   {
     name: "Heimdall",
     description: "Administrador mestre do estúdio, com visão ampla e privilegiada, podendo gerenciar todos os usuários e relatórios.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: true,
   },
   {
     name: "Asgard",
@@ -42,13 +40,11 @@ const initialRoles: RoleSettings[] = [
       ...acc,
       [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/dashboards'].includes(item.href)
     }), {}),
-    isFixed: false,
   },
   {
     name: "Midgard",
     description: "Representa a esfera dos clientes finais. Não possuem acesso ao painel de administração.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: false }), {}),
-    isFixed: true,
   },
 ];
 
@@ -77,11 +73,9 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
-                    if (role.name !== 'Asgard') return role;
-
-                    const asgardUserWithPermissions = users.find(u => u.role === 'Asgard' && u.permissions && Object.keys(u.permissions).length > 0);
+                    const userWithPermissions = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
                     
-                    const dbPermissions = asgardUserWithPermissions ? asgardUserWithPermissions.permissions : role.permissions;
+                    const dbPermissions = userWithPermissions ? userWithPermissions.permissions : role.permissions;
                     const completePermissions: { [key: string]: boolean } = {};
                     
                     allMenuItems.forEach(item => {
@@ -154,11 +148,7 @@ export default function PermissoesPage() {
                     <CardContent className="space-y-4">
                         <Separator />
                          <h4 className="font-semibold text-base pt-2">Acesso às Páginas</h4>
-                         {role.isFixed ? (
-                             <div className="text-sm text-center text-muted-foreground bg-muted p-3 rounded-md">
-                                As permissões para o papel <strong>{role.name}</strong> são fixas e não podem ser alteradas.
-                             </div>
-                         ) : (
+                         {
                             allMenuItems.map(item => (
                                 <div key={item.href} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <div className="flex items-center gap-3">
@@ -175,15 +165,13 @@ export default function PermissoesPage() {
                                     />
                                 </div>
                             ))
-                         )}
+                         }
                     </CardContent>
-                    {!role.isFixed && (
-                        <CardFooter className="flex justify-end border-t pt-6">
-                            <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading}>
-                                {isLoading ? 'Salvando...' : 'Salvar Permissões do Asgard'}
-                            </Button>
-                        </CardFooter>
-                    )}
+                    <CardFooter className="flex justify-end border-t pt-6">
+                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading}>
+                            {isLoading ? 'Salvando...' : `Salvar Permissões de ${role.name}`}
+                        </Button>
+                    </CardFooter>
                 </Card>
             )
         })}
@@ -191,3 +179,4 @@ export default function PermissoesPage() {
     </div>
   );
 }
+
