@@ -29,12 +29,13 @@ export default function RealtimeNotifier() {
             schema: "public", 
             table: "appointments" 
         },
-        async (payload) => {
+        (payload) => {
           const newAppointment = payload.new as Appointment;
           
           // Trigger the server action to handle the notification logic securely
           if (newAppointment?.id) {
-             await notifyOnNewAppointment(newAppointment.id);
+             // We don't await this so it doesn't block the UI toast notification
+             notifyOnNewAppointment(newAppointment.id);
           }
 
           toast({
