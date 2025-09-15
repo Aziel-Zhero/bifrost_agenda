@@ -1,4 +1,5 @@
 
+
 # Agenda - Sistema de Gestão para Studios
 
 Bem-vindo à **Agenda**, um sistema de gerenciamento robusto e intuitivo, projetado para otimizar a administração de estúdios, salões e negócios baseados em agendamentos. A plataforma centraliza a gestão de clientes, agendamentos e finanças, capacitando os administradores com ferramentas eficientes e insights claros.

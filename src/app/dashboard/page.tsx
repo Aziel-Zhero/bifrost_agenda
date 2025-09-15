@@ -31,7 +31,7 @@ type Period = "day" | "week" | "month";
 export default function DashboardRedirectPage() {
   const [period, setPeriod] = useState<Period>("day");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [studioName, setStudioName] = useState("seu estúdio");
+  const [userName, setUserName] = useState("Usuário");
   const today = useMemo(() => new Date(), []);
 
   useEffect(() => {
@@ -53,23 +53,25 @@ export default function DashboardRedirectPage() {
       setAppointments(data as any[] || []);
     };
 
-    const fetchStudioName = async () => {
-        const { data, error } = await supabase
-            .from('studio_profile')
-            .select('studio_name')
-            .eq('id', 1)
-            .single();
-        
-        if (data && data.studio_name) {
-            setStudioName(data.studio_name);
-        } else if (error && error.code !== 'PGRST116') {
-             // PGRST116 means no rows found, which is fine, we'll use the default.
-            console.log("Could not fetch studio name, using default. Error: ", error.message)
+    const fetchUserProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('name')
+                .eq('id', user.id)
+                .single();
+            
+            if (data && data.name) {
+                setUserName(data.name);
+            } else if (error && error.code !== 'PGRST116') {
+                console.log("Could not fetch user name, using default. Error: ", error.message)
+            }
         }
     }
 
     fetchAppointments();
-    fetchStudioName();
+    fetchUserProfile();
   }, []);
 
   const filteredAppointments = useMemo(() => {
@@ -118,7 +120,7 @@ export default function DashboardRedirectPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Bem-vindo ao {studioName}</h1>
+          <h1 className="text-2xl font-bold">Olá, {userName}!</h1>
           <p className="text-muted-foreground">{getPeriodTitle()}</p>
         </div>
         <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">
