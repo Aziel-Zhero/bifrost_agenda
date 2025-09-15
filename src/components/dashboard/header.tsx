@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   Bell,
@@ -20,6 +20,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
@@ -35,12 +39,16 @@ import { cn } from "@/lib/utils";
 import Nav, { menuItems } from "./nav";
 import { supabase } from "@/lib/supabase/client";
 import type { UserProfile } from "@/types";
-
+import { useNotifications } from "@/contexts/notification-context";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const { notifications, unreadCount, markAsRead } = useNotifications();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -102,17 +110,21 @@ export default function Header() {
   
   const visibleMenuItems = menuItems.filter(item => hasPermission(item.href));
   
-  // Separate profile-related items for the user dropdown
   const navMenuItems = visibleMenuItems.filter(item => item.href !== '/dashboard/perfil');
   
-  // Create a separate list for what appears in the user's own profile dropdown menu.
-  // All users should see "Meu Perfil". Admins see "Perfil do Studio".
   const userDropdownItems = [
     { href: "/dashboard/perfil", label: "Meu Perfil", icon: User },
   ];
   if (currentUser && (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost')) {
     userDropdownItems.push({ href: "/dashboard/perfil-studio", label: "Perfil do Studio", icon: Building });
     userDropdownItems.push({ href: "/dashboard/permissoes", label: "Permissões", icon: Shield });
+  }
+
+  const handleNotificationClick = (notificationId: string, href?: string) => {
+    markAsRead(notificationId);
+    if(href) {
+        router.push(href);
+    }
   }
 
 
@@ -140,7 +152,7 @@ export default function Header() {
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
              </SheetHeader>
              <div className="mb-4">
-                <Logo />
+                <Logo isHeader/>
               </div>
             <nav className="grid gap-6 text-lg font-medium">
               {[...visibleMenuItems, ...userDropdownItems.filter(item => item.href !== '/dashboard/perfil')].map((item) => (
@@ -165,10 +177,36 @@ export default function Header() {
         </div>
         
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notificações</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500" />}
+                    <span className="sr-only">Notificações</span>
+                </Button>
+            </DropdownMenuTrigger>
+             <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.length > 0 ? (
+                    notifications.map(notif => (
+                    <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif.id, notif.href)} className={cn("flex items-start gap-2", !notif.read && "font-bold")}>
+                        <div className="flex-shrink-0 pt-1">
+                           {!notif.read && <span className="flex h-2 w-2 rounded-full bg-primary" />}
+                        </div>
+                        <div className="flex-grow">
+                            <p className="text-sm leading-tight">{notif.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(notif.timestamp, { addSuffix: true, locale: ptBR })}
+                            </p>
+                        </div>
+                    </DropdownMenuItem>
+                    ))
+                ) : (
+                    <p className="p-4 text-center text-sm text-muted-foreground">Nenhuma notificação.</p>
+                )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
@@ -216,10 +254,37 @@ export default function Header() {
         </div>
         
         <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Toggle notifications</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500" />}
+                    <span className="sr-only">Notificações</span>
+                </Button>
+            </DropdownMenuTrigger>
+             <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.length > 0 ? (
+                    notifications.map(notif => (
+                    <DropdownMenuItem key={notif.id} onSelect={() => handleNotificationClick(notif.id, notif.href)} className={cn("flex items-start gap-2 cursor-pointer", !notif.read && "font-semibold")}>
+                        <div className="flex-shrink-0 pt-1">
+                           {!notif.read && <span className="flex h-2 w-2 rounded-full bg-primary" />}
+                        </div>
+                        <div className="flex-grow">
+                            <p className="text-sm leading-tight">{notif.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(notif.timestamp, { addSuffix: true, locale: ptBR })}
+                            </p>
+                        </div>
+                    </DropdownMenuItem>
+                    ))
+                ) : (
+                    <p className="p-4 text-center text-sm text-muted-foreground">Nenhuma notificação.</p>
+                )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">

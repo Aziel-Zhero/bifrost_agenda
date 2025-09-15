@@ -108,4 +108,10 @@ export type AppointmentReminder = {
     status: string;
 };
 
-
+export type AppNotification = {
+  id: string;
+  title: string;
+  read: boolean;
+  timestamp: Date;
+  href?: string;
+};
