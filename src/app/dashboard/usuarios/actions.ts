@@ -123,14 +123,38 @@ export async function reinviteUser(userId: string) {
 export async function deleteUser(userId: string) {
   const supabaseAdmin = getSupabaseAdmin();
 
-  const { data, error } = await supabaseAdmin.auth.admin.deleteUser(userId)
+  // First, get user details to log them before deletion
+  const { data: userToDelete, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+  
+  if (getUserError) {
+    console.error('Error fetching user before deletion:', getUserError);
+    return { error: getUserError };
+  }
+  
+  const { data, error } = await supabaseAdmin.auth.admin.deleteUser(userId);
   
   if (error) {
-    console.error('Error deleting user:', error)
-    return { error }
+    console.error('Error deleting user:', error);
+    return { error };
   }
 
-  return { data, error: null }
+  // If deletion is successful, insert a log entry
+  const logPayload = {
+    message: 'User deleted',
+    record: {
+      email: userToDelete.user.email,
+      id: userToDelete.user.id,
+    }
+  };
+
+  const { error: logError } = await supabaseAdmin.from('audit_log').insert({ payload: logPayload });
+
+  if (logError) {
+    console.error('Failed to write to audit log after user deletion:', logError);
+    // Don't return this error to the client, as the main action (deletion) was successful.
+  }
+
+  return { data, error: null };
 }
 
 
@@ -175,13 +199,12 @@ export async function getAuditLogs(): Promise<{ data: AuditLog[] | null, error: 
     const supabaseAdmin = getSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-        .from('audit_log_entries')
+        .from('audit_log') // Querying our custom audit_log table now
         .select('id, payload, created_at')
         .order('created_at', { ascending: false });
 
     if (error) {
-        // RLS might be blocking access. Supabase logs are usually in a different schema.
-        console.error("Error fetching audit logs from 'audit_log_entries':", error);
+        console.error("Error fetching audit logs:", error);
         return { data: null, error: { message: "Falha ao buscar logs de auditoria: " + error.message }};
     }
     
