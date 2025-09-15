@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ptBR } from 'date-fns/locale';
 import { supabase } from "@/lib/supabase/client";
 import { parseISO } from "date-fns";
+import { notifyOnNewAppointment } from "@/app/actions";
 
 
 export default function AgendaPage() {
@@ -141,6 +142,9 @@ export default function AgendaPage() {
         console.error("Error creating appointment", error);
     } else if (data) {
         const newAppointment: Appointment = data as any;
+        
+        // Trigger notification
+        notifyOnNewAppointment(newAppointment.id);
 
         setAppointments(prev => [...prev, newAppointment]);
         setFormOpen(false);
@@ -283,4 +287,3 @@ export default function AgendaPage() {
     </>
   );
 }
-
