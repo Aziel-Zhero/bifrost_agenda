@@ -2,7 +2,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import type { UserProfile } from '@/types';
+import type { UserProfile, AuditLog } from '@/types';
 
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -168,4 +168,29 @@ export async function updatePermissionsByRole(role: UserProfile['role'], permiss
     }
 
     return { data, error: null };
+}
+
+
+export async function getAuditLogs(): Promise<{ data: AuditLog[] | null, error: { message: string } | null }> {
+    const supabaseAdmin = getSupabaseAdmin();
+
+    const { data, error } = await supabaseAdmin
+        .from('audit_log_entries')
+        .select('id, payload, created_at')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        // RLS might be blocking access. Supabase logs are usually in a different schema.
+        console.error("Error fetching audit logs from 'audit_log_entries':", error);
+        return { data: null, error: { message: "Falha ao buscar logs de auditoria: " + error.message }};
+    }
+    
+    // The payload comes as a JSON object, but the timestamp needs to be a Date object.
+    const logs: AuditLog[] = data.map((log: any) => ({
+        id: log.id,
+        payload: log.payload,
+        timestamp: new Date(log.created_at)
+    }));
+
+    return { data: logs, error: null };
 }
