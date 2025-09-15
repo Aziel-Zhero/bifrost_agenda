@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Bell } from "lucide-react";
 import type { Appointment } from "@/types";
+import { notifyOnNewAppointment } from "@/app/actions";
 
 
 export default function RealtimeNotifier() {
@@ -19,6 +20,26 @@ export default function RealtimeNotifier() {
       return;
     }
 
+    const handleNewAppointment = (payload: any) => {
+      // Refresh the current route to re-fetch server data
+      router.refresh();
+
+      toast({
+        title: (
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            <span className="font-semibold">Novo Agendamento!</span>
+          </div>
+        ),
+        description: `Um novo horário foi agendado. Os dados foram atualizados.`,
+        duration: 10000,
+        className: "cursor-pointer hover:bg-muted/80",
+        onClick: () => {
+          router.push("/dashboard/agenda-geral");
+        },
+      });
+    };
+
     const channel = supabase
       .channel("realtime-appointments")
       .on(
@@ -28,25 +49,18 @@ export default function RealtimeNotifier() {
             schema: "public", 
             table: "appointments" 
         },
-        (payload) => {
-          // A notificação para Telegram agora é chamada diretamente na criação do agendamento.
-          // Este componente foca apenas em notificar o usuário na tela (UI).
-          
-          toast({
-            title: (
-              <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                <span className="font-semibold">Novo Agendamento!</span>
-              </div>
-            ),
-            description: `Um novo horário foi agendado. Clique para ver.`,
-            duration: 10000, // 10 segundos
-            className: "cursor-pointer hover:bg-muted/80",
-            onClick: () => {
-              router.push("/dashboard/agenda-geral");
-              router.refresh();
-            },
-          });
+        handleNewAppointment
+      )
+       .on(
+        "postgres_changes",
+        { 
+            event: "UPDATE", 
+            schema: "public", 
+            table: "appointments" 
+        },
+        () => {
+            // Also refresh on updates (e.g., status change, reschedule)
+            router.refresh();
         }
       )
       .subscribe((status, err) => {
