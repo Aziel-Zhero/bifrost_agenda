@@ -50,8 +50,8 @@ const initialRoles: RoleSettings[] = [
         '/dashboard/logs': false,
         '/dashboard/perfil': true,
         '/dashboard/perfil-studio': false,
-        '/dashboard/clientes': false,
         '/dashboard/permissoes': false,
+        '/dashboard/clientes': false,
     },
     isFixed: false,
   },
@@ -88,27 +88,22 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
-                    // Find a user with this role that has a non-empty permissions object
+                    if (role.isFixed) return role;
+
                     const userWithRole = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
                     
-                    if (userWithRole) {
-                        const completePermissions: { [key: string]: boolean } = {};
-                        
-                        // Ensure all menu items have a permission entry
-                        menuItems.forEach(item => {
-                            // If permission exists in DB, use it. Otherwise, use initial default for that role.
-                            if (typeof userWithRole.permissions[item.href] !== 'undefined') {
-                                completePermissions[item.href] = userWithRole.permissions[item.href];
-                            } else {
-                                const initialRole = initialRoles.find(r => r.name === role.name);
-                                completePermissions[item.href] = initialRole?.permissions[item.href] ?? false;
-                            }
-                        });
+                    const dbPermissions = userWithRole ? userWithRole.permissions : role.permissions;
+                    const completePermissions: { [key: string]: boolean } = {};
+                    
+                    menuItems.forEach(item => {
+                        if (typeof dbPermissions[item.href] !== 'undefined') {
+                            completePermissions[item.href] = dbPermissions[item.href];
+                        } else {
+                            completePermissions[item.href] = role.permissions[item.href] ?? false;
+                        }
+                    });
 
-                        return { ...role, permissions: completePermissions };
-                    }
-                    // If no user has permissions set for this role, return the initial default role settings
-                    return role;
+                    return { ...role, permissions: completePermissions };
                 });
                 setRoles(updatedRoles);
             }
