@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -6,10 +7,8 @@ import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Bell } from "lucide-react";
 import type { Appointment } from "@/types";
+import { notifyOnNewAppointment } from "@/app/actions";
 
-type AppointmentPayload = {
-  new: Appointment;
-};
 
 export default function RealtimeNotifier() {
   const { toast } = useToast();
@@ -23,7 +22,7 @@ export default function RealtimeNotifier() {
 
     const channel = supabase
       .channel("realtime-appointments")
-      .on<AppointmentPayload>(
+      .on(
         "postgres_changes",
         { 
             event: "INSERT", 
@@ -31,12 +30,13 @@ export default function RealtimeNotifier() {
             table: "appointments" 
         },
         async (payload) => {
-          // O payload de uma inserção direta não contém dados de tabelas relacionadas (joins).
-          // Para manter a notificação rápida e confiável, usamos uma mensagem mais genérica
-          // e incentivamos o clique para ver os detalhes.
+          const newAppointment = payload.new as Appointment;
           
-          // NOTA: Para que isso funcione, o Realtime deve estar habilitado para a tabela 'appointments' no seu painel do Supabase.
-          
+          // Trigger the server action to handle the notification logic securely
+          if (newAppointment?.id) {
+             await notifyOnNewAppointment(newAppointment.id);
+          }
+
           toast({
             title: (
               <div className="flex items-center gap-2">
@@ -48,7 +48,6 @@ export default function RealtimeNotifier() {
             duration: 10000, // 10 segundos
             className: "cursor-pointer hover:bg-muted/80",
             onClick: () => {
-              // Redireciona para a agenda e força um refresh para garantir que os novos dados apareçam
               router.push("/dashboard/agenda-geral");
               router.refresh();
             },
