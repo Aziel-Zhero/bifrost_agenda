@@ -27,13 +27,13 @@ const initialRoles: RoleSettings[] = [
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
     permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: true, // Bifrost permissions should be fixed
+    isFixed: true, 
   },
   {
     name: "Heimdall",
     description: "Administrador mestre do estúdio, com visão ampla e privilegiada, podendo gerenciar todos os usuários e relatórios.",
     permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
-    isFixed: false,
+    isFixed: true,
   },
   {
     name: "Asgard",
@@ -50,7 +50,6 @@ const initialRoles: RoleSettings[] = [
         '/dashboard/logs': false,
         '/dashboard/perfil': true,
         '/dashboard/perfil-studio': false,
-        '/dashboard/permissoes': false,
         '/dashboard/clientes': false,
     },
     isFixed: false,
@@ -88,17 +87,22 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
+                    // For fixed roles, we always use the complete permission set from initialRoles.
                     if (role.isFixed) return role;
 
+                    // Find a user with the current role to get the base permissions.
                     const userWithRole = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
                     
                     const dbPermissions = userWithRole ? userWithRole.permissions : role.permissions;
                     const completePermissions: { [key: string]: boolean } = {};
                     
+                    // Ensure every menu item has a defined permission.
                     menuItems.forEach(item => {
+                        // If the permission is defined in the DB, use it.
                         if (typeof dbPermissions[item.href] !== 'undefined') {
                             completePermissions[item.href] = dbPermissions[item.href];
                         } else {
+                            // Otherwise, use the default from initialRoles for that role.
                             completePermissions[item.href] = role.permissions[item.href] ?? false;
                         }
                     });
