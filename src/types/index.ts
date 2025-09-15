@@ -94,3 +94,10 @@ export type GaiaLog = {
   sent_to: string;
   status: string;
 };
+
+export type AppointmentReminder = {
+    id: number;
+    appointment_id: string;
+    sent_at: string;
+    status: string;
+};

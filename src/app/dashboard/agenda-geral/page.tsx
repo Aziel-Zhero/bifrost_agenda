@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import type { Appointment, UserProfile } from '@/types';
 import { supabase } from '@/lib/supabase/client';
 import { Star } from 'lucide-react';
+import { sendAppointmentReminders } from '@/app/actions';
 
 type AppointmentsByDay = {
   [day: string]: {
@@ -41,6 +42,9 @@ export default function AgendaGeralPage() {
   const [adminColorMap, setAdminColorMap] = useState<AdminColorMap>({});
 
   useEffect(() => {
+    // Fire-and-forget the reminder check
+    sendAppointmentReminders();
+
     const fetchData = async () => {
       // Fetch users to create a map of ID -> Name and assign colors
       const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, name');
