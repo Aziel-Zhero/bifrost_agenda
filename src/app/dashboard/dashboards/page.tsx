@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { User, Calendar as CalendarIcon, Users, UserPlus, ShieldAlert, TrendingUp, TrendingDown } from "lucide-react";
-import type { Appointment, Service } from "@/types";
+import type { Appointment, Service, UserProfile } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -76,19 +76,31 @@ export default function DashboardPage() {
   });
 
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [allUserAppointments, setAllUserAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
   
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch Appointments with nested client and service data
-      const { data: apptData, error: apptError } = await supabase
-        .from('appointments')
-        .select(`*, clients ( name ), services ( * )`);
-      
-      if (apptError) {
-        console.error("Error fetching appointments:", apptError.message);
-      } else {
-        setAppointments(apptData as any[] || []);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setCurrentUser(profile);
+
+        // Fetch Appointments only for the current user
+        const { data: apptData, error: apptError } = await supabase
+          .from('appointments')
+          .select(`*, clients ( name ), services ( * )`)
+          .eq('admin_id', user.id);
+        
+        if (apptError) {
+          console.error("Error fetching user appointments:", apptError.message);
+        } else {
+          const userAppointments = apptData as any[] || [];
+          setAppointments(userAppointments);
+          setAllUserAppointments(userAppointments);
+        }
       }
     };
     fetchData();
@@ -107,7 +119,7 @@ export default function DashboardPage() {
 
   const kpiData: Kpi[] = useMemo(() => {
     const from = dateRange?.from;
-    if (!from) return [];
+    if (!from || !currentUser) return [];
 
     const calculateChange = (current: number, previous: number) => {
         if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -128,7 +140,7 @@ export default function DashboardPage() {
     const prevMonthStart = startOfMonth(prevMonthDate);
     const prevMonthEnd = endOfMonth(prevMonthDate);
     
-    const prevMonthAppointments = appointments.filter(appt => 
+    const prevMonthAppointments = allUserAppointments.filter(appt => 
       appt.date_time && isWithinInterval(parseISO(appt.date_time), { start: prevMonthStart, end: prevMonthEnd })
     );
     const prevMonthCompleted = prevMonthAppointments.filter(a => a.status === 'Realizado');
@@ -137,9 +149,9 @@ export default function DashboardPage() {
     const prevMonthLosses = prevMonthCancelled.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
     const prevMonthClients = new Set(prevMonthCompleted.map(a => a.clients?.name)).size;
 
-    // Logic to find new clients
+    // Logic to find new clients for the current user
     const allClientsEver = new Map<string, string>();
-    [...appointments]
+    [...allUserAppointments]
       .sort((a,b) => {
         if (!a.date_time || !b.date_time) return 0;
         return parseISO(a.date_time).getTime() - parseISO(b.date_time).getTime()
@@ -152,7 +164,7 @@ export default function DashboardPage() {
 
     const getNewClientsInInterval = (interval: {start: Date, end: Date}) => {
          return new Set(
-            appointments
+            allUserAppointments
                 .filter(appt => {
                     if (!appt.clients?.name) return false;
                     const firstAppointmentDateString = allClientsEver.get(appt.clients.name);
@@ -205,11 +217,11 @@ export default function DashboardPage() {
       },
     ]
 
-  }, [filteredAppointments, appointments, dateRange]);
+  }, [filteredAppointments, allUserAppointments, dateRange, currentUser]);
 
 
   const getTopClients = (): ClientRanking[] => {
-    const clientCounts = appointments
+    const clientCounts = allUserAppointments
       .filter(appt => appt.status === 'Realizado' && appt.clients?.name)
       .reduce((acc, appt) => {
         const clientName = appt.clients!.name;
@@ -225,7 +237,7 @@ export default function DashboardPage() {
 
   const overviewData = useMemo(() => {
     const monthlyGains: {[key: string]: number} = {};
-    const completedAppointments = appointments.filter(a => a.status === 'Realizado');
+    const completedAppointments = allUserAppointments.filter(a => a.status === 'Realizado');
 
     completedAppointments.forEach(appt => {
         if (appt.date_time) {
@@ -251,7 +263,7 @@ export default function DashboardPage() {
     }
 
     return data;
-  }, [appointments, today, isMobile]);
+  }, [allUserAppointments, today, isMobile]);
   
   const topClients = getTopClients();
 
@@ -262,9 +274,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold">Meu Dashboard</h1>
           <p className="text-muted-foreground">
             Suas métricas e visão geral do desempenho.
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            As métricas de ganhos e perdas são atualizadas diariamente após a meia-noite.
           </p>
         </div>
          <Popover>
@@ -331,7 +340,7 @@ export default function DashboardPage() {
              <Card>
               <CardHeader>
                 <CardTitle>Top 5 Clientes</CardTitle>
-                <CardDescription>Quem mais marcou presença até o momento.</CardDescription>
+                <CardDescription>Quem mais marcou presença com você.</CardDescription>
               </CardHeader>
               <CardContent>
                  <Table>
@@ -371,3 +380,4 @@ export default function DashboardPage() {
     
 
     
+
