@@ -22,6 +22,7 @@ export default function RootLayout({
         <meta name="theme-color" content="hsl(217 91% 60%)" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="msapplication-navbutton-color" content="hsl(217 91% 60%)" />
+        <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
       </head>
       <body className="font-body antialiased">
         {children}
