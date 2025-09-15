@@ -8,10 +8,7 @@ import { Bell } from "lucide-react";
 import type { Appointment } from "@/types";
 
 type AppointmentPayload = {
-  new: Appointment & { 
-    clients: { name: string } | null;
-    profiles: { name: string } | null;
-  };
+  new: Appointment;
 };
 
 export default function RealtimeNotifier() {
@@ -34,29 +31,11 @@ export default function RealtimeNotifier() {
             table: "appointments" 
         },
         async (payload) => {
-          const newAppointment = payload.new;
-
-          // Precisamos buscar o nome do admin e do cliente separadamente
-          // pois o payload do INSERT não pode fazer joins complexos.
-          const { data: adminProfile, error: adminError } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('id', newAppointment.admin_id)
-            .single();
-
-          const { data: client, error: clientError } = await supabase
-            .from('clients')
-            .select('name')
-            .eq('id', newAppointment.client_id)
-            .single();
+          // O payload de uma inserção direta não contém dados de tabelas relacionadas (joins).
+          // Para manter a notificação rápida e confiável, usamos uma mensagem mais genérica
+          // e incentivamos o clique para ver os detalhes.
           
-          if (adminError || clientError) {
-              console.error("Error fetching names for notification:", adminError || clientError);
-              return;
-          }
-
-          const adminName = adminProfile?.name || 'Alguém';
-          const clientName = client?.name || 'um novo cliente';
+          // NOTA: Para que isso funcione, o Realtime deve estar habilitado para a tabela 'appointments' no seu painel do Supabase.
           
           toast({
             title: (
@@ -65,16 +44,30 @@ export default function RealtimeNotifier() {
                 <span className="font-semibold">Novo Agendamento!</span>
               </div>
             ),
-            description: `${adminName} agendou ${clientName}.`,
+            description: `Um novo horário foi agendado. Clique para ver.`,
             duration: 10000, // 10 segundos
             className: "cursor-pointer hover:bg-muted/80",
             onClick: () => {
+              // Redireciona para a agenda e força um refresh para garantir que os novos dados apareçam
               router.push("/dashboard/agenda-geral");
+              router.refresh();
             },
           });
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Conectado ao canal de agendamentos em tempo real!');
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Erro no canal de tempo real:', err);
+          toast({
+            variant: 'destructive',
+            title: 'Erro de Conexão',
+            description: 'Não foi possível conectar ao serviço de notificações em tempo real.'
+          })
+        }
+      });
 
     // Cleanup: desinscrever-se do canal quando o componente for desmontado
     return () => {
