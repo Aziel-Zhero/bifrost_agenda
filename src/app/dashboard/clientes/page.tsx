@@ -2,21 +2,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ColumnDef } from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  MoreHorizontal,
-  PlusCircle,
-  User,
-} from "lucide-react";
+import { PlusCircle, MoreHorizontal, User, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Card,
+  CardContent,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -24,106 +15,58 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import { DataTable } from "./components/data-table";
-import type { Client } from "@/types";
+import { getColumns } from "./components/columns";
+import { DataTable } from "@/app/dashboard/clientes/components/data-table";
 import { supabase } from "@/lib/supabase/client";
+import type { Client, UserProfile } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
-// We can define columns directly in the page component if they are specific to it
-// Or we can keep them in a separate file if they are reused
-export const getColumns = (
-  onEdit: (client: Client) => void,
-  onDelete: (client: Client) => void
-): ColumnDef<Client>[] => [
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Nome
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const client = row.original;
-      return (
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-            <User className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <span className="font-medium">{client.name}</span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "whatsapp",
-    header: "WhatsApp",
-  },
-  {
-    accessorKey: "admin",
-    header: "Usuário Designado",
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const client = row.original;
-      return (
-        <div className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => onEdit(client)}>
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => onDelete(client)}
-              >
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    },
-  },
-];
 
 export default function ClientesPage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isFormOpen, setFormOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [whatsapp, setWhatsapp] = useState('');
   const { toast } = useToast();
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [whatsapp, setWhatsapp] = useState('');
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   useEffect(() => {
-    const fetchClients = async () => {
-      const { data, error } = await supabase.from("clients").select("*");
-      if (error) {
-        console.error("Error fetching clients:", error);
+    const fetchUserAndClients = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      setCurrentUser(profile);
+      
+      const isAdmin = profile?.role === 'Heimdall' || profile?.role === 'Bifrost';
+      
+      let query = supabase.from('clients').select('*');
+
+      if (!isAdmin) {
+          // Asgard users see only their own clients
+          query = query.eq('admin', profile?.name || user.email);
+      }
+      
+      const { data: clientData, error: clientError } = await query;
+              
+      if (clientError) {
+          console.error("Error fetching clients:", clientError);
+          toast({ title: "Erro ao buscar clientes", description: clientError.message, variant: "destructive" });
       } else {
-        setClients(data || []);
+          setClients(clientData || []);
       }
     };
-    fetchClients();
-  }, []);
+    fetchUserAndClients();
+  }, [toast]);
 
   const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -141,61 +84,49 @@ export default function ClientesPage() {
     setWhatsapp(masked);
   };
 
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      toast({ title: "Erro", description: "Usuário não autenticado.", variant: "destructive"});
+      return;
+    }
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const clientData = {
-      name: formData.get("name") as string,
-      whatsapp: (formData.get("whatsapp") as string).replace(/\D/g, ''),
-      telegram: formData.get("telegram") as string,
-      admin: formData.get("admin") as string,
+        name: formData.get('name') as string,
+        whatsapp: (formData.get('whatsapp') as string).replace(/\D/g, ''),
+        telegram: formData.get('telegram') as string,
+        // For Asgard users, admin is always themselves. For Admins, it's what they type.
+        admin: (currentUser.role === 'Asgard' ? currentUser.name : formData.get('admin') as string) || currentUser.name,
     };
 
     if (editingClient) {
-      // Update
-      const { data, error } = await supabase
-        .from("clients")
-        .update(clientData)
-        .eq("id", editingClient.id)
-        .select()
-        .single();
-      if (error) {
-        toast({
-          title: "Erro ao atualizar",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else if (data) {
-        setClients(
-          clients.map((c) => (c.id === editingClient.id ? data : c))
-        );
-        toast({ title: "Cliente atualizado com sucesso!" });
-        setFormOpen(false);
-      }
+        // Update logic
+        const { data, error } = await supabase.from('clients').update(clientData).eq('id', editingClient.id).select().single();
+        if (error) {
+            toast({ title: "Erro ao atualizar cliente", description: error.message, variant: "destructive" });
+        } else if (data) {
+            setClients(prev => prev.map(c => c.id === data.id ? data : c));
+            toast({ title: "Cliente Atualizado!", description: `${data.name} foi atualizado.`, className: "bg-green-100" });
+        }
+
     } else {
-      // Create
-      const { data, error } = await supabase
-        .from("clients")
-        .insert(clientData)
-        .select()
-        .single();
-      if (error) {
-        toast({
-          title: "Erro ao criar",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else if (data) {
-        setClients([...clients, data]);
-        toast({ title: "Cliente criado com sucesso!" });
-        setFormOpen(false);
-      }
+        // Create logic
+        const { data, error } = await supabase.from('clients').insert(clientData).select().single();
+        if (error) {
+            toast({ title: "Erro ao adicionar cliente", description: error.message, variant: "destructive" });
+        } else if (data) {
+            setClients(prev => [...prev, data]);
+            toast({ title: "Cliente Adicionado!", description: `${data.name} foi adicionado à sua lista.`, className: "bg-green-100" });
+        }
     }
+    
+    closeForm();
   };
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
-    setWhatsapp(client.whatsapp); // Set whatsapp state for editing
+    setWhatsapp(client.whatsapp || ''); // Mask it for display
     setFormOpen(true);
   };
 
@@ -205,7 +136,7 @@ export default function ClientesPage() {
     if (error) {
        toast({
           title: "Erro ao excluir",
-          description: error.message,
+          description: "Você pode não ter permissão para excluir este cliente. Apenas o usuário designado pode excluí-lo. Erro: " + error.message,
           variant: "destructive",
         });
     } else {
@@ -213,90 +144,70 @@ export default function ClientesPage() {
         toast({ title: "Cliente excluído com sucesso!" });
     }
   };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingClient(null);
+    setWhatsapp('');
+  }
   
-  const columns = getColumns(handleEdit, handleDelete);
+  const columns = getColumns({ onEdit: handleEdit, onDelete: handleDelete });
+
+  const isAdmin = currentUser?.role === 'Heimdall' || currentUser?.role === 'Bifrost';
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Clientes do Studio</h1>
+          <h1 className="text-2xl font-bold">Gerenciar Clientes</h1>
           <p className="text-muted-foreground">
-            Gerencie todos os clientes do seu negócio.
+            {isAdmin ? "Gerencie todos os clientes do estúdio." : "Gerencie os clientes que são designados a você."}
           </p>
         </div>
-        <Dialog
-          open={isFormOpen}
-          onOpenChange={(isOpen) => {
-            setFormOpen(isOpen);
-            if (!isOpen) {
-              setEditingClient(null);
-              setWhatsapp(''); // Reset whatsapp state
-            }
-          }}
-        >
+        <Dialog open={isFormOpen} onOpenChange={isOpen => {
+          if (!isOpen) closeForm();
+          else setFormOpen(true);
+        }}>
           <DialogTrigger asChild>
-            <Button>
+             <Button onClick={() => { setEditingClient(null); setFormOpen(true); }}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Adicionar Cliente
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {editingClient ? "Editar Cliente" : "Adicionar Novo Cliente"}
-              </DialogTitle>
+              <DialogTitle>{editingClient ? 'Editar' : 'Adicionar'} Cliente</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="Nome completo do cliente"
-                  defaultValue={editingClient?.name}
-                  required
-                />
+                <Input id="name" name="name" placeholder="Nome completo do cliente" defaultValue={editingClient?.name} required/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input
-                  id="whatsapp"
-                  name="whatsapp"
-                  placeholder="(99) 99999-9999"
-                  value={whatsapp}
-                  onChange={handleWhatsappChange}
-                  maxLength={15}
-                  required
-                />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="telegram">Telegram</Label>
-                <Input
-                  id="telegram"
-                  name="telegram"
-                  placeholder="ID ou usuário do Telegram"
-                  defaultValue={editingClient?.telegram}
-                />
+                <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" value={whatsapp} onChange={handleWhatsappChange} maxLength={15} required/>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="admin">Usuário Designado</Label>
-                <Input
-                  id="admin"
-                  name="admin"
-                  placeholder="Nome do admin"
-                  defaultValue={editingClient?.admin}
-                  required
-                />
+                <Label htmlFor="telegram">Telegram Chat ID (Opcional)</Label>
+                <Input id="telegram" name="telegram" placeholder="ID numérico do chat com o bot" defaultValue={editingClient?.telegram || ''} />
+                <p className="text-xs text-muted-foreground">
+                    Peça para o cliente enviar uma mensagem ao bot e use o `@userinfobot` para obter o ID.
+                </p>
               </div>
+               {isAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="admin">Usuário Designado</Label>
+                    <Input
+                      id="admin"
+                      name="admin"
+                      placeholder="Nome do admin responsável"
+                      defaultValue={editingClient?.admin || currentUser?.name}
+                      required
+                    />
+                  </div>
+                )}
               <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setFormOpen(false)}
-                >
-                  Cancelar
-                </Button>
+                <Button type="button" variant="ghost" onClick={closeForm}>Cancelar</Button>
                 <Button type="submit">Salvar</Button>
               </div>
             </form>

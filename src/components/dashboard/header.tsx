@@ -7,10 +7,11 @@ import { useState, useEffect } from "react";
 import {
   Bell,
   LogOut,
-  Settings,
   PanelLeft,
-  User,
+  Users,
+  Shield,
   Building,
+  User,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,7 +36,12 @@ import Nav, { menuItems } from "./nav";
 import { supabase } from "@/lib/supabase/client";
 import type { UserProfile } from "@/types";
 
-const profileMenuItemsHrefs = ['/dashboard/perfil', '/dashboard/perfil-studio'];
+
+// These are profile-related and should be accessible to the user
+const profileMenuItemsHrefs = ['/dashboard/perfil'];
+
+// These are admin-only pages, accessible only by specific roles
+const adminOnlyHrefs = ['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/dashboards'];
 
 export default function Header() {
   const pathname = usePathname();
@@ -60,11 +66,24 @@ export default function Header() {
                 id: user.id,
                 name: user.email?.split('@')[0] || 'Usuário',
                 email: user.email || 'Não encontrado',
-                role: 'Midgard', // Default role
+                role: 'Asgard', // Default role
                 permissions: {}
               });
-          } else {
+          } else if (profile) {
+              // On first login via invite, role might be null in DB, use default 'Asgard'
+              if (!profile.role) {
+                profile.role = 'Asgard';
+              }
               setCurrentUser(profile);
+          } else {
+             // Profile not found, create a temporary one for display
+             setCurrentUser({
+                id: user.id,
+                name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
+                email: user.email || 'Não encontrado',
+                role: 'Asgard',
+                permissions: {},
+              });
           }
       }
     };
@@ -77,15 +96,32 @@ export default function Header() {
 
   const hasPermission = (href: string) => {
     if (!currentUser) return false;
-    if (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost') {
-      return true;
-    }
+    const isAdmin = currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost';
+    
+    // Admins can see everything
+    if (isAdmin) return true;
+
+    // If it's an admin-only page, non-admins can't see it
+    if (adminOnlyHrefs.includes(href)) return false;
+
+    // For regular pages, check individual permissions
     return currentUser.permissions[href] !== false;
   };
   
   const visibleMenuItems = menuItems.filter(item => hasPermission(item.href));
+  
+  // Separate profile-related items for the user dropdown
   const navMenuItems = visibleMenuItems.filter(item => !profileMenuItemsHrefs.includes(item.href));
-  const profileMenuItems = visibleMenuItems.filter(item => profileMenuItemsHrefs.includes(item.href));
+  
+  // Create a separate list for what appears in the user's own profile dropdown menu.
+  // All users should see "Meu Perfil". Admins see "Perfil do Studio".
+  const userDropdownItems = [
+    { href: "/dashboard/perfil", label: "Meu Perfil", icon: User },
+  ];
+  if (currentUser && (currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost')) {
+    userDropdownItems.push({ href: "/dashboard/perfil-studio", label: "Perfil do Studio", icon: Building });
+    userDropdownItems.push({ href: "/dashboard/permissoes", label: "Permissões", icon: Shield });
+  }
 
 
   if (!currentUser) {
@@ -160,7 +196,7 @@ export default function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-               {profileMenuItems.map(item => (
+               {userDropdownItems.map(item => (
                  <DropdownMenuItem key={item.href} asChild>
                     <Link href={item.href}>
                       <item.icon className="mr-2 h-4 w-4" />
@@ -211,7 +247,7 @@ export default function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {profileMenuItems.map(item => (
+              {userDropdownItems.map(item => (
                  <DropdownMenuItem key={item.href} asChild>
                     <Link href={item.href}>
                       <item.icon className="mr-2 h-4 w-4" />

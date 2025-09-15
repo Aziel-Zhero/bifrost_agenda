@@ -26,12 +26,18 @@ export type Appointment = {
 };
 
 
-export type AppointmentReport = Appointment & {
-  clientName: string;
-  whatsapp: string;
-  telegram?: string;
-  admin: string;
+export type AppointmentReport = {
+    id: string;
+    dateTime: string;
+    notes: string;
+    status: AppointmentStatus;
+    clientName: string;
+    whatsapp: string;
+    telegram?: string;
+    admin: string;
+    serviceId: string;
 }
+
 
 export type Service = {
   id: string;

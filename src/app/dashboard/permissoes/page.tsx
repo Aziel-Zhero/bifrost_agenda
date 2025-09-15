@@ -16,23 +16,27 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Shield, Combine, User, Users } from "lucide-react";
 import type { RoleSettings } from "@/types";
-import { menuItems } from "@/components/dashboard/nav";
+import { menuItems as allMenuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
 import { updatePermissionsByRole } from "../usuarios/actions";
 import { supabase } from "@/lib/supabase/client";
 
+// Exclude admin-only pages from the permissions list for non-admin roles
+const adminOnlyHrefs = ['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/logs', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/dashboards'];
+
+const menuItems = allMenuItems.filter(item => !adminOnlyHrefs.includes(item.href) && item.href !== '/dashboard/perfil');
 
 const initialRoles: RoleSettings[] = [
   {
     name: "Bifrost",
     description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
-    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
+    permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
     isFixed: true,
   },
   {
     name: "Heimdall",
     description: "Administrador mestre do estúdio, com visão ampla e privilegiada, podendo gerenciar todos os usuários e relatórios.",
-    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
+    permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
     isFixed: true,
   },
   {
@@ -40,25 +44,18 @@ const initialRoles: RoleSettings[] = [
     description: "Administradores ou profissionais do estúdio. Têm acesso às ferramentas para gerenciar seus próprios clientes e agendamentos.",
     permissions: {
         '/dashboard': true,
-        '/dashboard/meus-clientes': true,
+        '/dashboard/clientes': true,
         '/dashboard/agenda': true,
         '/dashboard/agenda-geral': true,
         '/dashboard/servicos': true,
-        '/dashboard/usuarios': false,
-        '/dashboard/dashboards': true,
-        '/dashboard/relatorios': false,
-        '/dashboard/logs': false,
-        '/dashboard/bots': false,
         '/dashboard/perfil': true,
-        '/dashboard/perfil-studio': true,
-        '/dashboard/clientes': false,
     },
     isFixed: false,
   },
   {
     name: "Midgard",
     description: "Representa a esfera dos clientes finais. Não possuem acesso ao painel de administração.",
-    permissions: menuItems.reduce((acc, item) => ({ ...acc, [item.href]: false }), {}),
+    permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: false }), {}),
     isFixed: true,
   },
 ];
@@ -88,12 +85,16 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
-                    const userWithRole = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
+                    // We only care about Asgard for custom permissions
+                    if (role.name !== 'Asgard') return role;
+
+                    const asgardUserWithPermissions = users.find(u => u.role === 'Asgard' && u.permissions && Object.keys(u.permissions).length > 0);
                     
-                    const dbPermissions = userWithRole ? userWithRole.permissions : role.permissions;
+                    const dbPermissions = asgardUserWithPermissions ? asgardUserWithPermissions.permissions : role.permissions;
                     const completePermissions: { [key: string]: boolean } = {};
                     
-                    menuItems.forEach(item => {
+                    allMenuItems.forEach(item => {
+                        // Set permission from DB if exists, otherwise from initial config
                         if (typeof dbPermissions[item.href] !== 'undefined') {
                             completePermissions[item.href] = dbPermissions[item.href];
                         } else {
@@ -135,7 +136,7 @@ export default function PermissoesPage() {
         } else {
              toast({
                 title: "Permissões Salvas!",
-                description: `As permissões para o papel ${roleName} foram atualizadas com sucesso. Os usuários precisarão recarregar a página para ver as mudanças.`,
+                description: `As permissões para o papel ${roleName} foram atualizadas. Os usuários afetados precisarão recarregar a página para ver as mudanças.`,
                 className: "bg-green-100 border-green-300 text-green-800"
             });
         }
@@ -167,27 +168,33 @@ export default function PermissoesPage() {
                     <CardContent className="space-y-4">
                         <Separator />
                          <h4 className="font-semibold text-base pt-2">Acesso às Páginas</h4>
-                         {menuItems.map(item => (
-                             <div key={item.href} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                                 <div className="flex items-center gap-3">
-                                    <item.icon className="h-5 w-5 text-muted-foreground" />
-                                    <Label htmlFor={`perm-${role.name}-${item.href}`} className="font-normal cursor-pointer">
-                                        {item.label}
-                                    </Label>
-                                 </div>
-                                 <Switch
-                                    id={`perm-${role.name}-${item.href}`}
-                                    checked={!!role.permissions[item.href]}
-                                    onCheckedChange={(value) => handlePermissionChange(role.name, item.href, value)}
-                                    disabled={role.isFixed || isLoading}
-                                 />
+                         {role.isFixed ? (
+                             <div className="text-sm text-center text-muted-foreground bg-muted p-3 rounded-md">
+                                As permissões para o papel <strong>{role.name}</strong> são fixas e não podem ser alteradas.
                              </div>
-                         ))}
+                         ) : (
+                            menuItems.map(item => (
+                                <div key={item.href} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <item.icon className="h-5 w-5 text-muted-foreground" />
+                                        <Label htmlFor={`perm-${role.name}-${item.href}`} className="font-normal cursor-pointer">
+                                            {item.label}
+                                        </Label>
+                                    </div>
+                                    <Switch
+                                        id={`perm-${role.name}-${item.href}`}
+                                        checked={!!role.permissions[item.href]}
+                                        onCheckedChange={(value) => handlePermissionChange(role.name, item.href, value)}
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                            ))
+                         )}
                     </CardContent>
                     {!role.isFixed && (
                         <CardFooter className="flex justify-end border-t pt-6">
                             <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading}>
-                                {isLoading ? 'Salvando...' : 'Salvar Permissões'}
+                                {isLoading ? 'Salvando...' : 'Salvar Permissões do Asgard'}
                             </Button>
                         </CardFooter>
                     )}
