@@ -87,13 +87,16 @@ export default function RealtimeNotifier() {
         if (status === 'SUBSCRIBED') {
           console.log('Conectado ao canal de tempo real!');
         }
+        if (status === 'CLOSED' || status === 'TIMED_OUT') {
+            console.log('Canal de tempo real desconectado. Tentando reconectar...');
+        }
         if (status === 'CHANNEL_ERROR') {
-          const errorMessage = err?.message || 'Causa desconhecida.';
-          console.error('Erro no canal de tempo real:', errorMessage, err);
+          const errorMessage = err?.message || 'A conexão foi interrompida.';
+          console.error('Erro no canal de tempo real:', errorMessage);
           toast({
             variant: 'destructive',
-            title: 'Erro de Conexão em Tempo Real',
-            description: `Não foi possível se conectar para receber atualizações ao vivo. ${errorMessage}`
+            title: 'Conexão em Tempo Real Interrompida',
+            description: `Não foi possível manter a conexão para atualizações ao vivo. ${errorMessage}`
           })
         }
       });
