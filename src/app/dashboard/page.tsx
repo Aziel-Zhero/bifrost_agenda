@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Appointment, AppointmentStatus, StudioProfile } from "@/types";
+import type { Appointment, AppointmentStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 
@@ -32,7 +32,6 @@ export default function DashboardRedirectPage() {
   const [period, setPeriod] = useState<Period>("day");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [studioName, setStudioName] = useState("");
-  const [userName, setUserName] = useState("Usuário");
   const today = useMemo(() => new Date(), []);
 
   useEffect(() => {
@@ -40,10 +39,6 @@ export default function DashboardRedirectPage() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        // Fetch user's name
-        const { data: profile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
-        setUserName(profile?.name || user.email?.split('@')[0] || 'Usuário');
-
         // Fetch appointments for the current user
         const { data: appointmentData, error: appointmentError } = await supabase
           .from("appointments")
@@ -124,7 +119,7 @@ export default function DashboardRedirectPage() {
     }
   }
   
-  const welcomeMessage = `Olá, ${userName}${studioName ? ` ${studioName}` : ''}!`;
+  const welcomeMessage = studioName ? `Bem-vindo(a) ao ${studioName}!` : 'Bem-vindo(a)!';
 
   return (
     <div className="flex flex-col gap-8">
