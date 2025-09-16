@@ -58,6 +58,13 @@ const generateTimeOptions = () => {
     return options;
 }
 
+const formatTime = (timeString: string) => {
+    if (timeString && timeString.length > 5) {
+        return timeString.substring(0, 5); // "HH:mm:ss" -> "HH:mm"
+    }
+    return timeString;
+}
+
 export default function PerfilStudioPage() {
   const { toast } = useToast();
   const [isEditingGoals, setIsEditingGoals] = useState(false);
@@ -97,7 +104,12 @@ export default function PerfilStudioPage() {
       if (error) {
         console.log("Could not fetch studio hours, might be first time setup:", error.message);
       } else if (data && data.length > 0) {
-        const sortedData = data.sort((a, b) => a.day_of_week - b.day_of_week);
+        const formattedData = data.map(hour => ({
+          ...hour,
+          start_time: formatTime(hour.start_time),
+          end_time: formatTime(hour.end_time),
+        }));
+        const sortedData = formattedData.sort((a, b) => a.day_of_week - b.day_of_week);
         setStudioHours(sortedData);
       }
     };
@@ -145,7 +157,12 @@ export default function PerfilStudioPage() {
             variant: "destructive"
         });
     } else if (data) {
-        const sortedData = data.sort((a, b) => a.day_of_week - b.day_of_week);
+         const formattedData = data.map(hour => ({
+            ...hour,
+            start_time: formatTime(hour.start_time),
+            end_time: formatTime(hour.end_time),
+        }));
+        const sortedData = formattedData.sort((a, b) => a.day_of_week - b.day_of_week);
         setStudioHours(sortedData);
         toast({
             title: "Horários salvos!",
@@ -382,5 +399,3 @@ export default function PerfilStudioPage() {
     </>
   );
 }
-
-    
