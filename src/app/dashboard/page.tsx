@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Appointment, AppointmentStatus } from "@/types";
+import type { Appointment, AppointmentStatus, StudioProfile } from "@/types";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 
@@ -31,26 +31,26 @@ type Period = "day" | "week" | "month";
 export default function DashboardRedirectPage() {
   const [period, setPeriod] = useState<Period>("day");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [userName, setUserName] = useState("Usuário");
+  const [studioName, setStudioName] = useState("Bem-vindo(a)!");
   const today = useMemo(() => new Date(), []);
 
   useEffect(() => {
     const fetchUserData = async () => {
+      // Fetch studio profile name first
+      const { data: studioData, error: studioError } = await supabase
+        .from('studio_profile')
+        .select('studio_name')
+        .eq('id', 1)
+        .single();
+      
+      if (studioData && studioData.studio_name) {
+          setStudioName(studioData.studio_name);
+      } else if (studioError) {
+          console.log("Could not fetch studio name, using default. Error: ", studioError.message);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Fetch profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileData && profileData.name) {
-          setUserName(profileData.name);
-        } else if (profileError && profileError.code !== 'PGRST116') {
-          console.log("Could not fetch user name, using default. Error: ", profileError.message);
-        }
-
         // Fetch appointments for the current user
         const { data: appointmentData, error: appointmentError } = await supabase
           .from("appointments")
@@ -102,6 +102,7 @@ export default function DashboardRedirectPage() {
     Realizado: "status-realizado",
     Cancelado: "status-cancelado",
     Bloqueado: "status-bloqueado",
+    Reagendado: 'status-reagendado',
   };
 
   const getPeriodTitle = () => {
@@ -121,7 +122,7 @@ export default function DashboardRedirectPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Olá, {userName}!</h1>
+          <h1 className="text-2xl font-bold">Olá, {studioName}!</h1>
           <p className="text-muted-foreground">{getPeriodTitle()}</p>
         </div>
         <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">
