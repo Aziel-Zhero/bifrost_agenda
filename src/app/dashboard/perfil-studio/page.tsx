@@ -79,31 +79,31 @@ export default function PerfilStudioPage() {
   const timeOptions = generateTimeOptions();
 
   useEffect(() => {
-    const fetchStudioProfile = async () => {
-        const { data, error } = await supabase
-            .from('studio_profile')
-            .select('*')
-            .eq('id', 1)
-            .single();
-        if (data) {
-            setStudioProfile(data);
-        } else {
-            console.log("No studio profile found, using defaults. Error:", error?.message);
-        }
-    };
+    // const fetchStudioProfile = async () => {
+    //     const { data, error } = await supabase
+    //         .from('studio_profile')
+    //         .select('*')
+    //         .eq('id', 1)
+    //         .single();
+    //     if (data) {
+    //         setStudioProfile(data);
+    //     } else {
+    //         console.log("No studio profile found, using defaults. Error:", error?.message);
+    //     }
+    // };
 
-    const fetchHours = async () => {
-      const { data, error } = await supabase.from('studio_hours').select('*');
-      if (error) {
-        console.log("Could not fetch studio hours, might be first time setup:", error.message);
-      } else if (data && data.length > 0) {
-        const sortedData = data.sort((a, b) => a.day_of_week - b.day_of_week);
-        setStudioHours(sortedData);
-      }
-    };
+    // const fetchHours = async () => {
+    //   const { data, error } = await supabase.from('studio_hours').select('*');
+    //   if (error) {
+    //     console.log("Could not fetch studio hours, might be first time setup:", error.message);
+    //   } else if (data && data.length > 0) {
+    //     const sortedData = data.sort((a, b) => a.day_of_week - b.day_of_week);
+    //     setStudioHours(sortedData);
+    //   }
+    // };
     
-    fetchStudioProfile();
-    fetchHours();
+    // fetchStudioProfile();
+    // fetchHours();
   }, []);
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -380,3 +380,5 @@ export default function PerfilStudioPage() {
     </>
   );
 }
+
+    
