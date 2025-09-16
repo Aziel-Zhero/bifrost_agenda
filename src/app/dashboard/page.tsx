@@ -31,26 +31,19 @@ type Period = "day" | "week" | "month";
 export default function DashboardRedirectPage() {
   const [period, setPeriod] = useState<Period>("day");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [studioName, setStudioName] = useState("Bem-vindo(a)!");
+  const [studioName, setStudioName] = useState("");
+  const [userName, setUserName] = useState("Usuário");
   const today = useMemo(() => new Date(), []);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      // Fetch studio profile name first
-      const { data: studioData, error: studioError } = await supabase
-        .from('studio_profile')
-        .select('studio_name')
-        .eq('id', 1)
-        .single();
-      
-      if (studioData && studioData.studio_name) {
-          setStudioName(studioData.studio_name);
-      } else if (studioError) {
-          console.log("Could not fetch studio name, using default. Error: ", studioError.message);
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
+
       if (user) {
+        // Fetch user's name
+        const { data: profile } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+        setUserName(profile?.name || user.email?.split('@')[0] || 'Usuário');
+
         // Fetch appointments for the current user
         const { data: appointmentData, error: appointmentError } = await supabase
           .from("appointments")
@@ -66,9 +59,22 @@ export default function DashboardRedirectPage() {
 
         if (appointmentError) {
           console.error("Error fetching appointments:", appointmentError);
-          return;
+        } else {
+          setAppointments(appointmentData as any[] || []);
         }
-        setAppointments(appointmentData as any[] || []);
+      }
+
+       // Fetch studio profile name
+      const { data: studioData, error: studioError } = await supabase
+        .from('studio_profile')
+        .select('studio_name')
+        .eq('id', 1)
+        .single();
+      
+      if (studioData && studioData.studio_name) {
+          setStudioName(studioData.studio_name);
+      } else if (studioError) {
+          console.log("Could not fetch studio name, using default. Error: ", studioError.message);
       }
     };
 
@@ -117,12 +123,14 @@ export default function DashboardRedirectPage() {
         return "Agendamentos";
     }
   }
+  
+  const welcomeMessage = `Olá, ${userName}${studioName ? ` ${studioName}` : ''}!`;
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Olá, {studioName}!</h1>
+          <h1 className="text-2xl font-bold">{welcomeMessage}</h1>
           <p className="text-muted-foreground">{getPeriodTitle()}</p>
         </div>
         <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">
@@ -142,6 +150,7 @@ export default function DashboardRedirectPage() {
                 <TableHead>Horário</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Serviço</TableHead>
+                 {period !== 'day' && <TableHead>Data</TableHead>}
                  {period === 'day' && <TableHead>Observações</TableHead>}
                 <TableHead className="text-right">Status</TableHead>
               </TableRow>
@@ -158,6 +167,11 @@ export default function DashboardRedirectPage() {
                     </TableCell>
                     <TableCell>{appt.clients?.name || 'N/A'}</TableCell>
                     <TableCell>{appt.services?.name || appt.notes}</TableCell>
+                     {period !== 'day' && (
+                        <TableCell>
+                            {parseISO(appt.date_time).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                    )}
                      {period === 'day' && <TableCell>{appt.notes}</TableCell>}
                     <TableCell className="text-right">
                        <Badge
@@ -171,7 +185,7 @@ export default function DashboardRedirectPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={period === 'day' ? 5 : 4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     Nenhum agendamento para este período.
                   </TableCell>
                 </TableRow>
