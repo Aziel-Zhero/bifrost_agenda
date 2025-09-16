@@ -133,9 +133,9 @@ export default function PerfilStudioPage() {
   }
 
   const handleSaveHours = async () => {
-    const { error } = await supabase.from('studio_hours').upsert(studioHours, {
+    const { data, error } = await supabase.from('studio_hours').upsert(studioHours, {
         onConflict: 'day_of_week'
-    });
+    }).select();
 
     if (error) {
         console.error("Error saving studio hours:", error);
@@ -144,7 +144,9 @@ export default function PerfilStudioPage() {
             description: `Não foi possível atualizar os horários de funcionamento: ${error.message}`,
             variant: "destructive"
         });
-    } else {
+    } else if (data) {
+        const sortedData = data.sort((a, b) => a.day_of_week - b.day_of_week);
+        setStudioHours(sortedData);
         toast({
             title: "Horários salvos!",
             description: "Seu horário de funcionamento foi atualizado.",
