@@ -92,7 +92,6 @@ export default function RealtimeNotifier() {
         }
         if (status === 'CHANNEL_ERROR') {
           const errorMessage = err?.message || 'A conexão foi interrompida.';
-          console.error('Erro no canal de tempo real:', errorMessage);
           toast({
             variant: 'destructive',
             title: 'Conexão em Tempo Real Interrompida',
