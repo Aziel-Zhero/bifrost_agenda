@@ -9,7 +9,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from '@/lib/utils';
 import type { Appointment, UserProfile } from '@/types';
 import { supabase } from '@/lib/supabase/client';
-import { Star } from 'lucide-react';
 import { sendAppointmentReminders } from '@/app/actions';
 
 type AppointmentsByDay = {
@@ -167,12 +166,11 @@ export default function AgendaGeralPage() {
             head_row: 'flex w-full py-4',
             head_cell: 'flex-1 text-muted-foreground rounded-md w-full font-normal text-[0.8rem] capitalize py-2 border-b border-r',
             row: 'flex w-full',
-            cell: (date) => cn(
-              "h-24 sm:h-32 lg:h-36 xl:h-40 w-full text-left text-sm p-0 relative border-b border-r",
-              "[&:nth-child(7n)]:border-r-0",
-              isBefore(date, startOfToday()) && "opacity-60"
+            cell: "h-24 sm:h-32 lg:h-36 xl:h-40 w-full text-left text-sm p-0 relative border-b border-r [&:nth-child(7n)]:border-r-0",
+            day: (date) => cn(
+                "h-full w-full focus-within:relative focus-within:z-20",
+                 isBefore(date, startOfToday()) && "opacity-60"
             ),
-            day: 'h-full w-full focus-within:relative focus-within:z-20',
             day_today: "bg-accent text-accent-foreground",
             day_outside: "text-muted-foreground opacity-50",
           }}
