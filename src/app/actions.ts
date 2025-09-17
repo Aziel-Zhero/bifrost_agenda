@@ -99,6 +99,17 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         return;
     }
 
+    const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
+        .from('studio_profile')
+        .select('google_maps_url')
+        .eq('id', 1)
+        .single();
+
+    if (studioProfileError) {
+        console.warn('Could not fetch studio profile for placeholders:', studioProfileError.message);
+    }
+
+
     const logToDb = async (message: string, to: string, status: string) => {
         await supabaseAdmin.from('gaia_logs').insert({
             message_content: message,
@@ -114,6 +125,7 @@ export async function notifyOnNewAppointment(appointmentId: string) {
             adminName: appointment.profiles?.name || 'um guardião de Asgard',
             dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
             time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+            googleMapsUrl: studioProfile?.google_maps_url || 'https://maps.google.com'
         };
 
         const studioChatId = process.env.TELEGRAM_CHAT_ID;
@@ -141,19 +153,30 @@ export async function notifyOnNewAppointment(appointmentId: string) {
 
 
 export async function sendTestTemplateMessage(template: string, chatId: string): Promise<{ success: boolean; message: string }> {
+     const supabaseAdmin = getSupabaseAdmin();
+     const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
+        .from('studio_profile')
+        .select('google_maps_url')
+        .eq('id', 1)
+        .single();
+    
+    if (studioProfileError) {
+        console.warn('Could not fetch studio profile for test message placeholders:', studioProfileError.message);
+    }
+
     const testReplacements = {
         clientName: 'Cliente de Teste',
         serviceName: 'Jornada de Teste',
         adminName: 'Guardião de Teste',
         dateTime: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
         time: new Date().toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+        googleMapsUrl: studioProfile?.google_maps_url || 'https://maps.google.com/?q=brazil'
     };
 
     const testMessage = `*--- MENSAGEM DE TESTE DA GAIA ---*\n\n${replacePlaceholders(template, testReplacements)}`;
 
     const result = await sendTelegramNotification(testMessage, chatId);
 
-    const supabaseAdmin = getSupabaseAdmin();
     await supabaseAdmin.from('gaia_logs').insert({
         message_content: testMessage,
         sent_to: `Teste para ID: ${chatId}`,
@@ -209,6 +232,12 @@ export async function sendAppointmentReminders() {
         return;
     }
 
+    const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
+        .from('studio_profile')
+        .select('google_maps_url')
+        .eq('id', 1)
+        .single();
+
 
     const appointmentIds = appointments.map(a => a.id);
     const { data: existingReminders, error: reminderError } = await supabaseAdmin
@@ -243,6 +272,7 @@ export async function sendAppointmentReminders() {
                 adminName: appointment.profiles?.name || 'um guardião de Asgard',
                 dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
                 time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+                googleMapsUrl: studioProfile?.google_maps_url || 'https://maps.google.com'
             };
 
             const reminderMessage = replacePlaceholders(reminderTemplate.template, replacements);
@@ -306,6 +336,13 @@ export async function sendEvaluationMessages() {
         return;
     }
 
+    const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
+        .from('studio_profile')
+        .select('google_maps_url')
+        .eq('id', 1)
+        .single();
+
+
     const logToDb = async (message: string, to: string, status: string) => {
         await supabaseAdmin.from('gaia_logs').insert({
             message_content: message,
@@ -323,6 +360,7 @@ export async function sendEvaluationMessages() {
                 adminName: appointment.profiles?.name || 'um guardião de Asgard',
                 dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
                 time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+                googleMapsUrl: studioProfile?.google_maps_url || 'https://maps.google.com'
             };
 
             const evalMessage = replacePlaceholders(evalTemplate.template, replacements);

@@ -142,6 +142,7 @@ export default function BotsPage() {
     { name: "{{serviceName}}", desc: "Nome do serviço" },
     { name: "{{dateTime}}", desc: "Data e hora completas" },
     { name: "{{time}}", desc: "Apenas a hora" },
+    { name: "{{googleMapsUrl}}", desc: "Link do Google Maps" },
   ];
 
   return (
