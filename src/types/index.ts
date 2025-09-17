@@ -85,6 +85,13 @@ export type StudioProfile = {
     clients_goal: number;
     new_clients_goal: number;
     google_maps_url?: string;
+    address_street?: string;
+    address_number?: string;
+    address_complement?: string;
+    address_neighborhood?: string;
+    address_city?: string;
+    address_state?: string;
+    address_zip_code?: string;
 }
 
 export type RoleSettings = {
@@ -133,3 +140,14 @@ export type GaiaMessageTemplate = {
     is_enabled: boolean;
     description: string;
 };
+
+export type AndromedaTrigger = {
+    id: number;
+    created_at: string;
+    trigger_keywords: string[];
+    action_type: string;
+    response_text: string;
+    response_buttons?: any; // JSONB
+    is_enabled: boolean;
+    description: string;
+}

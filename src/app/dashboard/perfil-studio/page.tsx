@@ -11,22 +11,10 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { FaWhatsapp, FaTelegram } from "react-icons/fa";
-import { format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -67,13 +55,9 @@ const formatTime = (timeString: string) => {
 
 export default function PerfilStudioPage() {
   const { toast } = useToast();
-  const [isEditingGoals, setIsEditingGoals] = useState(false);
   
   const [studioProfile, setStudioProfile] = useState<Partial<StudioProfile>>({ studio_name: "Bifrost" });
   
-  const [isConfirmOpen, setConfirmOpen] = useState(false);
-  const [isExportOpen, setExportOpen] = useState(false);
-
   const [studioHours, setStudioHours] = useState<Omit<StudioHour, 'id' | 'created_at'>[]>([
     { day_of_week: 0, start_time: "09:00", end_time: "18:00", is_enabled: false },
     { day_of_week: 1, start_time: "09:00", end_time: "18:00", is_enabled: true },
@@ -170,66 +154,6 @@ export default function PerfilStudioPage() {
         });
     }
   }
-  
-  const handleSaveGoals = () => {
-    handleSaveStudioProfile(); // Save goals along with other profile data
-    setIsEditingGoals(false);
-    toast({
-      title: "Sucesso!",
-      description: "Suas metas foram salvas.",
-      className: 'bg-green-100 border-green-300 text-green-800'
-    });
-  };
-
-  const handleExportAndSave = () => {
-    const today = format(new Date(), 'ddMMyyyy');
-    const filename = `${studioProfile.studio_name?.replace(/\s/g, '') || 'Studio'}_${today}.csv`;
-    
-    const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-    const monthlyData = months.slice(0, new Date().getMonth() + 1).map(month => ({
-        month,
-        gains: (Math.random() * 2000 + 7000).toFixed(2),
-        cancellations: Math.floor(Math.random() * 5 + 10),
-        totalClients: Math.floor(Math.random() * 10 + 40),
-        newClients: Math.floor(Math.random() * 5 + 15)
-    }));
-
-    const totals = {
-        gains: monthlyData.reduce((sum, data) => sum + parseFloat(data.gains), 0).toFixed(2),
-        cancellations: monthlyData.reduce((sum, data) => sum + data.cancellations, 0),
-        totalClients: monthlyData.reduce((sum, data) => sum + data.totalClients, 0),
-        newClients: monthlyData.reduce((sum, data) => sum + data.newClients, 0)
-    };
-
-    let csvContent = "data:text/csv;charset=utf-8," 
-      + "Mês,Ganhos (R$),Cancelamentos,Clientes Atendidos,Novos Clientes\n";
-    
-    monthlyData.forEach(data => {
-        csvContent += `${data.month},${data.gains},${data.cancellations},${data.totalClients},${data.newClients}\n`;
-    });
-
-    csvContent += `Total,${totals.gains},${totals.cancellations},${totals.totalClients},${totals.newClients}\n`;
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    handleSaveGoals();
-    setExportOpen(false);
-  }
-
-  const handleInitialSaveClick = () => {
-    setConfirmOpen(true);
-  };
-  
-  const handleCancelEdit = () => {
-    // Here you might want to reset `goals` to their original state if they were fetched
-    setIsEditingGoals(false);
-  }
 
   return (
     <>
@@ -237,7 +161,7 @@ export default function PerfilStudioPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold">Perfil do Studio</h1>
           <p className="text-muted-foreground">
-            Defina o nome do seu negócio, metas e configurações.
+            Defina o nome, endereço, horários e outras configurações do seu negócio.
           </p>
         </div>
         
@@ -255,46 +179,60 @@ export default function PerfilStudioPage() {
                     <Label htmlFor="studio_name">Nome do Studio</Label>
                     <Input id="studio_name" placeholder="Ex: Studio de Beleza da Ana" value={studioProfile.studio_name || ''} onChange={handleProfileChange} />
                   </div>
-                   <div className="space-y-2">
-                    <Label htmlFor="google_maps_url">Link do Google Maps</Label>
-                    <Input id="google_maps_url" placeholder="https://maps.app.goo.gl/..." value={studioProfile.google_maps_url || ''} onChange={handleProfileChange} />
-                  </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
                     <Button onClick={handleSaveStudioProfile}>Salvar Configurações</Button>
                 </CardFooter>
               </Card>
 
-              <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Metas Mensais</CardTitle>
-                    <CardDescription>Defina seus objetivos para acompanhar no dashboard.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="monthly_goal">Meta de Ganhos (R$)</Label>
-                        <Input id="monthly_goal" type="number" value={studioProfile.monthly_goal || ''} onChange={handleProfileChange} disabled={!isEditingGoals} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="clients_goal">Meta de Clientes Atendidos</Label>
-                        <Input id="clients_goal" type="number" value={studioProfile.clients_goal || ''} onChange={handleProfileChange} disabled={!isEditingGoals} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="new_clients_goal">Meta de Novos Clientes</Label>
-                        <Input id="new_clients_goal" type="number" value={studioProfile.new_clients_goal || ''} onChange={handleProfileChange} disabled={!isEditingGoals} />
-                    </div>
-                </CardContent>
-                <CardFooter className="flex justify-end gap-2">
-                      {!isEditingGoals ? (
-                          <Button onClick={() => setIsEditingGoals(true)}>Alterar Metas</Button>
-                      ) : (
-                          <>
-                              <Button variant="ghost" onClick={handleCancelEdit}>Cancelar</Button>
-                              <Button onClick={handleInitialSaveClick}>Salvar Metas</Button>
-                          </>
-                      )}
-                </CardFooter>
-              </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Endereço do Studio</CardTitle>
+                        <CardDescription>
+                           Essas informações serão usadas pela GAIA para guiar seus clientes.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="google_maps_url">Link do Google Maps</Label>
+                            <Input id="google_maps_url" placeholder="https://maps.app.goo.gl/..." value={studioProfile.google_maps_url || ''} onChange={handleProfileChange} />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="space-y-2 sm:col-span-2">
+                                <Label htmlFor="address_street">Rua / Avenida</Label>
+                                <Input id="address_street" value={studioProfile.address_street || ''} onChange={handleProfileChange} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="address_number">Número</Label>
+                                <Input id="address_number" value={studioProfile.address_number || ''} onChange={handleProfileChange} />
+                            </div>
+                        </div>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="address_complement">Complemento</Label>
+                                <Input id="address_complement" placeholder="Apto, sala, etc." value={studioProfile.address_complement || ''} onChange={handleProfileChange} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="address_neighborhood">Bairro</Label>
+                                <Input id="address_neighborhood" value={studioProfile.address_neighborhood || ''} onChange={handleProfileChange} />
+                            </div>
+                        </div>
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                             <div className="space-y-2 sm:col-span-2">
+                                <Label htmlFor="address_city">Cidade</Label>
+                                <Input id="address_city" value={studioProfile.address_city || ''} onChange={handleProfileChange} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="address_state">Estado</Label>
+                                <Input id="address_state" value={studioProfile.address_state || ''} onChange={handleProfileChange} />
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex justify-end">
+                        <Button onClick={handleSaveStudioProfile}>Salvar Endereço</Button>
+                    </CardFooter>
+                </Card>
+
             </div>
 
              <div className="space-y-8">
@@ -335,71 +273,9 @@ export default function PerfilStudioPage() {
                     <Button onClick={handleSaveHours}>Salvar Horários</Button>
                 </CardFooter>
               </Card>
-              <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Notificações</CardTitle>
-                    <CardDescription>Ative ou desative as notificações para clientes.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="flex items-center gap-3">
-                            <FaWhatsapp className="h-6 w-6 text-green-500"/>
-                            <div>
-                                <Label htmlFor="whatsapp-notifications" className="font-semibold cursor-pointer">WhatsApp</Label>
-                                <p className="text-xs text-muted-foreground">Notificações de agendamento e lembretes.</p>
-                            </div>
-                      </div>
-                      <Switch id="whatsapp-notifications" defaultChecked/>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="flex items-center gap-3">
-                            <FaTelegram className="h-6 w-6 text-blue-500"/>
-                            <div>
-                                <Label htmlFor="telegram-notifications" className="font-semibold cursor-pointer">Telegram</Label>
-                                <p className="text-xs text-muted-foreground">Notificações de agendamento e lembretes.</p>
-                            </div>
-                      </div>
-                      <Switch id="telegram-notifications" />
-                    </div>
-                </CardContent>
-              </Card>
             </div>
         </div>
       </div>
-
-      {/* First Confirmation Dialog */}
-      <AlertDialog open={isConfirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Alterar suas metas irá recalcular as métricas de desempenho no seu dashboard.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Não</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirmOpen(false); setExportOpen(true); }}>Sim</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Second Confirmation Dialog (Export) */}
-      <AlertDialog open={isExportOpen} onOpenChange={setExportOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Exportar Relatório Atual?</AlertDialogTitle>
-            <AlertDialogDescription>
-               Recomendamos exportar os dados atuais para manter um histórico. O arquivo CSV conterá os dados de desempenho mensais, de janeiro até a data atual, com um total consolidado no final.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={() => { setExportOpen(false); handleSaveGoals(); }}>
-              Salvar sem Exportar
-            </Button>
-            <AlertDialogAction onClick={handleExportAndSave}>Exportar Dados e Salvar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
