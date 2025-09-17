@@ -140,7 +140,7 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent 
             side="left" 
-            className="menu-glassmorphism p-0"
+            className="bg-background/80 backdrop-blur-lg border-r p-0 text-foreground"
           >
              <SheetHeader className="p-6">
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
@@ -154,8 +154,8 @@ export default function Header() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-white/80 transition-all hover:text-white",
-                    pathname === item.href && "bg-white/10 text-white"
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground",
+                    pathname === item.href && "bg-muted text-foreground"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
