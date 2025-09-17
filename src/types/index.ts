@@ -84,6 +84,7 @@ export type StudioProfile = {
     monthly_goal: number;
     clients_goal: number;
     new_clients_goal: number;
+    google_maps_url?: string;
 }
 
 export type RoleSettings = {

@@ -250,14 +250,18 @@ export default function PerfilStudioPage() {
                     Informações principais do seu negócio.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="studio_name">Nome do Studio</Label>
                     <Input id="studio_name" placeholder="Ex: Studio de Beleza da Ana" value={studioProfile.studio_name || ''} onChange={handleProfileChange} />
                   </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="google_maps_url">Link do Google Maps</Label>
+                    <Input id="google_maps_url" placeholder="https://maps.app.goo.gl/..." value={studioProfile.google_maps_url || ''} onChange={handleProfileChange} />
+                  </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                    <Button onClick={handleSaveStudioProfile}>Salvar Nome</Button>
+                    <Button onClick={handleSaveStudioProfile}>Salvar Configurações</Button>
                 </CardFooter>
               </Card>
 

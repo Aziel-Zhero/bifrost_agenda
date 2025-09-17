@@ -86,6 +86,7 @@ export default function GaiaBotPage() {
     { name: "{{serviceName}}", desc: "Nome do serviço" },
     { name: "{{dateTime}}", desc: "Data e hora completas" },
     { name: "{{time}}", desc: "Apenas a hora" },
+    { name: "{{googleMapsUrl}}", desc: "Link do Google Maps" },
   ];
 
   return (
@@ -104,7 +105,7 @@ export default function GaiaBotPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <Card className="md:col-span-1">
+        <Card className="md:col-span-1 xl:col-span-1">
           <CardHeader>
             <CardTitle>Placeholders Disponíveis</CardTitle>
             <CardDescription>
@@ -128,7 +129,7 @@ export default function GaiaBotPage() {
           </CardContent>
         </Card>
 
-        <div className="md:col-span-1 xl:col-span-2 space-y-6">
+        <div className="md:col-span-2 xl:col-span-2 space-y-6">
             {isLoading && <p className="text-muted-foreground">Carregando modelos...</p>}
             {templates.map((template) => (
                 <Card key={template.id}>
@@ -141,7 +142,7 @@ export default function GaiaBotPage() {
                             />
                         </div>
                         <CardDescription>
-                            Evento gatilho: <code className="text-xs">{template.event_type}</code>
+                            Gatilho: <code className="text-xs">{template.event_type}</code>
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
