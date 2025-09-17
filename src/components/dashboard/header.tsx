@@ -140,7 +140,7 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent 
             side="left" 
-            className="menu-glass-effect p-0 text-white"
+            className="menu-glass p-0 text-white border-none"
           >
              <SheetHeader className="p-6">
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
