@@ -4,7 +4,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from "@/lib/supabase/client";
 import { sendTelegramNotification } from "@/services/notification-service";
-import { startOfMinute, addMinutes, subMinutes } from 'date-fns';
+import { startOfMinute, addMinutes, subMinutes, subDays, startOfDay, endOfDay } from 'date-fns';
 import type { Appointment } from '@/types';
 
 const getSupabaseAdmin = () => {
@@ -250,6 +250,79 @@ export async function sendAppointmentReminders() {
                 await logToDb(reminderMessage, `Lembrete Cliente: ${replacements.clientName} (${clientTelegramId})`, `Falhou: ${message}`);
                 console.log(`Server Action: Failed to send reminder for appointment ${appointment.id}`);
             }
+        }
+    }
+}
+
+export async function sendEvaluationMessages() {
+    console.log("Server Action: Checking for post-appointment evaluations to send.");
+    const supabaseAdmin = getSupabaseAdmin();
+    
+    // Check for appointments marked as 'Realizado' yesterday.
+    const yesterdayStart = startOfDay(subDays(new Date(), 1)).toISOString();
+    const yesterdayEnd = endOfDay(subDays(new Date(), 1)).toISOString();
+
+    const { data: appointments, error } = await supabaseAdmin
+        .from('appointments')
+        .select(`
+            id,
+            date_time,
+            clients (name, telegram),
+            services (name),
+            profiles (name)
+        `)
+        .eq('status', 'Realizado')
+        .gte('date_time', yesterdayStart)
+        .lt('date_time', yesterdayEnd);
+
+    if (error) {
+        console.error('Error fetching completed appointments for evaluation:', error);
+        return;
+    }
+
+    if (!appointments || appointments.length === 0) {
+        console.log("Server Action: No completed appointments from yesterday found for evaluation.");
+        return;
+    }
+    
+    const { data: templates, error: templateError } = await supabaseAdmin
+        .from('gaia_message_templates')
+        .select('*');
+        
+    if (templateError) {
+        console.error('Error fetching message templates for evaluation:', templateError);
+        return;
+    }
+    const evalTemplate = templates?.find(t => t.event_type === 'post_appointment_evaluation');
+    if (!evalTemplate || !evalTemplate.is_enabled) {
+        console.log("Server Action: Post-appointment evaluation template is disabled or not found.");
+        return;
+    }
+
+    const logToDb = async (message: string, to: string, status: string) => {
+        await supabaseAdmin.from('gaia_logs').insert({
+            message_content: message,
+            sent_to: to,
+            status: status,
+        });
+    };
+
+    for (const appointment of appointments) {
+        const clientTelegramId = appointment.clients?.telegram;
+        if (clientTelegramId) {
+            const replacements = {
+                clientName: appointment.clients?.name || 'Viajante',
+                serviceName: appointment.services?.name || 'Jornada',
+                adminName: appointment.profiles?.name || 'um guardião de Asgard',
+                dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
+                time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+            };
+
+            const evalMessage = replacePlaceholders(evalTemplate.template, replacements);
+
+            const { success, message } = await sendTelegramNotification(evalMessage, clientTelegramId);
+            await logToDb(evalMessage, `Avaliação Cliente: ${replacements.clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
+            console.log(`Server Action: Evaluation message attempt for appointment ${appointment.id}. Success: ${success}`);
         }
     }
 }
