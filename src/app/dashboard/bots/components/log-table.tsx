@@ -26,14 +26,15 @@ export default function GaiaLogTable() {
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from("gaia_logs")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50);
 
     if (error) {
-      console.error("Error fetching Gaia logs:", error);
+      console.error("Error fetching Gaia logs:", error.message);
       // You could show a toast here if you want
     } else {
       setLogs(data || []);
@@ -54,7 +55,7 @@ export default function GaiaLogTable() {
   }, []);
 
   return (
-    <ScrollArea className="h-72 rounded-md border">
+    <ScrollArea className="h-96 rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -92,7 +93,7 @@ export default function GaiaLogTable() {
                         : statusVariant["Falhou"]
                     )}
                   >
-                    {log.status}
+                    {log.status.split(':')[0]}
                   </Badge>
                 </TableCell>
               </TableRow>
