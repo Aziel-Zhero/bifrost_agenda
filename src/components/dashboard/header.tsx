@@ -138,7 +138,10 @@ export default function Header() {
               <span className="sr-only">Abrir menu de navegação</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left">
+          <SheetContent 
+            side="left" 
+            className="bg-cyan-900/80 backdrop-blur-lg border-r border-white/20 text-white"
+          >
              <SheetHeader>
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
              </SheetHeader>
@@ -151,8 +154,8 @@ export default function Header() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                    pathname === item.href && "bg-muted text-primary"
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-white/80 transition-all hover:text-white",
+                    pathname === item.href && "bg-white/10 text-white"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -317,3 +320,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
