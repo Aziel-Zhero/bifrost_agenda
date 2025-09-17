@@ -87,7 +87,7 @@ export default function ApiPage() {
                  <CardHeader>
                     <CardTitle>Webhook da GAIA (Telegram)</CardTitle>
                     <CardDescription>
-                       Para a GAIA responder no Telegram, configure este webhook nas configurações do seu bot no <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="underline font-semibold">BotFather</a>.
+                       Para a GAIA responder no Telegram, configure esta URL nas configurações do seu bot através do <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="underline font-semibold">BotFather</a>.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -99,7 +99,7 @@ export default function ApiPage() {
                         </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                        Use o comando `/setwebhook` no BotFather, selecione seu bot e cole esta URL.
+                        No Telegram, envie o comando `/setwebhook` para o BotFather, selecione seu bot e então cole esta URL.
                     </p>
                 </CardContent>
             </Card>
@@ -134,4 +134,3 @@ export default function ApiPage() {
     </div>
   );
 }
-
