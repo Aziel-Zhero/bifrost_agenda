@@ -44,6 +44,12 @@ import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { deleteUser, inviteUser, reinviteUser, getUsers } from "./actions";
 import EditPermissionsDialog from "./components/edit-permissions-dialog";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Usuários',
+};
+
 
 export default function UsuariosPage() {
   const router = useRouter();

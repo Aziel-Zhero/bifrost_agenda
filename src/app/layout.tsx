@@ -3,7 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Agenda',
+  title: {
+    default: 'Bifrost',
+    template: 'Bifrost | %s',
+  },
   description: 'Sistema central de agendamentos',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#3B82F6' },

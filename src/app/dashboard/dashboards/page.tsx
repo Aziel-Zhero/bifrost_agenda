@@ -30,6 +30,12 @@ import type { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Dashboards',
+};
+
 
 type ClientRanking = {
   clientName: string;
@@ -375,9 +381,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-    
-
-    
-
-    
-

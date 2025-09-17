@@ -25,6 +25,12 @@ import { Badge } from "@/components/ui/badge";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Home',
+};
+
 
 type Period = "day" | "week" | "month";
 

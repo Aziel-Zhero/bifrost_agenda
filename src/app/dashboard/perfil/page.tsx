@@ -33,6 +33,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Meu Perfil',
+};
+
 
 // This is a helper function that will be used to generate the cropped image data URL.
 function getCroppedImg(

@@ -22,6 +22,12 @@ import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Relatórios',
+};
+
 
 export default function RelatoriosPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();

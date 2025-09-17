@@ -22,6 +22,12 @@ import GaiaLogTable from "./components/log-table";
 import { Input } from "@/components/ui/input";
 import { sendTestTemplateMessage } from "@/app/actions";
 import { Separator } from "@/components/ui/separator";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'GAIA Bot',
+};
+
 
 type TestState = {
     chatId: string;

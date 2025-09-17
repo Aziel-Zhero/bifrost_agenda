@@ -24,6 +24,12 @@ import {
 } from "@/components/ui/select";
 import type { StudioHour, StudioProfile } from "@/types";
 import { supabase } from "@/lib/supabase/client";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Studio',
+};
+
 
 const weekDays = [
   "Domingo",

@@ -49,6 +49,12 @@ import { useToast } from "@/hooks/use-toast";
 import { FaTag } from 'react-icons/fa';
 import * as FaIcons from 'react-icons/fa';
 import * as BsIcons from 'react-icons/bs';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Serviços',
+};
+
 
 const allIcons: { [key: string]: React.ElementType } = { ...FaIcons, ...BsIcons };
 

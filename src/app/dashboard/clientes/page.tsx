@@ -29,6 +29,11 @@ import { DataTable } from "@/app/dashboard/clientes/components/data-table";
 import { supabase } from "@/lib/supabase/client";
 import type { Client, UserProfile } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Clientes',
+};
 
 
 export default function ClientesPage() {
