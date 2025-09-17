@@ -140,15 +140,15 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent 
             side="left" 
-            className="menu-glassmorphism"
+            className="menu-glassmorphism p-0"
           >
-             <SheetHeader>
+             <SheetHeader className="p-6">
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
              </SheetHeader>
-             <div className="mb-4">
+             <div className="mb-4 px-6">
                 <Logo isHeader title="Bifrost" />
               </div>
-            <nav className="grid gap-6 text-lg font-medium">
+            <nav className="grid gap-6 text-lg font-medium p-6">
               {[...visibleNavItems, ...userDropdownItems].map((item) => (
                 <Link
                   key={item.href}
@@ -320,5 +320,6 @@ export default function Header() {
     </header>
   );
 }
+    
 
     
