@@ -140,20 +140,27 @@ export async function notifyOnNewAppointment(appointmentId: string) {
 }
 
 
-export async function sendTestTelegramMessage(chatId: string): Promise<{ success: boolean; message: string }> {
-  const testMessage = `👋 Olá! Esta é uma mensagem de teste da GAIA. Se você recebeu isso, a conexão com o Telegram está funcionando perfeitamente! ✨`;
-  
-  const result = await sendTelegramNotification(testMessage, chatId);
+export async function sendTestTemplateMessage(template: string, chatId: string): Promise<{ success: boolean; message: string }> {
+    const testReplacements = {
+        clientName: 'Cliente de Teste',
+        serviceName: 'Jornada de Teste',
+        adminName: 'Guardião de Teste',
+        dateTime: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
+        time: new Date().toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+    };
 
-  const supabaseAdmin = getSupabaseAdmin();
+    const testMessage = `*--- MENSAGEM DE TESTE DA GAIA ---*\n\n${replacePlaceholders(template, testReplacements)}`;
 
-  await supabaseAdmin.from('gaia_logs').insert({
-    message_content: testMessage,
-    sent_to: `Teste para ID: ${chatId}`,
-    status: result.success ? 'Enviado' : `Falhou: ${result.message}`,
-  });
-  
-  return result;
+    const result = await sendTelegramNotification(testMessage, chatId);
+
+    const supabaseAdmin = getSupabaseAdmin();
+    await supabaseAdmin.from('gaia_logs').insert({
+        message_content: testMessage,
+        sent_to: `Teste para ID: ${chatId}`,
+        status: result.success ? 'Enviado' : `Falhou: ${result.message}`,
+    });
+
+    return result;
 }
 
 export async function sendAppointmentReminders() {
@@ -326,5 +333,3 @@ export async function sendEvaluationMessages() {
         }
     }
 }
-
-    

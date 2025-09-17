@@ -20,15 +20,19 @@ import { Label } from "@/components/ui/label";
 import { Info, Send } from "lucide-react";
 import GaiaLogTable from "./components/log-table";
 import { Input } from "@/components/ui/input";
-import { sendTestTelegramMessage } from "@/app/actions";
+import { sendTestTemplateMessage } from "@/app/actions";
+import { Separator } from "@/components/ui/separator";
 
+type TestState = {
+    chatId: string;
+    isTesting: boolean;
+};
 
 export default function BotsPage() {
   const { toast } = useToast();
   const [templates, setTemplates] = useState<GaiaMessageTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [testChatId, setTestChatId] = useState('');
-  const [isTesting, setIsTesting] = useState(false);
+  const [testStates, setTestStates] = useState<{[key: number]: TestState}>({});
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -46,6 +50,12 @@ export default function BotsPage() {
         });
       } else {
         setTemplates(data || []);
+        // Initialize test states
+        const initialStates: {[key: number]: TestState} = {};
+        data?.forEach(t => {
+            initialStates[t.id] = { chatId: '', isTesting: false };
+        });
+        setTestStates(initialStates);
       }
       setIsLoading(false);
     };
@@ -86,9 +96,9 @@ export default function BotsPage() {
     }
   };
 
-  const handleTestSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!testChatId) {
+  const handleTestSubmit = async (template: GaiaMessageTemplate) => {
+      const state = testStates[template.id];
+      if (!state || !state.chatId) {
           toast({
               title: "ID do Chat ausente",
               description: "Por favor, insira um ID de Chat do Telegram para testar.",
@@ -96,15 +106,18 @@ export default function BotsPage() {
           });
           return;
       }
+      
+      setTestStates(prev => ({ ...prev, [template.id]: { ...state, isTesting: true }}));
 
-      setIsTesting(true);
-      const { success, message } = await sendTestTelegramMessage(testChatId);
-      setIsTesting(false);
+      const { success, message } = await sendTestTemplateMessage(template.template, state.chatId);
+      
+      setTestStates(prev => ({ ...prev, [template.id]: { ...state, isTesting: false }}));
+
 
       if (success) {
           toast({
               title: "Mensagem de Teste Enviada!",
-              description: `Uma mensagem foi enviada para o Chat ID: ${testChatId}.`,
+              description: `Uma mensagem foi enviada para o Chat ID: ${state.chatId}.`,
               className: "bg-green-100 border-green-300 text-green-800"
           });
       } else {
@@ -115,6 +128,13 @@ export default function BotsPage() {
           });
       }
   };
+  
+  const handleTestChatIdChange = (templateId: number, value: string) => {
+    setTestStates(prev => ({
+        ...prev,
+        [templateId]: { ...prev[templateId], chatId: value }
+    }));
+  }
 
   const placeholders = [
     { name: "{{clientName}}", desc: "Nome do cliente" },
@@ -134,39 +154,6 @@ export default function BotsPage() {
           </p>
         </div>
       </div>
-
-       <Card>
-          <CardHeader>
-            <CardTitle>Testar Notificações</CardTitle>
-            <CardDescription>
-                Envie uma mensagem de teste para qualquer ID de chat do Telegram para verificar se o serviço está funcionando.
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleTestSubmit}>
-              <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                      <Label htmlFor="test-chat-id">ID do Chat do Telegram</Label>
-                      <Input
-                          id="test-chat-id"
-                          placeholder="Insira o ID do chat de destino"
-                          value={testChatId}
-                          onChange={(e) => setTestChatId(e.target.value)}
-                      />
-                        <p className="text-xs text-muted-foreground">
-                          Use o bot <code className="font-mono p-1 bg-muted rounded-sm">@userinfobot</code> no Telegram para descobrir seu ID de chat.
-                      </p>
-                  </div>
-              </CardContent>
-              <CardFooter>
-                  <Button type="submit" disabled={isTesting}>
-                      {isTesting ? "Enviando..." : <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Enviar Mensagem de Teste
-                      </>}
-                  </Button>
-              </CardFooter>
-          </form>
-      </Card>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         <Card className="md:col-span-2 xl:col-span-1">
@@ -190,44 +177,66 @@ export default function BotsPage() {
                 <Info className="h-4 w-4" />
                 <p>O Telegram suporta formatação <a href="https://core.telegram.org/bots/api#markdown-style" target="_blank" rel="noopener noreferrer" className="underline">Markdown</a> para negrito, itálico, etc.</p>
             </div>
+             <div className="pt-4 text-xs text-muted-foreground flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                <p>Use o bot <code className="font-mono p-1 bg-muted rounded-sm">@userinfobot</code> no Telegram para obter o ID do seu chat de teste.</p>
+            </div>
           </CardContent>
         </Card>
 
         <div className="md:col-span-2 xl:col-span-2 space-y-6">
             {isLoading && <p className="text-muted-foreground">Carregando modelos...</p>}
-            {templates.map((template) => (
-                <Card key={template.id}>
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle>{template.description}</CardTitle>
-                            <Switch
-                                checked={template.is_enabled}
-                                onCheckedChange={(value) => handleEnabledChange(template.id, value)}
+            {templates.map((template) => {
+                const testState = testStates[template.id] || { chatId: '', isTesting: false };
+                return (
+                    <Card key={template.id}>
+                        <CardHeader>
+                            <div className="flex justify-between items-center">
+                                <CardTitle>{template.description}</CardTitle>
+                                <Switch
+                                    checked={template.is_enabled}
+                                    onCheckedChange={(value) => handleEnabledChange(template.id, value)}
+                                />
+                            </div>
+                            <CardDescription>
+                                Gatilho: <code className="text-xs">{template.event_type}</code>
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Label htmlFor={`template-${template.id}`} className="sr-only">
+                                Modelo da Mensagem
+                            </Label>
+                            <Textarea
+                                id={`template-${template.id}`}
+                                value={template.template}
+                                onChange={(e) => handleTemplateChange(template.id, e.target.value)}
+                                className="min-h-[150px] font-mono text-sm"
+                                disabled={!template.is_enabled}
                             />
-                        </div>
-                        <CardDescription>
-                            Gatilho: <code className="text-xs">{template.event_type}</code>
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Label htmlFor={`template-${template.id}`} className="sr-only">
-                            Modelo da Mensagem
-                        </Label>
-                        <Textarea
-                            id={`template-${template.id}`}
-                            value={template.template}
-                            onChange={(e) => handleTemplateChange(template.id, e.target.value)}
-                            className="min-h-[150px] font-mono text-sm"
-                            disabled={!template.is_enabled}
-                        />
-                    </CardContent>
-                    <CardFooter className="flex justify-end">
-                        <Button onClick={() => handleSave(template)} disabled={!template.is_enabled}>
-                            Salvar Mensagem
-                        </Button>
-                    </CardFooter>
-                </Card>
-            ))}
+                        </CardContent>
+                        <CardFooter className="flex-col items-stretch gap-4">
+                            <Separator />
+                             <div className="space-y-2">
+                                <Label htmlFor={`test-chat-id-${template.id}`} className="text-sm font-medium">Testar Envio</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id={`test-chat-id-${template.id}`}
+                                        placeholder="ID do Chat para Teste"
+                                        value={testState.chatId}
+                                        onChange={(e) => handleTestChatIdChange(template.id, e.target.value)}
+                                        disabled={!template.is_enabled}
+                                    />
+                                    <Button onClick={() => handleTestSubmit(template)} disabled={!template.is_enabled || testState.isTesting} variant="secondary">
+                                        {testState.isTesting ? 'Enviando...' : <Send className="h-4 w-4" />}
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button onClick={() => handleSave(template)} disabled={!template.is_enabled} className="w-full">
+                                Salvar Mensagem
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                )})}
         </div>
       </div>
        <Card>
@@ -244,5 +253,3 @@ export default function BotsPage() {
     </div>
   );
 }
-
-    
