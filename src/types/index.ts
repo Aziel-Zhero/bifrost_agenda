@@ -124,14 +124,6 @@ export type AppNotification = {
   href?: string;
 };
 
-export type ApiIntegration = {
-    id: number;
-    created_at: string;
-    name: string;
-    webhook_url?: string;
-    api_key?: string;
-};
-
 export type GaiaMessageTemplate = {
     id: number;
     created_at: string;
@@ -141,13 +133,4 @@ export type GaiaMessageTemplate = {
     description: string;
 };
 
-export type AndromedaTrigger = {
-    id: number;
-    created_at: string;
-    trigger_keywords: string[];
-    action_type: string;
-    response_text: string;
-    response_buttons?: any; // JSONB
-    is_enabled: boolean;
-    description: string;
-}
+    

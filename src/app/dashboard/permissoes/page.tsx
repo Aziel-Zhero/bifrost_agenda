@@ -38,7 +38,7 @@ const initialRoles: RoleSettings[] = [
     description: "Administradores ou profissionais do estúdio. Têm acesso às ferramentas para gerenciar seus próprios clientes e agendamentos.",
     permissions: allMenuItems.reduce((acc, item) => ({
       ...acc,
-      [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/gaia-bot', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral', '/dashboard/integrations'].includes(item.href)
+      [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
     }), {}),
   },
   {
@@ -179,3 +179,5 @@ export default function PermissoesPage() {
     </div>
   );
 }
+
+    

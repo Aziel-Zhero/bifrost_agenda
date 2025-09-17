@@ -327,46 +327,4 @@ export async function sendEvaluationMessages() {
     }
 }
 
-
-export async function triggerMakeWebhook(appointmentData: {clientName: string; serviceName: string; date: string; time: string; notes: string; adminName: string;}) {
-    const supabaseAdmin = getSupabaseAdmin();
-
-    const { data: makeIntegration, error } = await supabaseAdmin
-        .from('api_integrations')
-        .select('webhook_url, api_key')
-        .eq('name', 'Make.com')
-        .single();
     
-    if (error || !makeIntegration || !makeIntegration.webhook_url) {
-        console.log("Server Action: Make.com webhook URL not configured. Skipping webhook trigger.", error?.message);
-        return;
-    }
-
-    const { webhook_url, api_key } = makeIntegration;
-
-    const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-    };
-    if (api_key) {
-        headers['x-make-apikey'] = api_key;
-    }
-
-    try {
-        const response = await fetch(webhook_url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(appointmentData),
-        });
-
-        if (!response.ok) {
-            // Make.com webhooks often return 200 OK with "Accepted" in the body.
-            // A non-200 response is a definitive error.
-            const responseBody = await response.text();
-            console.error(`Error triggering Make.com webhook. Status: ${response.status}. Body: ${responseBody}`);
-        } else {
-            console.log("Server Action: Successfully triggered Make.com webhook.");
-        }
-    } catch (fetchError: any) {
-        console.error("Server Action: Network error while trying to trigger Make.com webhook.", fetchError.message);
-    }
-}

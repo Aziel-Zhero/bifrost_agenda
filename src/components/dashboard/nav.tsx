@@ -15,8 +15,6 @@ import {
   Shield,
   Building,
   Bot,
-  MessageCircle,
-  Code2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types";
@@ -32,9 +30,7 @@ export const menuItems = [
   { href: "/dashboard/relatorios", label: "Relatórios", icon: BookText },
   { href: "/dashboard/usuarios", label: "Usuários", icon: Users2 },
   { href: "/dashboard/permissoes", label: "Permissões", icon: Shield },
-  { href: "/dashboard/bots", label: "Bots", icon: Bot },
-  { href: "/dashboard/gaia-bot", label: "Gaia Bot", icon: MessageCircle },
-  { href: "/dashboard/integrations", label: "Integrações", icon: Code2 },
+  { href: "/dashboard/bots", label: "GAIA Bot", icon: Bot },
 ];
 
 interface NavProps {
@@ -65,3 +61,5 @@ export default function Nav({ currentUser, navItems }: NavProps) {
     </nav>
   );
 }
+
+    
