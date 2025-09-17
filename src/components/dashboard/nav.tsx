@@ -34,7 +34,7 @@ export const menuItems = [
   { href: "/dashboard/permissoes", label: "Permissões", icon: Shield },
   { href: "/dashboard/bots", label: "Bots", icon: Bot },
   { href: "/dashboard/gaia-bot", label: "Gaia Bot", icon: MessageCircle },
-  { href: "/dashboard/api", label: "API", icon: Code2 },
+  { href: "/dashboard/integrations", label: "Integrações", icon: Code2 },
 ];
 
 interface NavProps {

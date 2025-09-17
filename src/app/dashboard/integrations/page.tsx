@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { ApiIntegration } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
-export default function ApiPage() {
+export default function IntegrationsPage() {
   const { toast } = useToast();
   const [integrations, setIntegrations] = useState<ApiIntegration[]>([]);
   const [makeIntegration, setMakeIntegration] = useState<Partial<ApiIntegration>>({});
@@ -28,8 +28,10 @@ export default function ApiPage() {
 
    useEffect(() => {
     // Define a URL do webhook baseada no ambiente
-    const currentUrl = window.location.origin;
-    setWebhookUrl(`${currentUrl}/api/telegram`);
+    if (typeof window !== 'undefined') {
+        const currentUrl = window.location.origin;
+        setWebhookUrl(`${currentUrl}/api/telegram`);
+    }
 
     const fetchIntegrations = async () => {
       const { data, error } = await supabase.from('api_integrations').select('*');
@@ -99,7 +101,7 @@ export default function ApiPage() {
                         </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                        No Telegram, envie o comando `/setwebhook` para o BotFather, selecione seu bot e então cole esta URL.
+                        No Telegram, envie o comando <code className="font-mono p-1 bg-muted rounded-sm">/setwebhook</code> para o BotFather, selecione seu bot e então cole esta URL.
                     </p>
                 </CardContent>
             </Card>

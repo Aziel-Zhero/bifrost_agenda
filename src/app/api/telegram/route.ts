@@ -1,7 +1,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { handleTelegramMessage } from '@/ai/flows/andromeda-flow';
-import { sendTelegramNotification } from '@/services/notification-service';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +12,7 @@ export async function POST(req: NextRequest) {
     const message = body.message || body.edited_message;
     if (!message || !message.text || !message.chat?.id) {
       console.log("Webhook do Telegram recebido, mas sem mensagem de texto ou chat ID. Ignorando.", body);
+      // Retornar um 200 OK para o Telegram saber que recebemos, mesmo que não atuemos.
       return NextResponse.json({ status: 'ok', message: 'Webhook received but no action taken.' });
     }
     
@@ -23,39 +25,22 @@ export async function POST(req: NextRequest) {
         message: userMessage,
     });
     
-    // Envia a resposta da Andromeda de volta para o usuário no Telegram
-    // Precisamos de uma função de envio que aceite 'reply_markup'
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) {
-        throw new Error('TELEGRAM_BOT_TOKEN não configurado.');
-    }
-    
-    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-    const payload = {
+    // Retorna a resposta da Andromeda diretamente no corpo da resposta para o Telegram
+    // Isso é mais eficiente do que fazer uma segunda chamada fetch.
+    return NextResponse.json({
+        method: 'sendMessage',
         chat_id: chatId,
         text: andromedaResponse.text,
         reply_markup: andromedaResponse.reply_markup,
         parse_mode: 'Markdown'
-    };
-
-    const telegramApiResponse = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
     });
-
-    const telegramResult = await telegramApiResponse.json();
-
-    if (!telegramResult.ok) {
-        console.error('Falha ao enviar resposta do bot para o Telegram:', telegramResult.description);
-        // Não lançamos um erro aqui para não falhar a resposta do webhook
-    }
-
-    return NextResponse.json({ status: 'ok' });
 
   } catch (error: any) {
     console.error('Erro no processamento do webhook do Telegram:', error);
-    return NextResponse.json({ status: 'error', message: error.message }, { status: 500 });
+    // Em caso de erro, é importante ainda retornar uma resposta 200 OK para o Telegram
+    // para evitar que ele tente reenviar a mesma mensagem repetidamente.
+    // O erro já está logado no servidor para depuração.
+    return NextResponse.json({ status: 'error processing message' }, { status: 200 });
   }
 }
 
