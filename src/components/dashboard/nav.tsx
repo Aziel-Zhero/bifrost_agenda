@@ -12,11 +12,11 @@ import {
   ClipboardList,
   Globe,
   Users2,
-  ShieldCheck,
-  User,
+  Shield,
   Building,
   Bot,
-  Shield,
+  MessageCircle,
+  Code2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types";
@@ -33,7 +33,8 @@ export const menuItems = [
   { href: "/dashboard/usuarios", label: "Usuários", icon: Users2 },
   { href: "/dashboard/permissoes", label: "Permissões", icon: Shield },
   { href: "/dashboard/bots", label: "Bots", icon: Bot },
-  { href: "/dashboard/logs", label: "Logs", icon: ShieldCheck },
+  { href: "/dashboard/gaia-bot", label: "Gaia Bot", icon: MessageCircle },
+  { href: "/dashboard/api", label: "API", icon: Code2 },
 ];
 
 interface NavProps {

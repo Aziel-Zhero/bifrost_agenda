@@ -115,3 +115,20 @@ export type AppNotification = {
   timestamp: Date;
   href?: string;
 };
+
+export type ApiIntegration = {
+    id: number;
+    created_at: string;
+    name: string;
+    webhook_url?: string;
+    api_key?: string;
+};
+
+export type GaiaMessageTemplate = {
+    id: number;
+    created_at: string;
+    event_type: string;
+    template: string;
+    is_enabled: boolean;
+    description: string;
+};

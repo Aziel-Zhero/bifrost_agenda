@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { supabase } from "@/lib/supabase/client";
 import { sendTelegramNotification } from "@/services/notification-service";
 import { startOfMinute, addMinutes, subMinutes } from 'date-fns';
+import type { Appointment } from '@/types';
 
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,6 +60,14 @@ export async function signUpUser(formData: FormData) {
     return { data: data.user };
 }
 
+const replacePlaceholders = (template: string, replacements: Record<string, string>): string => {
+    let result = template;
+    for (const key in replacements) {
+        result = result.replace(new RegExp(`{{${key}}}`, 'g'), replacements[key]);
+    }
+    return result;
+};
+
 
 export async function notifyOnNewAppointment(appointmentId: string) {
     console.log("Server Action: Received new appointment ID for immediate notification:", appointmentId);
@@ -80,6 +89,15 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         console.error('Error fetching new appointment details for notification:', error);
         return;
     }
+    
+    const { data: templates, error: templateError } = await supabaseAdmin
+        .from('gaia_message_templates')
+        .select('*');
+
+    if (templateError) {
+        console.error('Error fetching message templates:', templateError);
+        return;
+    }
 
     const logToDb = async (message: string, to: string, status: string) => {
         await supabaseAdmin.from('gaia_logs').insert({
@@ -90,16 +108,20 @@ export async function notifyOnNewAppointment(appointmentId: string) {
     };
 
     if (appointment) {
-        const clientName = appointment.clients?.name || 'Viajante';
-        const serviceName = appointment.services?.name || 'Jornada';
-        const adminName = appointment.profiles?.name || 'um guardião de Asgard';
-        const dateTime = new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'});
+        const replacements = {
+            clientName: appointment.clients?.name || 'Viajante',
+            serviceName: appointment.services?.name || 'Jornada',
+            adminName: appointment.profiles?.name || 'um guardião de Asgard',
+            dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
+            time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+        };
+
         const studioChatId = process.env.TELEGRAM_CHAT_ID;
+        const studioTemplate = templates?.find(t => t.event_type === 'new_appointment_studio');
 
-        // Notification for the admin/studio group with a mythological tone
-        const studioMessage = `🛡️ *Pelos corvos de Odin!* 🛡️\n\nUm novo destino foi traçado na Grande Agenda. A Bifrost se abre para um novo encontro.\n\n*Profissional:* ${adminName}\n*Viajante:* ${clientName}\n*Jornada:* ${serviceName}\n*Quando:* ${dateTime}\n\nQue os Deuses guiem este momento!`;
-
-        if (studioChatId) {
+        // Notification for the admin/studio group
+        if (studioChatId && studioTemplate && studioTemplate.is_enabled) {
+            const studioMessage = replacePlaceholders(studioTemplate.template, replacements);
             const { success, message } = await sendTelegramNotification(studioMessage, studioChatId);
             await logToDb(studioMessage, `Grupo do Studio (${studioChatId})`, success ? 'Enviado' : `Falhou: ${message}`);
             console.log(`Server Action: Studio Telegram notification attempt. Success: ${success}`);
@@ -107,10 +129,11 @@ export async function notifyOnNewAppointment(appointmentId: string) {
 
         // Notification for the client, if they have a Telegram Chat ID
         const clientTelegramId = appointment.clients?.telegram;
-        if (clientTelegramId) {
-             const clientMessage = `Saudações, ${clientName}! ✨\n\nSou a GAIA, e trago notícias dos reinos! Um encontro foi marcado pelos destinos e sua jornada está confirmada.\n\n*Serviço:* ${serviceName}\n*Com:* ${adminName}\n*Quando:* ${dateTime}\n\nAs estrelas aguardam ansiosamente por você!`;
+        const clientTemplate = templates?.find(t => t.event_type === 'new_appointment_client');
+        if (clientTelegramId && clientTemplate && clientTemplate.is_enabled) {
+            const clientMessage = replacePlaceholders(clientTemplate.template, replacements);
             const { success, message } = await sendTelegramNotification(clientMessage, clientTelegramId);
-            await logToDb(clientMessage, `Cliente: ${clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
+            await logToDb(clientMessage, `Cliente: ${replacements.clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
             console.log(`Server Action: Client Telegram notification attempt to ${clientTelegramId}. Success: ${success}`);
         }
     }
@@ -139,7 +162,6 @@ export async function sendAppointmentReminders() {
     const now = new Date();
     
     // Check for appointments between 60 and 75 minutes from now.
-    // This gives a 15-min window to catch appointments and avoid re-sending.
     const reminderWindowStart = addMinutes(now, 60);
     const reminderWindowEnd = addMinutes(now, 75);
 
@@ -165,8 +187,22 @@ export async function sendAppointmentReminders() {
         console.log("Server Action: No appointments found in the upcoming reminder window.");
         return;
     }
+    
+    const { data: templates, error: templateError } = await supabaseAdmin
+        .from('gaia_message_templates')
+        .select('*');
+        
+    if (templateError) {
+        console.error('Error fetching message templates for reminders:', templateError);
+        return;
+    }
+    const reminderTemplate = templates?.find(t => t.event_type === 'appointment_reminder_client');
+    if (!reminderTemplate || !reminderTemplate.is_enabled) {
+        console.log("Server Action: Client reminder template is disabled or not found.");
+        return;
+    }
 
-    // Get IDs of appointments for which we've already sent reminders
+
     const appointmentIds = appointments.map(a => a.id);
     const { data: existingReminders, error: reminderError } = await supabaseAdmin
         .from('appointment_reminders')
@@ -194,25 +230,70 @@ export async function sendAppointmentReminders() {
 
         const clientTelegramId = appointment.clients?.telegram;
         if (clientTelegramId) {
-            const clientName = appointment.clients?.name || 'Viajante';
-            const serviceName = appointment.services?.name || 'Jornada';
-            const adminName = appointment.profiles?.name || 'um guardião de Asgard';
-            const time = new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' });
+            const replacements = {
+                clientName: appointment.clients?.name || 'Viajante',
+                serviceName: appointment.services?.name || 'Jornada',
+                adminName: appointment.profiles?.name || 'um guardião de Asgard',
+                dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
+                time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
+            };
 
-            const reminderMessage = `Saudações, nobre ${clientName}! 🌟\n\nA poeira estelar sussurra que seu encontro se aproxima. A GAIA veio lembrá-lo de sua jornada.\n\n*Serviço:* ${serviceName}\n*Com:* ${adminName}\n*Horário:* Hoje, às ${time}\n\nOs reinos aguardam por você. Não se atrase!`;
+            const reminderMessage = replacePlaceholders(reminderTemplate.template, replacements);
 
             const { success, message } = await sendTelegramNotification(reminderMessage, clientTelegramId);
 
             if (success) {
-                // Log success in both tables
-                await logToDb(reminderMessage, `Lembrete Cliente: ${clientName} (${clientTelegramId})`, 'Enviado');
+                await logToDb(reminderMessage, `Lembrete Cliente: ${replacements.clientName} (${clientTelegramId})`, 'Enviado');
                 await supabaseAdmin.from('appointment_reminders').insert({ appointment_id: appointment.id, status: 'Sent' });
                 console.log(`Server Action: Reminder sent successfully for appointment ${appointment.id}`);
             } else {
-                // Log failure
-                await logToDb(reminderMessage, `Lembrete Cliente: ${clientName} (${clientTelegramId})`, `Falhou: ${message}`);
+                await logToDb(reminderMessage, `Lembrete Cliente: ${replacements.clientName} (${clientTelegramId})`, `Falhou: ${message}`);
                 console.log(`Server Action: Failed to send reminder for appointment ${appointment.id}`);
             }
         }
+    }
+}
+
+
+export async function triggerMakeWebhook(appointmentData: {clientName: string; serviceName: string; date: string; time: string; notes: string; adminName: string;}) {
+    const supabaseAdmin = getSupabaseAdmin();
+
+    const { data: makeIntegration, error } = await supabaseAdmin
+        .from('api_integrations')
+        .select('webhook_url, api_key')
+        .eq('name', 'Make.com')
+        .single();
+    
+    if (error || !makeIntegration || !makeIntegration.webhook_url) {
+        console.log("Server Action: Make.com webhook URL not configured. Skipping webhook trigger.", error?.message);
+        return;
+    }
+
+    const { webhook_url, api_key } = makeIntegration;
+
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
+    if (api_key) {
+        headers['x-make-apikey'] = api_key;
+    }
+
+    try {
+        const response = await fetch(webhook_url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(appointmentData),
+        });
+
+        if (!response.ok) {
+            // Make.com webhooks often return 200 OK with "Accepted" in the body.
+            // A non-200 response is a definitive error.
+            const responseBody = await response.text();
+            console.error(`Error triggering Make.com webhook. Status: ${response.status}. Body: ${responseBody}`);
+        } else {
+            console.log("Server Action: Successfully triggered Make.com webhook.");
+        }
+    } catch (fetchError: any) {
+        console.error("Server Action: Network error while trying to trigger Make.com webhook.", fetchError.message);
     }
 }
