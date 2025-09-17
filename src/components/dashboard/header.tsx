@@ -140,7 +140,7 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent 
             side="left" 
-            className="bg-background/80 backdrop-blur-xl border-r border-white/10 text-white"
+            className="menu-glassmorphism"
           >
              <SheetHeader>
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
@@ -320,3 +320,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
