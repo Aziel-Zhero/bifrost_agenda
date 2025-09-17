@@ -1,11 +1,13 @@
+
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
   isHeader?: boolean;
+  title?: string;
 }
 
-export function Logo({ isHeader = false }: LogoProps) {
+export function Logo({ isHeader = false, title }: LogoProps) {
   return (
     <div className="flex items-center gap-2" aria-label="Agenda Logo">
       <Image 
@@ -16,6 +18,7 @@ export function Logo({ isHeader = false }: LogoProps) {
         className={cn(isHeader ? "brightness-0 invert" : "")}
         priority
       />
+      {title && <span className={cn("font-semibold", isHeader ? "text-lg text-white" : "text-2xl")}>{title}</span>}
     </div>
   );
 }

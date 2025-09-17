@@ -140,13 +140,13 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent 
             side="left" 
-            className="bg-cyan-900/80 backdrop-blur-lg border-r border-white/20 text-white"
+            className="bg-background/80 backdrop-blur-xl border-r border-white/10 text-white"
           >
              <SheetHeader>
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
              </SheetHeader>
              <div className="mb-4">
-                <Logo isHeader/>
+                <Logo isHeader title="Bifrost" />
               </div>
             <nav className="grid gap-6 text-lg font-medium">
               {[...visibleNavItems, ...userDropdownItems].map((item) => (
@@ -167,7 +167,7 @@ export default function Header() {
         </Sheet>
 
         <div className="absolute left-1/2 -translate-x-1/2">
-             <Logo isHeader />
+             <Logo isHeader title="Bifrost" />
         </div>
         
         <div className="flex items-center justify-end gap-1">
@@ -243,7 +243,7 @@ export default function Header() {
       {/* Desktop Header */}
       <div className="hidden md:flex w-full items-center gap-6">
         <div className="flex items-center gap-6">
-          <Logo isHeader />
+          <Logo isHeader title="Bifrost" />
           <Nav currentUser={currentUser} navItems={visibleNavItems} />
         </div>
         
@@ -320,5 +320,3 @@ export default function Header() {
     </header>
   );
 }
-
-    
