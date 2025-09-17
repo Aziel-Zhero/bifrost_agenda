@@ -11,7 +11,7 @@ export function Logo({ isHeader = false, title }: LogoProps) {
   return (
     <div className="flex items-center gap-2" aria-label="Agenda Logo">
       <Image 
-        src="/logo_agenda.png"
+        src="/favcon.ico"
         alt="Agenda Logo"
         width={isHeader ? 28 : 40}
         height={isHeader ? 28 : 40}
