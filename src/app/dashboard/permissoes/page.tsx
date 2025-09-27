@@ -20,12 +20,6 @@ import { menuItems as allMenuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
 import { updatePermissionsByRole } from "../usuarios/actions";
 import { supabase } from "@/lib/supabase/client";
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Permissões',
-};
-
 
 const initialRoles: RoleSettings[] = [
   {

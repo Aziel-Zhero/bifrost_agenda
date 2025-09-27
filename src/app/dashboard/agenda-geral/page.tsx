@@ -10,12 +10,6 @@ import { cn } from '@/lib/utils';
 import type { Appointment, UserProfile } from '@/types';
 import { supabase } from '@/lib/supabase/client';
 import { sendAppointmentReminders } from '@/app/actions';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Agenda Geral',
-};
-
 
 type AppointmentsByDay = {
   [day: string]: {

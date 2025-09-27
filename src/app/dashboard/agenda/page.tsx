@@ -39,12 +39,6 @@ import { ptBR } from 'date-fns/locale';
 import { supabase } from "@/lib/supabase/client";
 import { parseISO, format } from "date-fns";
 import { notifyOnNewAppointment } from "@/app/actions";
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Agenda',
-};
-
 
 export default function AgendaPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
