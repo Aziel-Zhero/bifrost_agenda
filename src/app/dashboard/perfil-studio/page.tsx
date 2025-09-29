@@ -123,33 +123,30 @@ export default function PerfilStudioPage() {
         if (authUser) {
             const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
             
-            if (profileError && profileError.code !== 'PGRST116') {
-                toast({ title: 'Erro ao buscar perfil', description: 'Não foi possível carregar seus dados. ' + profileError.message, variant: 'destructive'});
-                setIsLoading(false);
-                return;
-            }
+            let userProfileToSet: UserProfile;
 
             if (profileData) {
                  const dbRole = (profileData.role || 'staff') as DatabaseRole;
-                 const userProfile: UserProfile = {
+                 userProfileToSet = {
                     ...profileData,
                     role: dbRoleToUiRole[dbRole],
                  };
-                 setCurrentUser(userProfile);
-                 await fetchInitialData(userProfile);
             } else {
                  // Create a fallback user profile if one doesn't exist in the DB yet
                  const fallbackRole: DatabaseRole = 'staff';
-                 const fallbackProfile: UserProfile = {
+                 userProfileToSet = {
                     id: authUser.id,
                     email: authUser.email || 'Não encontrado',
                     role: dbRoleToUiRole[fallbackRole],
                     full_name: authUser.user_metadata.full_name || authUser.email?.split('@')[0] || 'Usuário',
                     permissions: {}
                  }
-                 setCurrentUser(fallbackProfile);
-                 await fetchInitialData(fallbackProfile);
             }
+            setCurrentUser(userProfileToSet);
+            await fetchInitialData(userProfileToSet);
+
+        } else {
+            toast({ title: 'Erro de Autenticação', description: 'Usuário não encontrado. Faça login novamente.', variant: 'destructive'});
         }
         setIsLoading(false);
     };
@@ -169,6 +166,7 @@ export default function PerfilStudioPage() {
     }
 
     const dataToSave = {
+        // We never update profile_id, but it's needed for insert
         profile_id: currentUser.id,
         studio_name: studioProfile.studio_name,
         google_maps_url: studioProfile.google_maps_url,
@@ -179,20 +177,19 @@ export default function PerfilStudioPage() {
         address_city: studioProfile.address_city,
         address_state: studioProfile.address_state,
     };
-
-    let error, data;
     
-    // Use the existing ID if we have one (for updating)
+    // RLS policy requires us to use the profile_id for updates.
+    // If a studioProfile.id exists, we update, otherwise we insert.
+    let error, data;
     if (studioProfile.id) {
         ({data, error} = await supabase
             .from('studio_profile')
             .update(dataToSave)
-            .eq('id', studioProfile.id)
+            .eq('profile_id', currentUser.id) // Use profile_id to satisfy RLS
             .select()
             .single()
         );
     } else {
-        // Otherwise, insert a new record
         ({data, error} = await supabase
             .from('studio_profile')
             .insert(dataToSave)
@@ -204,7 +201,7 @@ export default function PerfilStudioPage() {
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
     } else {
-        setStudioProfile(data); // Update state with the newly saved data, including the ID
+        setStudioProfile(data); 
         toast({ title: "Perfil do Estúdio Salvo!", description: "As informações do seu negócio foram atualizadas." });
     }
   }
@@ -232,7 +229,6 @@ export default function PerfilStudioPage() {
         is_enabled: hour.is_enabled,
     }));
 
-    // Upsert will create or update based on the combination of profile_id and day_of_week
     const { error } = await supabase
         .from('studio_hours')
         .upsert(dataToUpsert, { onConflict: 'profile_id, day_of_week' });
@@ -384,5 +380,3 @@ export default function PerfilStudioPage() {
     </>
   );
 }
-
-    
