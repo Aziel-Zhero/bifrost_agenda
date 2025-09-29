@@ -9,10 +9,10 @@ export type UserProfile = {
     full_name: string;
     email: string;
     phone?: string;
-    role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
+    role: 'admin' | 'staff' | 'owner';
     avatar?: string; // Not in DB schema but useful for UI
     last_sign_in_at?: string; // From auth.users table
-    permissions?: { [key: string]: boolean }; // Managed by UI, not in DB
+    permissions?: { [key: string]: boolean };
 };
 
 
@@ -61,9 +61,8 @@ export type Client = {
   email?: string;
   phone?: string;
   notes?: string;
-  admin?: string; // name of the staff member
-  whatsapp?: string; // Added from previous versions, good to keep
-  telegram?: string; // Added from previous versions, good to keep
+  whatsapp?: string; // Not in DB, but useful from old schema
+  telegram?: string; // Not in DB, but useful from old schema
 };
 
 
@@ -76,7 +75,7 @@ export type Service = {
   created_at?: string;
   name: string;
   description?: string;
-  duration: number; // duration in minutes
+  duration_minutes: number;
   price: number;
   icon?: string;
 };
@@ -84,7 +83,7 @@ export type Service = {
 // ========================================
 // AGENDAMENTOS
 // ========================================
-export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Reagendado' | 'Bloqueado';
+export type AppointmentStatus = 'Agendado' | 'Concluido' | 'Cancelado' | 'Reagendado' | 'Bloqueado';
 
 export type Appointment = {
   id: string; // UUID
@@ -95,9 +94,9 @@ export type Appointment = {
   notes?: string;
   status: AppointmentStatus;
   // Joined data for UI
-  clients: { name: string, whatsapp?: string, telegram?: string } | null;
+  clients: { full_name: string, whatsapp?: string, telegram?: string } | null;
   services: { name: string; price: number } | null;
-  profiles?: { name: string } | null;
+  profiles?: { full_name: string } | null;
 };
 
 
@@ -160,4 +159,10 @@ export type AppointmentCancellation = {
     profile_id?: string;
     reason?: string;
     cancelled_at: string;
+}
+
+export type AuditLog = {
+    id: string;
+    payload: any;
+    timestamp: Date;
 }

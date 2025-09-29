@@ -47,29 +47,33 @@ export default function DashboardRedirectPage() {
             date_time,
             notes,
             status,
-            clients ( name ),
+            clients ( full_name ),
             services ( name )
           `)
           .eq('admin_id', user.id);
 
         if (appointmentError) {
-          console.error("Error fetching appointments:", appointmentError);
+          console.error("Error fetching appointments:", appointmentError.message);
         } else {
           setAppointments(appointmentData as any[] || []);
         }
-      }
 
-       // Fetch studio profile name
-      const { data: studioData, error: studioError } = await supabase
-        .from('studio_profile')
-        .select('studio_name')
-        .eq('id', 1)
-        .single();
-      
-      if (studioData && studioData.studio_name) {
-          setStudioName(studioData.studio_name);
-      } else if (studioError) {
-          console.log("Could not fetch studio name, using default. Error: ", studioError.message);
+        // Fetch studio profile name for the logged-in user
+        const { data: studioData, error: studioError } = await supabase
+          .from('studio_profile')
+          .select('studio_name')
+          .eq('profile_id', user.id)
+          .single();
+        
+        if (studioData && studioData.studio_name) {
+            setStudioName(studioData.studio_name);
+        } else if (studioError && studioError.code !== 'PGRST116') { //PGRST116 = no rows found
+            console.log("Could not fetch studio name, using default. Error: ", studioError.message);
+        }
+
+      } else {
+          // Dev user might not have a studio profile, set a default
+          setStudioName("Estúdio de Teste");
       }
     };
 
@@ -160,7 +164,7 @@ export default function DashboardRedirectPage() {
                         minute: "2-digit",
                       })}
                     </TableCell>
-                    <TableCell>{appt.clients?.name || 'N/A'}</TableCell>
+                    <TableCell>{appt.clients?.full_name || 'N/A'}</TableCell>
                     <TableCell>{appt.services?.name || appt.notes}</TableCell>
                      {period !== 'day' && (
                         <TableCell>
