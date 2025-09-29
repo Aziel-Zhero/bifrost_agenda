@@ -133,7 +133,6 @@ export default function DashboardPage() {
     const cancelledInPeriod = filteredAppointments.filter(a => a.status === 'Cancelado');
     const totalGains = completedInPeriod.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
     const totalLosses = cancelledInPeriod.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
-    const totalClients = new Set(completedInPeriod.map(a => a.clients?.full_name)).size;
     
     // Previous period data for comparison
     const prevMonthDate = subMonths(from, 1);
@@ -147,37 +146,30 @@ export default function DashboardPage() {
     const prevMonthCancelled = prevMonthAppointments.filter(a => a.status === 'Cancelado');
     const prevMonthGains = prevMonthCompleted.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
     const prevMonthLosses = prevMonthCancelled.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
-    const prevMonthClients = new Set(prevMonthCompleted.map(a => a.clients?.full_name)).size;
 
-    // Logic to find new clients for the current user
-    const allClientsEver = new Map<string, string>();
-    [...allUserAppointments]
-      .sort((a,b) => {
-        if (!a.date_time || !b.date_time) return 0;
-        return parseISO(a.date_time).getTime() - parseISO(b.date_time).getTime()
-      })
-      .forEach(appt => {
-        if(appt.clients?.full_name && !allClientsEver.has(appt.clients.full_name) && appt.date_time){
-          allClientsEver.set(appt.clients.full_name, appt.date_time);
-        }
-    });
-
-    const getNewClientsInInterval = (interval: {start: Date, end: Date}) => {
-         return new Set(
-            allUserAppointments
-                .filter(appt => {
-                    if (!appt.clients?.full_name) return false;
-                    const firstAppointmentDateString = allClientsEver.get(appt.clients.full_name);
-                    if (!firstAppointmentDateString) return false;
-                    const firstAppointmentDate = parseISO(firstAppointmentDateString);
-                    return isWithinInterval(firstAppointmentDate, interval);
-                })
-                .map(appt => appt.clients?.full_name)
-        ).size;
-    }
+    // --- New Client Calculation (Simplified & Robust) ---
+    const clientsInPeriod = new Set(completedInPeriod.map(a => a.client_id));
     
-    const newClientsInPeriod = getNewClientsInInterval({ start: startOfDay(from), end: dateRange.to ? endOfDay(dateRange.to) : endOfDay(from) });
-    const newClientsInPrevPeriod = getNewClientsInInterval({ start: prevMonthStart, end: prevMonthEnd });
+    const clientsBeforePeriod = new Set(
+        allUserAppointments
+            .filter(a => a.date_time && parseISO(a.date_time) < startOfDay(from))
+            .map(a => a.client_id)
+    );
+
+    const newClientsInPeriod = new Set(
+        [...clientsInPeriod].filter(clientId => !clientsBeforePeriod.has(clientId))
+    );
+
+    const prevPeriodCompletedClients = new Set(prevMonthCompleted.map(a => a.client_id));
+    const clientsBeforePrevPeriod = new Set(
+        allUserAppointments
+            .filter(a => a.date_time && parseISO(a.date_time) < prevMonthStart)
+            .map(a => a.client_id)
+    );
+     const newClientsInPrevPeriod = new Set(
+        [...prevPeriodCompletedClients].filter(clientId => !clientsBeforePrevPeriod.has(clientId))
+    );
+    // --- End of New Client Calculation ---
 
     return [
       {
@@ -203,17 +195,17 @@ export default function DashboardPage() {
       },
       {
         title: "Clientes Atendidos",
-        value: `${totalClients}`,
+        value: `${clientsInPeriod.size}`,
         icon: kpiIcons.clients,
         iconColor: "text-purple-500",
-        change: calculateChange(totalClients, prevMonthClients),
+        change: calculateChange(clientsInPeriod.size, prevPeriodCompletedClients.size),
       },
       {
         title: "Novos Clientes",
-        value: `${newClientsInPeriod}`,
+        value: `${newClientsInPeriod.size}`,
         icon: kpiIcons.newClients,
         iconColor: "text-blue-500",
-        change: calculateChange(newClientsInPeriod, newClientsInPrevPeriod),
+        change: calculateChange(newClientsInPeriod.size, newClientsInPrevPeriod.size),
       },
     ]
 
