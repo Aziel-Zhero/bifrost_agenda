@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Shield, User, Users, Star } from "lucide-react";
+import { Shield, Users, Star } from "lucide-react";
 import type { RoleSettings } from "@/types";
 import { menuItems as allMenuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
@@ -23,18 +23,18 @@ import { supabase } from "@/lib/supabase/client";
 
 const initialRoles: RoleSettings[] = [
   {
-    name: "owner",
-    description: "Proprietário do estúdio. Acesso total, incluindo configurações de faturamento e sistema.",
+    name: "Bifrost",
+    description: "Superadministrador. Acesso total e irrestrito a todas as funcionalidades e configurações.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
   },
   {
-    name: "admin",
-    description: "Administrador do estúdio. Pode gerenciar usuários, agendamentos e relatórios.",
+    name: "Heimdall",
+    description: "Administrador mestre do estúdio. Pode gerenciar usuários, relatórios e configurações gerais.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
   },
   {
-    name: "staff",
-    description: "Membro da equipe/Profissional. Gerencia seus próprios agendamentos e clientes.",
+    name: "Asgard",
+    description: "Profissional do estúdio. Gerencia seus próprios agendamentos e clientes.",
     permissions: allMenuItems.reduce((acc, item) => ({
       ...acc,
       [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
@@ -43,9 +43,9 @@ const initialRoles: RoleSettings[] = [
 ];
 
 const roleIcons: { [key: string]: React.ElementType } = {
-  owner: Star,
-  admin: Shield,
-  staff: Users,
+  Bifrost: Star,
+  Heimdall: Shield,
+  Asgard: Users,
 };
 
 
@@ -157,14 +157,14 @@ export default function PermissoesPage() {
                                         id={`perm-${role.name}-${item.href}`}
                                         checked={!!role.permissions[item.href]}
                                         onCheckedChange={(value) => handlePermissionChange(role.name, item.href, value)}
-                                        disabled={isLoading || role.name === 'owner' || role.name === 'admin'}
+                                        disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}
                                     />
                                 </div>
                             ))
                          }
                     </CardContent>
                     <CardFooter className="flex justify-end border-t pt-6">
-                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading || role.name === 'owner' || role.name === 'admin'}>
+                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}>
                             {isLoading ? 'Salvando...' : `Salvar Permissões de ${role.name}`}
                         </Button>
                     </CardFooter>

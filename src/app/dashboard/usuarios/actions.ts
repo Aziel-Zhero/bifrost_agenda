@@ -43,7 +43,7 @@ export async function getUsers(): Promise<{ data: UserProfile[] | null, error: {
       const profile = profileMap.get(authUser.id);
       return {
         id: authUser.id,
-        name: profile?.name || authUser.user_metadata?.full_name || 'Nome não definido',
+        full_name: profile?.full_name || authUser.user_metadata?.full_name || 'Nome não definido',
         email: authUser.email || 'Email não encontrado',
         role: profile?.role || 'Asgard',
         avatar: profile?.avatar,
@@ -79,7 +79,7 @@ export async function inviteUser({ email, name }: { email: string, name: string 
       .from('profiles')
       .upsert({
         id: data.user.id,
-        name: name,
+        full_name: name,
         email: email,
         role: 'Asgard', // Default role for new users
       }, { onConflict: 'id' });

@@ -9,7 +9,7 @@ export type UserProfile = {
     full_name: string;
     email: string;
     phone?: string;
-    role: 'admin' | 'staff' | 'owner';
+    role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
     avatar?: string; // Not in DB schema but useful for UI
     last_sign_in_at?: string; // From auth.users table
     permissions?: { [key: string]: boolean };
@@ -113,7 +113,7 @@ export type AppointmentReport = {
 }
 
 export type RoleSettings = {
-  name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
+  name: 'Bifrost' | 'Heimdall' | 'Asgard';
   description: string;
   permissions: { [key: string]: boolean };
 };

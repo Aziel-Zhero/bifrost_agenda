@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -18,9 +17,10 @@ import type { UserProfile } from "@/types";
 import { cn } from "@/lib/utils";
 
 const roleVariant: Record<string, string> = {
-  owner: "bg-gradient-to-r from-cyan-400 to-purple-500 text-white",
-  admin: "bg-yellow-400 text-yellow-900",
-  staff: "bg-blue-500 text-white",
+  Bifrost: "bg-gradient-to-r from-cyan-400 to-purple-500 text-white",
+  Heimdall: "bg-yellow-400 text-yellow-900",
+  Asgard: "bg-blue-500 text-white",
+  Midgard: "bg-gray-500 text-white",
 };
 
 type ColumnsProps = {
@@ -50,7 +50,7 @@ export const columns = ({ onEditPermissions, onEditRole, onDelete, onReinvite }:
         <div className="flex items-center gap-3">
             <User className="h-5 w-5 text-muted-foreground" />
             <div className="flex flex-col">
-                 <span className="font-medium">{row.original.name}</span>
+                 <span className="font-medium">{row.original.full_name}</span>
                  <span className="text-sm text-muted-foreground">{row.original.email}</span>
             </div>
         </div>
