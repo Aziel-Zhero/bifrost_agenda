@@ -139,11 +139,12 @@ export default function PerfilStudioPage() {
         toast({title: "Usuário não encontrado", description: "Faça login novamente.", variant: "destructive"});
         return;
     }
-    const dataToSave = { ...studioProfile, profile_id: currentUser.id, id: studioProfile.id || crypto.randomUUID() };
+    const { id, ...restOfProfile } = studioProfile;
+    const dataToSave = { ...restOfProfile, profile_id: currentUser.id };
 
     const { error } = await supabase
         .from('studio_profile')
-        .upsert(dataToSave, { onConflict: 'id' });
+        .upsert(dataToSave, { onConflict: 'profile_id' });
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
