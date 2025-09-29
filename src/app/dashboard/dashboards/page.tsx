@@ -42,7 +42,6 @@ type Kpi = {
   icon: React.ElementType;
   iconColor: string;
   change?: string;
-  changeType?: 'increase' | 'decrease';
 };
 
 type OverviewData = {
@@ -112,10 +111,10 @@ export default function DashboardPage() {
     const from = dateRange.from;
     const to = dateRange.to || from; // if no 'to', use 'from'
     
-    return appointments.filter(appt => 
+    return allUserAppointments.filter(appt => 
       appt.date_time && isWithinInterval(parseISO(appt.date_time), { start: startOfDay(from), end: endOfDay(to) })
     );
-  }, [dateRange, appointments]);
+  }, [dateRange, allUserAppointments]);
 
   const previousPeriodData = useMemo(() => {
     const from = dateRange?.from;
@@ -156,7 +155,19 @@ export default function DashboardPage() {
 
   const kpiData: Kpi[] = useMemo(() => {
     const from = dateRange?.from;
-    if (!from || !currentUser) return [];
+    
+    // Always return a structure for the cards, even if zeroed out.
+    const defaultKpis: Kpi[] = [
+      { title: "Ganhos (Período)", value: "R$ 0.00", icon: kpiIcons.gains, iconColor: "text-green-500", change: '0%' },
+      { title: "Perdas (Cancelado)", value: "R$ 0.00", icon: kpiIcons.losses, iconColor: "text-yellow-500", change: '0%' },
+      { title: "Cancelamentos", value: "0", icon: kpiIcons.cancellations, iconColor: "text-red-500", change: '0%' },
+      { title: "Clientes Atendidos", value: "0", icon: kpiIcons.clients, iconColor: "text-purple-500", change: '0%' },
+      { title: "Novos Clientes", value: "0", icon: kpiIcons.newClients, iconColor: "text-blue-500", change: '0%' },
+    ];
+
+    if (!from || !currentUser || !filteredAppointments) {
+      return defaultKpis;
+    }
 
     const { prevGains, prevLosses, prevCancellations, prevClients, prevNewClients } = previousPeriodData;
 
@@ -379,4 +390,3 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
