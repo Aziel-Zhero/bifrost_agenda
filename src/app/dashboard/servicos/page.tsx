@@ -93,12 +93,15 @@ export default function ServicosPage() {
 
   useEffect(() => {
     const fetchServices = async () => {
-        const { data, error } = await supabase.from('services').select('*');
-        if (error) {
-            console.error("Error fetching services", error);
-            toast({ title: "Erro ao buscar serviços", description: error.message, variant: "destructive" });
-        } else {
-            setServices(data || []);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data, error } = await supabase.from('services').select('*').eq('profile_id', user.id);
+            if (error) {
+                console.error("Error fetching services", error);
+                toast({ title: "Erro ao buscar serviços", description: error.message, variant: "destructive" });
+            } else {
+                setServices(data || []);
+            }
         }
     };
     fetchServices();
@@ -106,8 +109,8 @@ export default function ServicosPage() {
 
   const handleEditClick = (service: Service) => {
     setSelectedService(service);
-    const hours = Math.floor(service.duration / 60);
-    const minutes = service.duration % 60;
+    const hours = Math.floor(service.duration_minutes / 60);
+    const minutes = service.duration_minutes % 60;
     setFormData({ ...service, durationHours: hours, durationMinutes: minutes });
     setFormOpen(true);
   };
@@ -119,14 +122,21 @@ export default function ServicosPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        toast({ title: "Erro de autenticação", description: "Usuário não encontrado.", variant: "destructive"});
+        return;
+    }
 
     const durationInMinutes = (formData.durationHours || 0) * 60 + (formData.durationMinutes || 0);
 
     const serviceData = {
         name: formData.name || "",
-        duration: durationInMinutes,
+        duration_minutes: durationInMinutes,
         price: formData.price || 0,
         icon: formData.icon || "FaTag",
+        profile_id: user.id
     };
 
     if (selectedService) {
@@ -304,7 +314,7 @@ export default function ServicosPage() {
                         {service.name}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDuration(service.duration)}</TableCell>
+                    <TableCell>{formatDuration(service.duration_minutes)}</TableCell>
                     <TableCell>{`R$ ${service.price.toFixed(2)}`}</TableCell>
                     <TableCell className="text-right">
                        <DropdownMenu>
@@ -355,3 +365,5 @@ export default function ServicosPage() {
     </>
   );
 }
+
+    

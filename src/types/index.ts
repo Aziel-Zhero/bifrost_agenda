@@ -82,7 +82,7 @@ export type Service = {
   created_at?: string;
   name: string;
   description?: string;
-  duration: number; // Renamed from duration_minutes for consistency
+  duration_minutes: number; 
   price: number;
   icon?: string;
 };

@@ -95,7 +95,7 @@ export default function PerfilStudioPage() {
             .single();
         if (studioData) {
             setStudioProfile(studioData);
-        } else if(studioError && studioError.code !== 'PGRST116') {
+        } else if(studioError && studioError.code !== 'PGRST116') { // PGRST116 = no rows found
             console.error("Error fetching studio profile:", studioError.message);
         }
 
@@ -371,3 +371,5 @@ export default function PerfilStudioPage() {
     </>
   );
 }
+
+    
