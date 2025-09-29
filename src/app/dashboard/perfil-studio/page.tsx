@@ -139,12 +139,26 @@ export default function PerfilStudioPage() {
         toast({title: "Usuário não encontrado", description: "Faça login novamente.", variant: "destructive"});
         return;
     }
-    const { id, ...restOfProfile } = studioProfile;
+
+    // Data to be saved, excluding the primary key 'id'
+    const { id, created_at, ...restOfProfile } = studioProfile;
     const dataToSave = { ...restOfProfile, profile_id: currentUser.id };
 
-    const { error } = await supabase
-        .from('studio_profile')
-        .upsert(dataToSave, { onConflict: 'profile_id' });
+    let error;
+    if (id) {
+        // If an ID exists, we're updating.
+        const { error: updateError } = await supabase
+            .from('studio_profile')
+            .update(dataToSave)
+            .eq('id', id);
+        error = updateError;
+    } else {
+        // If no ID, we're inserting a new record.
+        const { error: insertError } = await supabase
+            .from('studio_profile')
+            .insert(dataToSave);
+        error = insertError;
+    }
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
@@ -176,15 +190,31 @@ export default function PerfilStudioPage() {
         is_enabled: hour.is_enabled,
     }))
 
-    const { error } = await supabase.from('studio_hours').upsert(dataToSave, {
-        onConflict: 'profile_id, day_of_week'
-    });
+    // Since we don't have a unique constraint on (profile_id, day_of_week), upsert is not ideal.
+    // Let's delete all existing hours for this user and insert the new ones.
+    // This is simpler than checking each day individually.
+    const { error: deleteError } = await supabase
+      .from('studio_hours')
+      .delete()
+      .eq('profile_id', currentUser.id);
 
-    if (error) {
-        console.error("Error saving studio hours:", error);
+    if (deleteError) {
+       console.error("Error deleting old studio hours:", deleteError);
         toast({
             title: "Erro ao salvar!",
-            description: `Não foi possível atualizar os horários de funcionamento: ${error.message}`,
+            description: `Não foi possível remover os horários antigos: ${deleteError.message}`,
+            variant: "destructive"
+        });
+        return;
+    }
+
+    const { error: insertError } = await supabase.from('studio_hours').insert(dataToSave);
+
+    if (insertError) {
+        console.error("Error saving studio hours:", insertError);
+        toast({
+            title: "Erro ao salvar!",
+            description: `Não foi possível atualizar os horários de funcionamento: ${insertError.message}`,
             variant: "destructive"
         });
     } else {
