@@ -117,9 +117,48 @@ export default function DashboardPage() {
     );
   }, [dateRange, appointments]);
 
+  const previousPeriodData = useMemo(() => {
+    const from = dateRange?.from;
+    if (!from || !allUserAppointments.length) {
+      return { prevGains: 0, prevLosses: 0, prevCancellations: 0, prevClients: 0, prevNewClients: 0 };
+    }
+
+    const prevMonthDate = subMonths(from, 1);
+    const prevMonthStart = startOfMonth(prevMonthDate);
+    const prevMonthEnd = endOfMonth(prevMonthDate);
+
+    const prevMonthAppointments = allUserAppointments.filter(appt =>
+      appt.date_time && isWithinInterval(parseISO(appt.date_time), { start: prevMonthStart, end: prevMonthEnd })
+    );
+    const prevMonthCompleted = prevMonthAppointments.filter(a => a.status === 'Realizado');
+    const prevMonthCancelled = prevMonthAppointments.filter(a => a.status === 'Cancelado');
+    const prevGains = prevMonthCompleted.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
+    const prevLosses = prevMonthCancelled.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
+
+    const prevPeriodClients = new Set(prevMonthCompleted.map(a => a.client_id));
+    const clientsBeforePrevPeriod = new Set(
+        allUserAppointments
+            .filter(a => a.date_time && parseISO(a.date_time) < prevMonthStart)
+            .map(a => a.client_id)
+    );
+    const newClientsInPrevPeriod = new Set(
+        [...prevPeriodClients].filter(clientId => !clientsBeforePrevPeriod.has(clientId))
+    );
+
+    return {
+      prevGains,
+      prevLosses,
+      prevCancellations: prevMonthCancelled.length,
+      prevClients: prevPeriodClients.size,
+      prevNewClients: newClientsInPrevPeriod.size,
+    };
+  }, [dateRange, allUserAppointments]);
+
   const kpiData: Kpi[] = useMemo(() => {
     const from = dateRange?.from;
     if (!from || !currentUser) return [];
+
+    const { prevGains, prevLosses, prevCancellations, prevClients, prevNewClients } = previousPeriodData;
 
     const calculateChange = (current: number, previous: number) => {
         if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -134,42 +173,16 @@ export default function DashboardPage() {
     const totalGains = completedInPeriod.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
     const totalLosses = cancelledInPeriod.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
     
-    // Previous period data for comparison
-    const prevMonthDate = subMonths(from, 1);
-    const prevMonthStart = startOfMonth(prevMonthDate);
-    const prevMonthEnd = endOfMonth(prevMonthDate);
-    
-    const prevMonthAppointments = allUserAppointments.filter(appt => 
-      appt.date_time && isWithinInterval(parseISO(appt.date_time), { start: prevMonthStart, end: prevMonthEnd })
-    );
-    const prevMonthCompleted = prevMonthAppointments.filter(a => a.status === 'Realizado');
-    const prevMonthCancelled = prevMonthAppointments.filter(a => a.status === 'Cancelado');
-    const prevMonthGains = prevMonthCompleted.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
-    const prevMonthLosses = prevMonthCancelled.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
-
-    // --- New Client Calculation (Simplified & Robust) ---
+    // New Client Calculation
     const clientsInPeriod = new Set(completedInPeriod.map(a => a.client_id));
-    
     const clientsBeforePeriod = new Set(
         allUserAppointments
             .filter(a => a.date_time && parseISO(a.date_time) < startOfDay(from))
             .map(a => a.client_id)
     );
-
     const newClientsInPeriod = new Set(
         [...clientsInPeriod].filter(clientId => !clientsBeforePeriod.has(clientId))
     );
-
-    const prevPeriodCompletedClients = new Set(prevMonthCompleted.map(a => a.client_id));
-    const clientsBeforePrevPeriod = new Set(
-        allUserAppointments
-            .filter(a => a.date_time && parseISO(a.date_time) < prevMonthStart)
-            .map(a => a.client_id)
-    );
-     const newClientsInPrevPeriod = new Set(
-        [...prevPeriodCompletedClients].filter(clientId => !clientsBeforePrevPeriod.has(clientId))
-    );
-    // --- End of New Client Calculation ---
 
     return [
       {
@@ -177,39 +190,39 @@ export default function DashboardPage() {
         value: `R$ ${totalGains.toFixed(2)}`,
         icon: kpiIcons.gains,
         iconColor: "text-green-500",
-        change: calculateChange(totalGains, prevMonthGains),
+        change: calculateChange(totalGains, prevGains),
       },
        {
         title: "Perdas (Cancelado)",
         value: `R$ ${totalLosses.toFixed(2)}`,
         icon: kpiIcons.losses,
         iconColor: "text-yellow-500",
-        change: calculateChange(totalLosses, prevMonthLosses),
+        change: calculateChange(totalLosses, prevLosses),
       },
        {
         title: "Cancelamentos",
         value: `${cancelledInPeriod.length}`,
         icon: kpiIcons.cancellations,
         iconColor: "text-red-500",
-        change: calculateChange(cancelledInPeriod.length, prevMonthCancelled.length),
+        change: calculateChange(cancelledInPeriod.length, prevCancellations),
       },
       {
         title: "Clientes Atendidos",
         value: `${clientsInPeriod.size}`,
         icon: kpiIcons.clients,
         iconColor: "text-purple-500",
-        change: calculateChange(clientsInPeriod.size, prevPeriodCompletedClients.size),
+        change: calculateChange(clientsInPeriod.size, prevClients),
       },
       {
         title: "Novos Clientes",
         value: `${newClientsInPeriod.size}`,
         icon: kpiIcons.newClients,
         iconColor: "text-blue-500",
-        change: calculateChange(newClientsInPeriod.size, newClientsInPrevPeriod.size),
+        change: calculateChange(newClientsInPeriod.size, prevNewClients),
       },
     ]
 
-  }, [filteredAppointments, allUserAppointments, dateRange, currentUser]);
+  }, [filteredAppointments, allUserAppointments, dateRange, currentUser, previousPeriodData]);
 
 
   const getTopClients = (): ClientRanking[] => {
