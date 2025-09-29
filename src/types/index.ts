@@ -1,5 +1,4 @@
 
-
 // ========================================
 // PAPEIS (ROLES)
 // ========================================
@@ -52,7 +51,7 @@ export type StudioProfile = {
 // ========================================
 export type StudioHour = {
     id: string; // UUID
-    profile_id: string; // Foreign key to profiles.id
+    profile_id?: string; // Foreign key to profiles.id
     created_at?: string;
     day_of_week: number; // 0-6
     start_time: string; // "HH:mm:ss"
