@@ -59,35 +59,26 @@ export default function Header() {
 
           if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
               console.error("Error fetching user profile:", error);
+              // Fallback for user without a profile entry yet
               setCurrentUser({
                 id: user.id,
                 email: user.email || 'Não encontrado',
-                role: 'staff',
-                full_name: user.email?.split('@')[0] || 'Usuário',
+                role: 'Asgard', // Default role for safety
+                full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
                 permissions: {}
               });
           } else if (profile) {
               setCurrentUser(profile);
           } else {
-             // Profile not found, but auth user exists (e.g. invited user)
+             // Profile not found, but auth user exists (e.g., just invited)
              setCurrentUser({
                 id: user.id,
                 email: user.email || 'Não encontrado',
                 full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
-                role: 'staff', // Default role
+                role: 'Asgard', // Default role
                 permissions: {},
               });
           }
-      } else {
-        // No user logged in, create a mock user for dev access
-        const allPermissions = menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {});
-        setCurrentUser({
-            id: 'dev-user',
-            full_name: 'Dev User',
-            email: 'dev@bifrost.local',
-            role: 'Heimdall',
-            permissions: allPermissions,
-        });
       }
     };
     fetchUser();
@@ -99,8 +90,8 @@ export default function Header() {
 
   const hasPermission = (href: string) => {
     if (!currentUser) return false;
-    // Bifrost role has all permissions
-    if (currentUser.role === 'Bifrost') return true;
+    // Bifrost and Heimdall roles have all permissions
+    if (currentUser.role === 'Bifrost' || currentUser.role === 'Heimdall') return true;
     
     // For other roles, check the permissions object
     return currentUser.permissions?.[href] === true;
@@ -120,12 +111,8 @@ export default function Header() {
   }
 
   const handleLogout = async () => {
-    if (currentUser?.id === 'dev-user') {
-        router.push('/');
-    } else {
-        await supabase.auth.signOut();
-        router.push('/');
-    }
+    await supabase.auth.signOut();
+    router.push('/');
   }
 
 
@@ -215,7 +202,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.full_name} data-ai-hint="person" />
+                  <AvatarImage src={''} alt={currentUser.full_name} data-ai-hint="person" />
                   <AvatarFallback>{currentUser.full_name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -291,7 +278,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar>
-                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.full_name} data-ai-hint="person" />
+                  <AvatarImage src={''} alt={currentUser.full_name} data-ai-hint="person" />
                   <AvatarFallback>{currentUser.full_name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -326,8 +313,3 @@ export default function Header() {
     </header>
   );
 }
-    
-
-    
-
-    
