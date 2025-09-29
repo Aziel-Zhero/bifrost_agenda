@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlusCircle, MoreHorizontal, User, Edit, Trash2 } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,13 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getColumns } from "./components/columns";
@@ -35,7 +28,7 @@ export default function ClientesPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [whatsapp, setWhatsapp] = useState('');
+  const [phone, setPhone] = useState('');
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   useEffect(() => {
@@ -44,18 +37,9 @@ export default function ClientesPage() {
       if (!user) return;
 
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      setCurrentUser(profile);
+      setCurrentUser(profile as any);
       
-      const isAdmin = profile?.role === 'Heimdall' || profile?.role === 'Bifrost';
-      
-      let query = supabase.from('clients').select('*');
-
-      if (!isAdmin) {
-          // Asgard users see only their own clients
-          query = query.eq('admin', profile?.name || user.email);
-      }
-      
-      const { data: clientData, error: clientError } = await query;
+      const { data: clientData, error: clientError } = await supabase.from('clients').select('*');
               
       if (clientError) {
           console.error("Error fetching clients:", clientError);
@@ -67,7 +51,7 @@ export default function ClientesPage() {
     fetchUserAndClients();
   }, [toast]);
 
-  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const onlyNums = value.replace(/\D/g, '');
     let masked = '';
@@ -80,7 +64,7 @@ export default function ClientesPage() {
     if (onlyNums.length > 7) {
       masked += `-${onlyNums.substring(7, 11)}`;
     }
-    setWhatsapp(masked);
+    setPhone(masked);
   };
 
 
@@ -92,11 +76,10 @@ export default function ClientesPage() {
     }
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const clientData = {
-        name: formData.get('name') as string,
-        whatsapp: (formData.get('whatsapp') as string).replace(/\D/g, ''),
+        full_name: formData.get('name') as string,
+        phone: (formData.get('phone') as string).replace(/\D/g, ''),
         telegram: formData.get('telegram') as string,
-        // For Asgard users, admin is always themselves. For Admins, it's what they type.
-        admin: (currentUser.role === 'Asgard' ? currentUser.name : formData.get('admin') as string) || currentUser.name,
+        email: formData.get('email') as string,
     };
 
     if (editingClient) {
@@ -106,7 +89,7 @@ export default function ClientesPage() {
             toast({ title: "Erro ao atualizar cliente", description: error.message, variant: "destructive" });
         } else if (data) {
             setClients(prev => prev.map(c => c.id === data.id ? data : c));
-            toast({ title: "Cliente Atualizado!", description: `${data.name} foi atualizado.`, className: "bg-green-100" });
+            toast({ title: "Cliente Atualizado!", description: `${data.full_name} foi atualizado.`, className: "bg-green-100" });
         }
 
     } else {
@@ -116,7 +99,7 @@ export default function ClientesPage() {
             toast({ title: "Erro ao adicionar cliente", description: error.message, variant: "destructive" });
         } else if (data) {
             setClients(prev => [...prev, data]);
-            toast({ title: "Cliente Adicionado!", description: `${data.name} foi adicionado à sua lista.`, className: "bg-green-100" });
+            toast({ title: "Cliente Adicionado!", description: `${data.full_name} foi adicionado à sua lista.`, className: "bg-green-100" });
         }
     }
     
@@ -125,7 +108,7 @@ export default function ClientesPage() {
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
-    setWhatsapp(client.whatsapp || ''); // Mask it for display
+    setPhone(client.phone || ''); // Mask it for display
     setFormOpen(true);
   };
 
@@ -135,7 +118,7 @@ export default function ClientesPage() {
     if (error) {
        toast({
           title: "Erro ao excluir",
-          description: "Você pode não ter permissão para excluir este cliente. Apenas o usuário designado pode excluí-lo. Erro: " + error.message,
+          description: "Não foi possível excluir o cliente. Erro: " + error.message,
           variant: "destructive",
         });
     } else {
@@ -147,7 +130,7 @@ export default function ClientesPage() {
   const closeForm = () => {
     setFormOpen(false);
     setEditingClient(null);
-    setWhatsapp('');
+    setPhone('');
   }
   
   const columns = getColumns({ onEdit: handleEdit, onDelete: handleDelete });
@@ -160,7 +143,7 @@ export default function ClientesPage() {
         <div>
           <h1 className="text-2xl font-bold">Gerenciar Clientes</h1>
           <p className="text-muted-foreground">
-            {isAdmin ? "Gerencie todos os clientes do estúdio." : "Gerencie os clientes que são designados a você."}
+            Gerencie todos os clientes do estúdio.
           </p>
         </div>
         <Dialog open={isFormOpen} onOpenChange={isOpen => {
@@ -179,12 +162,16 @@ export default function ClientesPage() {
             </DialogHeader>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" name="name" placeholder="Nome completo do cliente" defaultValue={editingClient?.name} required/>
+                <Label htmlFor="name">Nome Completo</Label>
+                <Input id="name" name="name" placeholder="Nome completo do cliente" defaultValue={editingClient?.full_name} required/>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" name="email" type="email" placeholder="email@cliente.com" defaultValue={editingClient?.email || ''} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input id="whatsapp" name="whatsapp" placeholder="(99) 99999-9999" value={whatsapp} onChange={handleWhatsappChange} maxLength={15} required/>
+                <Label htmlFor="phone">WhatsApp</Label>
+                <Input id="phone" name="phone" placeholder="(99) 99999-9999" value={phone} onChange={handlePhoneChange} maxLength={15} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="telegram">Telegram Chat ID (Opcional)</Label>
@@ -193,18 +180,6 @@ export default function ClientesPage() {
                     Peça para o cliente enviar uma mensagem ao bot e use o `@userinfobot` para obter o ID.
                 </p>
               </div>
-               {isAdmin && (
-                  <div className="space-y-2">
-                    <Label htmlFor="admin">Usuário Designado</Label>
-                    <Input
-                      id="admin"
-                      name="admin"
-                      placeholder="Nome do admin responsável"
-                      defaultValue={editingClient?.admin || currentUser?.name}
-                      required
-                    />
-                  </div>
-                )}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={closeForm}>Cancelar</Button>
                 <Button type="submit">Salvar</Button>
@@ -222,3 +197,5 @@ export default function ClientesPage() {
     </div>
   );
 }
+
+    
