@@ -240,7 +240,7 @@ export default function DashboardPage() {
     const completedAppointments = allUserAppointments.filter(a => a.status === 'Realizado');
 
     completedAppointments.forEach(appt => {
-        if (appt.date_time) {
+        if (appt.date_time && appt.services) {
             const monthKey = format(parseISO(appt.date_time), 'yyyy-MM');
             const price = appt.services?.price || 0;
             monthlyGains[monthKey] = (monthlyGains[monthKey] || 0) + price;
@@ -375,5 +375,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
