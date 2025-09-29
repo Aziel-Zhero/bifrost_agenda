@@ -9,7 +9,7 @@ export type UserProfile = {
     full_name: string;
     email: string;
     phone?: string;
-    role: 'admin' | 'staff' | 'owner';
+    role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
     avatar?: string; // Not in DB schema but useful for UI
     last_sign_in_at?: string; // From auth.users table
     permissions?: { [key: string]: boolean }; // Managed by UI, not in DB
@@ -61,6 +61,9 @@ export type Client = {
   email?: string;
   phone?: string;
   notes?: string;
+  admin?: string; // name of the staff member
+  whatsapp?: string; // Added from previous versions, good to keep
+  telegram?: string; // Added from previous versions, good to keep
 };
 
 
@@ -73,15 +76,15 @@ export type Service = {
   created_at?: string;
   name: string;
   description?: string;
-  duration_minutes: number;
+  duration: number; // duration in minutes
   price: number;
-  icon?: string; // Not in DB schema but useful for UI
+  icon?: string;
 };
 
 // ========================================
 // AGENDAMENTOS
 // ========================================
-export type AppointmentStatus = 'Agendado' | 'Concluido' | 'Cancelado' | 'Reagendado' | 'Bloqueado'; // 'Reagendado' and 'Bloqueado' are UI states
+export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Reagendado' | 'Bloqueado';
 
 export type Appointment = {
   id: string; // UUID
@@ -92,9 +95,9 @@ export type Appointment = {
   notes?: string;
   status: AppointmentStatus;
   // Joined data for UI
-  clients: { full_name: string } | null;
+  clients: { name: string, whatsapp?: string, telegram?: string } | null;
   services: { name: string; price: number } | null;
-  profiles?: { full_name: string } | null;
+  profiles?: { name: string } | null;
 };
 
 
@@ -111,10 +114,9 @@ export type AppointmentReport = {
 }
 
 export type RoleSettings = {
-  name: 'owner' | 'admin' | 'staff';
+  name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
   description: string;
   permissions: { [key: string]: boolean };
-  isFixed?: boolean; // Indicates if permissions can be changed
 };
 
 export type GaiaLog = {
@@ -141,3 +143,21 @@ export type GaiaMessageTemplate = {
     is_enabled: boolean;
     description: string;
 };
+
+// From the new schema, these might be useful later
+export type AppointmentReminder = {
+    id: string;
+    appointment_id: string;
+    reminder_time: string;
+    sent: boolean;
+};
+
+export type AppointmentCancellation = {
+    id: string;
+    appointment_id: string;
+    cancelled_by_type: 'client' | 'profile';
+    client_id?: string;
+    profile_id?: string;
+    reason?: string;
+    cancelled_at: string;
+}

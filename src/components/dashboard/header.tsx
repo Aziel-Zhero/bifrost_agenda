@@ -59,29 +59,36 @@ export default function Header() {
 
           if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
               console.error("Error fetching user profile:", error);
-              // Set a fallback user if profile doesn't exist yet but auth user does
               setCurrentUser({
                 id: user.id,
-                full_name: user.email?.split('@')[0] || 'Usuário',
                 email: user.email || 'Não encontrado',
-                role: 'staff', // Default role
+                role: 'staff',
+                full_name: user.email?.split('@')[0] || 'Usuário',
                 permissions: {}
               });
           } else if (profile) {
-              if (!profile.role) {
-                profile.role = 'staff';
-              }
               setCurrentUser(profile);
           } else {
-             // Profile not found, create a temporary one for display
+             // Profile not found, but auth user exists (e.g. invited user)
              setCurrentUser({
                 id: user.id,
-                full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
                 email: user.email || 'Não encontrado',
-                role: 'staff',
+                full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
+                role: 'staff', // Default role
                 permissions: {},
               });
           }
+      } else {
+        // No user logged in, create a mock user for dev access
+        const allPermissions = menuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {});
+        setCurrentUser({
+            id: 'dev-user',
+            full_name: 'Dev User',
+            email: 'dev@bifrost.local',
+            role: 'Bifrost',
+            permissions: allPermissions,
+            avatar: ''
+        });
       }
     };
     fetchUser();
@@ -93,12 +100,10 @@ export default function Header() {
 
   const hasPermission = (href: string) => {
     if (!currentUser) return false;
-    // owners and admins have all permissions
-    const isAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
+    // Bifrost role has all permissions
+    if (currentUser.role === 'Bifrost') return true;
     
-    if (isAdmin) return true;
-
-    // Staff permissions are checked from the permissions object
+    // For other roles, check the permissions object
     return currentUser.permissions?.[href] === true;
   };
   
@@ -112,6 +117,15 @@ export default function Header() {
     markAsRead(notificationId);
     if(href) {
         router.push(href);
+    }
+  }
+
+  const handleLogout = async () => {
+    if (currentUser?.id === 'dev-user') {
+        router.push('/');
+    } else {
+        await supabase.auth.signOut();
+        router.push('/');
     }
   }
 
@@ -226,11 +240,9 @@ export default function Header() {
                   </DropdownMenuItem>
                ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => supabase.auth.signOut()} asChild>
-                <Link href="/">
+              <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
-                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -304,11 +316,9 @@ export default function Header() {
                   </DropdownMenuItem>
                ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => supabase.auth.signOut()} asChild>
-                <Link href="/">
+              <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
-                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
