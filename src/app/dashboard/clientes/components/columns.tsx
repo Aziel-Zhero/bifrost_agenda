@@ -35,7 +35,7 @@ const formatWhatsapp = (phone: string) => {
 
 export const getColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Client>[] => [
   {
-    accessorKey: "name",
+    accessorKey: "full_name",
     header: ({ column }) => {
       return (
         <Button
@@ -53,19 +53,21 @@ export const getColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Client
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
             <User className="h-5 w-5 text-muted-foreground" />
           </div>
-          <span>{row.original.name}</span>
+          <span>{row.original.full_name}</span>
         </div>
       );
     },
   },
   {
-    accessorKey: "whatsapp",
+    accessorKey: "phone",
     header: "WhatsApp",
     cell: ({ row }) => {
+      const phone = row.original.phone;
+      if (!phone) return "N/A";
       return (
         <div className="flex items-center gap-2">
           <FaWhatsapp className="text-green-500" />
-          {formatWhatsapp(row.original.whatsapp)}
+          {formatWhatsapp(phone)}
         </div>
       );
     },
@@ -83,10 +85,6 @@ export const getColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Client
         </div>
       );
     },
-  },
-  {
-    accessorKey: "admin",
-    header: "Usuário Designado"
   },
   {
     id: "actions",
