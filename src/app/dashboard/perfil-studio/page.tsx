@@ -73,60 +73,62 @@ export default function PerfilStudioPage() {
   const timeOptions = generateTimeOptions();
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchInitialData = async (user: UserProfile) => {
+        // Fetch studio profile based on user's profile_id
+        const { data: studioData, error: studioError } = await supabase
+            .from('studio_profile')
+            .select('*')
+            .eq('profile_id', user.id)
+            .single();
+        if (studioData) {
+            setStudioProfile(studioData);
+        } else if(studioError && studioError.code !== 'PGRST116') { // Ignore "no rows found"
+            console.log("Error fetching studio profile:", studioError.message);
+        }
+
+        // Fetch studio hours based on user's profile_id
+        const { data: hoursData, error: hoursError } = await supabase
+            .from('studio_hours')
+            .select('*')
+            .eq('profile_id', user.id);
+            
+        if (hoursError && hoursError.code !== 'PGRST116') {
+             console.log("Could not fetch studio hours:", hoursError.message);
+        } else if (hoursData && hoursData.length > 0) {
+            const dayMap = new Map(hoursData.map(h => [h.day_of_week, h]));
+            const mergedHours = initialHours.map(initial => {
+                const dbHour = dayMap.get(initial.day_of_week);
+                return dbHour ? {
+                    day_of_week: dbHour.day_of_week,
+                    start_time: formatTime(dbHour.start_time),
+                    end_time: formatTime(dbHour.end_time),
+                    is_enabled: dbHour.is_enabled,
+                } : initial;
+            })
+            setStudioHours(mergedHours);
+        }
+  }
+
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const initialize = async () => {
         setIsLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-            // Get user profile to have the ID
             const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            
             if (profileError) {
                 toast({ title: 'Erro ao buscar perfil', description: 'Não foi possível carregar seus dados. ' + profileError.message, variant: 'destructive'});
                 setIsLoading(false);
                 return;
             }
-            setCurrentUser(profileData as any);
-
-            // Fetch studio profile based on user's profile_id
-            const { data: studioData, error: studioError } = await supabase
-                .from('studio_profile')
-                .select('*')
-                .eq('profile_id', user.id)
-                .single();
-            if (studioData) {
-                setStudioProfile(studioData);
-            } else if(studioError && studioError.code !== 'PGRST116') { // Ignore "no rows found"
-                console.log("Error fetching studio profile:", studioError.message);
-            }
-
-            // Fetch studio hours based on user's profile_id
-            const { data: hoursData, error: hoursError } = await supabase
-                .from('studio_hours')
-                .select('*')
-                .eq('profile_id', user.id);
-                
-            if (hoursError && hoursError.code !== 'PGRST116') {
-                 console.log("Could not fetch studio hours:", hoursError.message);
-            } else if (hoursData && hoursData.length > 0) {
-                const dayMap = new Map(hoursData.map(h => [h.day_of_week, h]));
-                const mergedHours = initialHours.map(initial => {
-                    const dbHour = dayMap.get(initial.day_of_week);
-                    return dbHour ? {
-                        day_of_week: dbHour.day_of_week,
-                        start_time: formatTime(dbHour.start_time),
-                        end_time: formatTime(dbHour.end_time),
-                        is_enabled: dbHour.is_enabled,
-                    } : initial;
-                })
-                setStudioHours(mergedHours);
-            }
+            const userProfile = profileData as UserProfile;
+            setCurrentUser(userProfile);
+            await fetchInitialData(userProfile);
         }
         setIsLoading(false);
     };
     
-    fetchInitialData();
+    initialize();
   }, [toast]);
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,29 +142,43 @@ export default function PerfilStudioPage() {
         return;
     }
 
-    // Data to be saved, excluding the primary key 'id'
-    const { id, created_at, ...restOfProfile } = studioProfile;
-    const dataToSave = { ...restOfProfile, profile_id: currentUser.id };
+    const dataToSave = {
+        profile_id: currentUser.id,
+        studio_name: studioProfile.studio_name,
+        google_maps_url: studioProfile.google_maps_url,
+        address_street: studioProfile.address_street,
+        address_number: studioProfile.address_number,
+        address_complement: studioProfile.address_complement,
+        address_neighborhood: studioProfile.address_neighborhood,
+        address_city: studioProfile.address_city,
+        address_state: studioProfile.address_state,
+    };
 
-    let error;
-    if (id) {
-        // If an ID exists, we're updating.
-        const { error: updateError } = await supabase
+    let error, data;
+    
+    if (studioProfile.id) {
+        // UPDATE existing record
+        ({data, error} = await supabase
             .from('studio_profile')
             .update(dataToSave)
-            .eq('id', id);
-        error = updateError;
+            .eq('id', studioProfile.id)
+            .select()
+            .single()
+        );
     } else {
-        // If no ID, we're inserting a new record.
-        const { error: insertError } = await supabase
+        // INSERT new record
+        ({data, error} = await supabase
             .from('studio_profile')
-            .insert(dataToSave);
-        error = insertError;
+            .insert(dataToSave)
+            .select()
+            .single()
+        );
     }
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
     } else {
+        setStudioProfile(data); // Update state with the newly saved data, including the ID
         toast({ title: "Perfil do Estúdio Salvo!", description: "As informações do seu negócio foram atualizadas." });
     }
   }
@@ -182,39 +198,24 @@ export default function PerfilStudioPage() {
         return;
     }
 
-    const dataToSave = studioHours.map(hour => ({
+    const dataToUpsert = studioHours.map(hour => ({
         profile_id: currentUser.id,
         day_of_week: hour.day_of_week,
         start_time: hour.start_time,
         end_time: hour.end_time,
         is_enabled: hour.is_enabled,
-    }))
+    }));
 
-    // Since we don't have a unique constraint on (profile_id, day_of_week), upsert is not ideal.
-    // Let's delete all existing hours for this user and insert the new ones.
-    // This is simpler than checking each day individually.
-    const { error: deleteError } = await supabase
-      .from('studio_hours')
-      .delete()
-      .eq('profile_id', currentUser.id);
+    // Upsert will create or update based on the combination of profile_id and day_of_week
+    const { error } = await supabase
+        .from('studio_hours')
+        .upsert(dataToUpsert, { onConflict: 'profile_id, day_of_week' });
 
-    if (deleteError) {
-       console.error("Error deleting old studio hours:", deleteError);
+    if (error) {
+        console.error("Error saving studio hours:", error);
         toast({
             title: "Erro ao salvar!",
-            description: `Não foi possível remover os horários antigos: ${deleteError.message}`,
-            variant: "destructive"
-        });
-        return;
-    }
-
-    const { error: insertError } = await supabase.from('studio_hours').insert(dataToSave);
-
-    if (insertError) {
-        console.error("Error saving studio hours:", insertError);
-        toast({
-            title: "Erro ao salvar!",
-            description: `Não foi possível atualizar os horários de funcionamento: ${insertError.message}`,
+            description: `Não foi possível atualizar os horários de funcionamento: ${error.message}`,
             variant: "destructive"
         });
     } else {
