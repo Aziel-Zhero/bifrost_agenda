@@ -67,12 +67,15 @@ export default function LandingPage() {
 
   return (
     <div ref={mainRef} className="invisible">
-      <Button 
-        onClick={() => router.push("/login")}
-        className="fixed top-4 right-4 z-50 bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white/20"
-      >
-        Acessar <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
+      <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <Button 
+          onClick={() => router.push("/login")}
+          className="bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white/20"
+        >
+          Acessar <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+
 
       <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0a091e] p-4 text-white">
         {/* Efeitos de fundo com gradiente */}
@@ -112,12 +115,14 @@ export default function LandingPage() {
 
           <div id="footer-cta" className="text-center">
               <p className="text-lg text-gray-300">Pronto para transcender a gestão comum?</p>
-              <Button 
-                onClick={() => router.push("/login")}
-                className="mt-4 bg-gradient-to-r from-[#8ce8f1] to-[#cb70c4] text-black font-bold text-base py-6 px-8 rounded-lg shadow-[0_0_20px_#cb70c4] hover:shadow-[0_0_30px_#8ce8f1] transition-shadow duration-300"
-              >
-                Atravesse a Bifrost
-              </Button>
+              <div className="flex gap-4 justify-center">
+                 <Button 
+                    onClick={() => router.push("/login")}
+                    className="mt-4 bg-gradient-to-r from-[#8ce8f1] to-[#cb70c4] text-black font-bold text-base py-6 px-8 rounded-lg shadow-[0_0_20px_#cb70c4] hover:shadow-[0_0_30px_#8ce8f1] transition-shadow duration-300"
+                  >
+                    Atravesse a Bifrost
+                  </Button>
+              </div>
           </div>
 
         </div>

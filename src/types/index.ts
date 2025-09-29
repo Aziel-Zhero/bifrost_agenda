@@ -1,28 +1,100 @@
 
 
-export type Client = {
-  id: string;
-  name: string;
-  whatsapp: string;
-  telegram?: string;
-  admin: string;
-  created_at?: string;
+// ========================================
+// PERFIS DE USUÁRIOS (profissionais/admins)
+// ========================================
+export type UserProfile = {
+    id: string; // UUID
+    created_at?: string;
+    full_name: string;
+    email: string;
+    phone?: string;
+    role: 'admin' | 'staff' | 'owner';
+    avatar?: string; // Not in DB schema but useful for UI
+    last_sign_in_at?: string; // From auth.users table
+    permissions?: { [key: string]: boolean }; // Managed by UI, not in DB
 };
 
-export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Bloqueado' | 'Reagendado';
+
+// ========================================
+// PERFIL DO ESTÚDIO
+// ========================================
+export type StudioProfile = {
+    id: string; // UUID
+    profile_id: string; // UUID of the owner
+    created_at?: string;
+    studio_name: string;
+    monthly_goal?: number;
+    clients_goal?: number;
+    new_clients_goal?: number;
+    address_street?: string;
+    address_number?: string;
+    address_complement?: string;
+    address_neighborhood?: string;
+    address_city?: string;
+    address_state?: string;
+    address_zip_code?: string;
+    google_maps_url?: string;
+};
+
+
+// ========================================
+// HORÁRIOS DE FUNCIONAMENTO
+// ========================================
+export type StudioHour = {
+    id: string; // UUID
+    profile_id: string; // UUID of the owner
+    created_at?: string;
+    day_of_week: number; // 0-6
+    start_time: string; // "HH:mm:ss"
+    end_time: string; // "HH:mm:ss"
+    is_enabled: boolean;
+};
+
+// ========================================
+// CLIENTES
+// ========================================
+export type Client = {
+  id: string; // UUID
+  created_at?: string;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+};
+
+
+// ========================================
+// SERVIÇOS
+// ========================================
+export type Service = {
+  id: string; // UUID
+  profile_id: string; // UUID of the owner
+  created_at?: string;
+  name: string;
+  description?: string;
+  duration_minutes: number;
+  price: number;
+  icon?: string; // Not in DB schema but useful for UI
+};
+
+// ========================================
+// AGENDAMENTOS
+// ========================================
+export type AppointmentStatus = 'Agendado' | 'Concluido' | 'Cancelado' | 'Reagendado' | 'Bloqueado'; // 'Reagendado' and 'Bloqueado' are UI states
 
 export type Appointment = {
-  id: string;
-  date_time: string; // Changed to string to match Supabase return
-  notes: string;
-  status: AppointmentStatus;
-  admin_id: string;
-  service_id: string;
+  id: string; // UUID
   client_id: string;
-  // Nested properties for joins
-  clients: { name: string, telegram?: string } | null;
+  service_id: string;
+  admin_id: string; // This is the profile_id of the staff who is performing the service
+  date_time: string; // TIMESTAMPTZ
+  notes?: string;
+  status: AppointmentStatus;
+  // Joined data for UI
+  clients: { full_name: string } | null;
   services: { name: string; price: number } | null;
-  profiles?: { name: string } | null;
+  profiles?: { full_name: string } | null;
 };
 
 
@@ -38,64 +110,8 @@ export type AppointmentReport = {
     serviceId: string;
 }
 
-
-export type Service = {
-  id: string;
-  name: string;
-  duration: number; // Stored in minutes
-  price: number;
-  icon?: string;
-};
-
-export type UserProfile = {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-    role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
-    permissions: {
-      [key: string]: boolean; // key is the route href
-    },
-    last_sign_in_at?: string;
-}
-
-export type AuditLog = {
-    id: string;
-    payload: {
-        message?: string;
-        record?: any;
-    };
-    timestamp: Date;
-}
-
-export type StudioHour = {
-    id: number;
-    created_at: string;
-    day_of_week: number; // 0 = Sunday, 1 = Monday, etc.
-    start_time: string; // e.g., "09:00"
-    end_time: string;   // e.g., "18:00"
-    is_enabled: boolean;
-}
-
-export type StudioProfile = {
-    id: number; // Should only be one row with id 1
-    created_at: string;
-    studio_name: string;
-    monthly_goal: number;
-    clients_goal: number;
-    new_clients_goal: number;
-    google_maps_url?: string;
-    address_street?: string;
-    address_number?: string;
-    address_complement?: string;
-    address_neighborhood?: string;
-    address_city?: string;
-    address_state?: string;
-    address_zip_code?: string;
-}
-
 export type RoleSettings = {
-  name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
+  name: 'owner' | 'admin' | 'staff';
   description: string;
   permissions: { [key: string]: boolean };
   isFixed?: boolean; // Indicates if permissions can be changed
@@ -107,13 +123,6 @@ export type GaiaLog = {
   message_content: string;
   sent_to: string;
   status: string;
-};
-
-export type AppointmentReminder = {
-    id: number;
-    appointment_id: string;
-    sent_at: string;
-    status: string;
 };
 
 export type AppNotification = {
@@ -132,5 +141,3 @@ export type GaiaMessageTemplate = {
     is_enabled: boolean;
     description: string;
 };
-
-    

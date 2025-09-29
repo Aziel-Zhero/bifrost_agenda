@@ -20,10 +20,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-  DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
@@ -66,24 +62,23 @@ export default function Header() {
               // Set a fallback user if profile doesn't exist yet but auth user does
               setCurrentUser({
                 id: user.id,
-                name: user.email?.split('@')[0] || 'Usuário',
+                full_name: user.email?.split('@')[0] || 'Usuário',
                 email: user.email || 'Não encontrado',
-                role: 'Asgard', // Default role
+                role: 'staff', // Default role
                 permissions: {}
               });
           } else if (profile) {
-              // On first login via invite, role might be null in DB, use default 'Asgard'
               if (!profile.role) {
-                profile.role = 'Asgard';
+                profile.role = 'staff';
               }
               setCurrentUser(profile);
           } else {
              // Profile not found, create a temporary one for display
              setCurrentUser({
                 id: user.id,
-                name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
+                full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
                 email: user.email || 'Não encontrado',
-                role: 'Asgard',
+                role: 'staff',
                 permissions: {},
               });
           }
@@ -98,11 +93,13 @@ export default function Header() {
 
   const hasPermission = (href: string) => {
     if (!currentUser) return false;
-    const isAdmin = currentUser.role === 'Heimdall' || currentUser.role === 'Bifrost';
+    // owners and admins have all permissions
+    const isAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
     
     if (isAdmin) return true;
 
-    return currentUser.permissions[href] === true;
+    // Staff permissions are checked from the permissions object
+    return currentUser.permissions?.[href] === true;
   };
   
   const visibleNavItems = menuItems.filter(item => hasPermission(item.href));
@@ -205,15 +202,15 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.name} data-ai-hint="person" />
-                  <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.full_name} data-ai-hint="person" />
+                  <AvatarFallback>{currentUser.full_name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{currentUser.name}</p>
+                  <p className="text-sm font-medium leading-none">{currentUser.full_name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {currentUser.email}
                   </p>
@@ -283,15 +280,15 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="overflow-hidden rounded-full hover:bg-white/10 focus-visible:ring-white">
                 <Avatar>
-                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.name} data-ai-hint="person" />
-                  <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={currentUser.avatar || ''} alt={currentUser.full_name} data-ai-hint="person" />
+                  <AvatarFallback>{currentUser.full_name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{currentUser.name}</p>
+                  <p className="text-sm font-medium leading-none">{currentUser.full_name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {currentUser.email}
                   </p>

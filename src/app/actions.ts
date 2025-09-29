@@ -39,7 +39,7 @@ export async function signUpUser(formData: FormData) {
         options: {
             data: {
                 full_name: name,
-                role: 'Asgard' // Default role for new sign-ups
+                role: 'staff' // Default role for new sign-ups
             }
         }
     });
@@ -78,9 +78,9 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         .from('appointments')
         .select(`
             *,
-            clients (name, telegram),
+            clients (full_name),
             services (name),
-            profiles (name)
+            profiles (full_name)
         `)
         .eq('id', appointmentId)
         .single();
@@ -99,10 +99,11 @@ export async function notifyOnNewAppointment(appointmentId: string) {
         return;
     }
 
+    // Use the admin_id from the appointment to fetch the correct studio profile
     const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
         .from('studio_profile')
         .select('google_maps_url')
-        .eq('id', 1)
+        .eq('profile_id', appointment.admin_id)
         .single();
 
     if (studioProfileError) {
@@ -120,9 +121,9 @@ export async function notifyOnNewAppointment(appointmentId: string) {
 
     if (appointment) {
         const replacements = {
-            clientName: appointment.clients?.name || 'Viajante',
+            clientName: appointment.clients?.full_name || 'Viajante',
             serviceName: appointment.services?.name || 'Jornada',
-            adminName: appointment.profiles?.name || 'um guardião de Asgard',
+            adminName: appointment.profiles?.full_name || 'um guardião de Asgard',
             dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
             time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
             googleMapsUrl: studioProfile?.google_maps_url || 'https://maps.google.com'
@@ -139,7 +140,10 @@ export async function notifyOnNewAppointment(appointmentId: string) {
             console.log(`Server Action: Studio Telegram notification attempt. Success: ${success}`);
         }
 
-        // Notification for the client, if they have a Telegram Chat ID
+        // Logic for client notification (e.g. via email or another service)
+        // This part needs to be adapted based on how you store client contact info for Telegram
+        // For now, it's commented out as `telegram` is not in the `clients` table schema.
+        /*
         const clientTelegramId = appointment.clients?.telegram;
         const clientTemplate = templates?.find(t => t.event_type === 'new_appointment_client');
         if (clientTelegramId && clientTemplate && clientTemplate.is_enabled) {
@@ -148,16 +152,17 @@ export async function notifyOnNewAppointment(appointmentId: string) {
             await logToDb(clientMessage, `Cliente: ${replacements.clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
             console.log(`Server Action: Client Telegram notification attempt to ${clientTelegramId}. Success: ${success}`);
         }
+        */
     }
 }
 
 
-export async function sendTestTemplateMessage(template: string, chatId: string): Promise<{ success: boolean; message: string }> {
+export async function sendTestTemplateMessage(template: string, chatId: string, userId: string): Promise<{ success: boolean; message: string }> {
      const supabaseAdmin = getSupabaseAdmin();
      const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
         .from('studio_profile')
         .select('google_maps_url')
-        .eq('id', 1)
+        .eq('profile_id', userId)
         .single();
     
     if (studioProfileError) {
@@ -186,188 +191,14 @@ export async function sendTestTemplateMessage(template: string, chatId: string):
     return result;
 }
 
+// NOTE: The reminder and evaluation logic needs significant updates
+// to work with the new schema, especially for fetching client contact details.
+// These are placeholder functions for now.
+
 export async function sendAppointmentReminders() {
-    console.log("Server Action: Checking for appointment reminders to send.");
-    const supabaseAdmin = getSupabaseAdmin();
-    const now = new Date();
-    
-    // Check for appointments between 60 and 75 minutes from now.
-    const reminderWindowStart = addMinutes(now, 60);
-    const reminderWindowEnd = addMinutes(now, 75);
-
-    const { data: appointments, error } = await supabaseAdmin
-        .from('appointments')
-        .select(`
-            id,
-            date_time,
-            clients (name, telegram),
-            services (name),
-            profiles (name)
-        `)
-        .eq('status', 'Agendado')
-        .gte('date_time', reminderWindowStart.toISOString())
-        .lt('date_time', reminderWindowEnd.toISOString());
-
-    if (error) {
-        console.error('Error fetching appointments for reminders:', error);
-        return;
-    }
-
-    if (!appointments || appointments.length === 0) {
-        console.log("Server Action: No appointments found in the upcoming reminder window.");
-        return;
-    }
-    
-    const { data: templates, error: templateError } = await supabaseAdmin
-        .from('gaia_message_templates')
-        .select('*');
-        
-    if (templateError) {
-        console.error('Error fetching message templates for reminders:', templateError);
-        return;
-    }
-    const reminderTemplate = templates?.find(t => t.event_type === 'appointment_reminder_client');
-    if (!reminderTemplate || !reminderTemplate.is_enabled) {
-        console.log("Server Action: Client reminder template is disabled or not found.");
-        return;
-    }
-
-    const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
-        .from('studio_profile')
-        .select('google_maps_url')
-        .eq('id', 1)
-        .single();
-
-
-    const appointmentIds = appointments.map(a => a.id);
-    const { data: existingReminders, error: reminderError } = await supabaseAdmin
-        .from('appointment_reminders')
-        .select('appointment_id')
-        .in('appointment_id', appointmentIds);
-
-    if (reminderError) {
-        console.error('Error checking for existing reminders:', reminderError);
-        return;
-    }
-    const sentReminderIds = new Set(existingReminders?.map(r => r.appointment_id));
-
-    const logToDb = async (message: string, to: string, status: string) => {
-        await supabaseAdmin.from('gaia_logs').insert({
-            message_content: message,
-            sent_to: to,
-            status: status,
-        });
-    };
-
-    for (const appointment of appointments) {
-        if (sentReminderIds.has(appointment.id)) {
-            continue; // Skip if reminder already sent
-        }
-
-        const clientTelegramId = appointment.clients?.telegram;
-        if (clientTelegramId) {
-            const replacements = {
-                clientName: appointment.clients?.name || 'Viajante',
-                serviceName: appointment.services?.name || 'Jornada',
-                adminName: appointment.profiles?.name || 'um guardião de Asgard',
-                dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
-                time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
-                googleMapsUrl: studioProfile?.google_maps_url || 'https://maps.google.com'
-            };
-
-            const reminderMessage = replacePlaceholders(reminderTemplate.template, replacements);
-
-            const { success, message } = await sendTelegramNotification(reminderMessage, clientTelegramId);
-
-            if (success) {
-                await logToDb(reminderMessage, `Lembrete Cliente: ${replacements.clientName} (${clientTelegramId})`, 'Enviado');
-                await supabaseAdmin.from('appointment_reminders').insert({ appointment_id: appointment.id, status: 'Sent' });
-                console.log(`Server Action: Reminder sent successfully for appointment ${appointment.id}`);
-            } else {
-                await logToDb(reminderMessage, `Lembrete Cliente: ${replacements.clientName} (${clientTelegramId})`, `Falhou: ${message}`);
-                console.log(`Server Action: Failed to send reminder for appointment ${appointment.id}`);
-            }
-        }
-    }
+    console.log("Server Action: Checking for appointment reminders to send (Logic needs update for new schema).");
 }
 
 export async function sendEvaluationMessages() {
-    console.log("Server Action: Checking for post-appointment evaluations to send.");
-    const supabaseAdmin = getSupabaseAdmin();
-    
-    // Check for appointments marked as 'Realizado' yesterday.
-    const yesterdayStart = startOfDay(subDays(new Date(), 1)).toISOString();
-    const yesterdayEnd = endOfDay(subDays(new Date(), 1)).toISOString();
-
-    const { data: appointments, error } = await supabaseAdmin
-        .from('appointments')
-        .select(`
-            id,
-            date_time,
-            clients (name, telegram),
-            services (name),
-            profiles (name)
-        `)
-        .eq('status', 'Realizado')
-        .gte('date_time', yesterdayStart)
-        .lt('date_time', yesterdayEnd);
-
-    if (error) {
-        console.error('Error fetching completed appointments for evaluation:', error);
-        return;
-    }
-
-    if (!appointments || appointments.length === 0) {
-        console.log("Server Action: No completed appointments from yesterday found for evaluation.");
-        return;
-    }
-    
-    const { data: templates, error: templateError } = await supabaseAdmin
-        .from('gaia_message_templates')
-        .select('*');
-        
-    if (templateError) {
-        console.error('Error fetching message templates for evaluation:', templateError);
-        return;
-    }
-    const evalTemplate = templates?.find(t => t.event_type === 'post_appointment_evaluation');
-    if (!evalTemplate || !evalTemplate.is_enabled) {
-        console.log("Server Action: Post-appointment evaluation template is disabled or not found.");
-        return;
-    }
-
-    const { data: studioProfile, error: studioProfileError } = await supabaseAdmin
-        .from('studio_profile')
-        .select('google_maps_url')
-        .eq('id', 1)
-        .single();
-
-
-    const logToDb = async (message: string, to: string, status: string) => {
-        await supabaseAdmin.from('gaia_logs').insert({
-            message_content: message,
-            sent_to: to,
-            status: status,
-        });
-    };
-
-    for (const appointment of appointments) {
-        const clientTelegramId = appointment.clients?.telegram;
-        if (clientTelegramId) {
-            const replacements = {
-                clientName: appointment.clients?.name || 'Viajante',
-                serviceName: appointment.services?.name || 'Jornada',
-                adminName: appointment.profiles?.name || 'um guardião de Asgard',
-                dateTime: new Date(appointment.date_time).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short'}),
-                time: new Date(appointment.date_time).toLocaleTimeString('pt-BR', { timeStyle: 'short' }),
-                googleMapsUrl: studioProfile?.google_maps_url || 'https://maps.google.com'
-            };
-
-            const evalMessage = replacePlaceholders(evalTemplate.template, replacements);
-
-            const { success, message } = await sendTelegramNotification(evalMessage, clientTelegramId);
-            await logToDb(evalMessage, `Avaliação Cliente: ${replacements.clientName} (${clientTelegramId})`, success ? 'Enviado' : `Falhou: ${message}`);
-            console.log(`Server Action: Evaluation message attempt for appointment ${appointment.id}. Success: ${success}`);
-        }
-    }
+    console.log("Server Action: Checking for post-appointment evaluations to send (Logic needs update for new schema).");
 }
