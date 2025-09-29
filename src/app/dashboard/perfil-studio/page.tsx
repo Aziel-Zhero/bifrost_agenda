@@ -46,7 +46,8 @@ const generateTimeOptions = () => {
     return options;
 }
 
-const formatTime = (timeString: string) => {
+const formatTime = (timeString: string | null | undefined): string => {
+    if (!timeString) return "09:00";
     if (timeString && timeString.length > 5) {
         return timeString.substring(0, 5); // "HH:mm:ss" -> "HH:mm"
     }
@@ -184,17 +185,15 @@ export default function PerfilStudioPage() {
     let error;
     let data;
 
-    // Check if a profile already exists for this user
     const { data: existingProfile, error: fetchError } = await supabase
       .from('studio_profile')
       .select('id')
       .eq('profile_id', currentUser.id)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
+    if (fetchError && fetchError.code !== 'PGRST116') {
         error = fetchError;
     } else if (existingProfile) {
-        // Update existing profile
         const { data: updateData, error: updateError } = await supabase
             .from('studio_profile')
             .update(dataToSave)
@@ -204,7 +203,6 @@ export default function PerfilStudioPage() {
         error = updateError;
         data = updateData;
     } else {
-        // Insert new profile
         const { data: insertData, error: insertError } = await supabase
             .from('studio_profile')
             .insert(dataToSave)
@@ -371,13 +369,13 @@ export default function PerfilStudioPage() {
                                  <Label htmlFor={`enabled-${hour.day_of_week}`} className="flex-1">{weekDays[hour.day_of_week]}</Label>
                             </div>
                             <div className="col-span-2 grid grid-cols-2 gap-2">
-                               <Select value={hour.start_time} onValueChange={(value) => handleHourChange(hour.day_of_week, 'start_time', value)} disabled={!hour.is_enabled}>
+                               <Select value={formatTime(hour.start_time)} onValueChange={(value) => handleHourChange(hour.day_of_week, 'start_time', value)} disabled={!hour.is_enabled}>
                                    <SelectTrigger><SelectValue/></SelectTrigger>
                                    <SelectContent>
                                        {timeOptions.map(t => <SelectItem key={`start-${t}`} value={t}>{t}</SelectItem>)}
                                    </SelectContent>
                                </Select>
-                                <Select value={hour.end_time} onValueChange={(value) => handleHourChange(hour.day_of_week, 'end_time', value)} disabled={!hour.is_enabled}>
+                                <Select value={formatTime(hour.end_time)} onValueChange={(value) => handleHourChange(hour.day_of_week, 'end_time', value)} disabled={!hour.is_enabled}>
                                    <SelectTrigger><SelectValue/></SelectTrigger>
                                    <SelectContent>
                                        {timeOptions.map(t => <SelectItem key={`end-${t}`} value={t}>{t}</SelectItem>)}
@@ -397,3 +395,5 @@ export default function PerfilStudioPage() {
     </>
   );
 }
+
+    
