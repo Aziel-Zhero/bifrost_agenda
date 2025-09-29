@@ -64,8 +64,8 @@ export default function Header() {
               .single();
 
           if (error && error.code !== 'PGRST116') {
-              console.error("Error fetching user profile:", error);
-              // Fallback for user without a profile entry yet
+              console.error("Error fetching user profile, using fallback:", error);
+              // Fallback for user without a profile entry yet or on error
               const fallbackRole: DatabaseRole = 'staff';
               setCurrentUser({
                 id: user.id,
@@ -81,7 +81,7 @@ export default function Header() {
                   role: dbRoleToUiRole[dbRole]
               });
           } else {
-             // Profile not found, but auth user exists (e.g., just invited)
+             // Profile not found, but auth user exists (e.g., just invited), create fallback
              const fallbackRole: DatabaseRole = 'staff';
              setCurrentUser({
                 id: user.id,
@@ -94,10 +94,12 @@ export default function Header() {
       }
     };
     fetchUser();
-  }, []);
+  }, [pathname]); // Re-fetch user on route change to ensure data is fresh
   
   useEffect(() => {
-    setSheetOpen(false);
+    if (isSheetOpen) {
+      setSheetOpen(false);
+    }
   }, [pathname]);
 
   const hasPermission = (href: string) => {
@@ -105,8 +107,9 @@ export default function Header() {
     // Bifrost and Heimdall roles have all permissions
     if (currentUser.role === 'Bifrost' || currentUser.role === 'Heimdall') return true;
     
-    // For other roles, check the permissions object
-    return currentUser.permissions?.[href] === true;
+    // For other roles, check the permissions object. Default to true if not specified for Asgard/Midgard.
+    const defaultPermission = currentUser.role === 'Asgard' || currentUser.role === 'Midgard';
+    return currentUser.permissions?.[href] ?? defaultPermission;
   };
   
   const visibleNavItems = menuItems.filter(item => hasPermission(item.href));
@@ -131,7 +134,7 @@ export default function Header() {
   if (!currentUser) {
     return (
         <header className="sticky top-0 z-50 flex h-16 items-center justify-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 px-4 md:px-6">
-             <div className="h-6 w-24 animate-pulse rounded-md bg-white/20" />
+             <div className="h-8 w-28 animate-pulse rounded-md bg-white/20" />
         </header>
     );
   }
@@ -150,6 +153,7 @@ export default function Header() {
           <SheetContent 
             side="left" 
             className={cn("menu-glass bg-transparent p-0 text-white border-none")}
+            onClick={() => setSheetOpen(false)}
           >
              <SheetHeader className="p-6">
                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
