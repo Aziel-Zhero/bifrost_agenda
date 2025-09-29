@@ -38,6 +38,7 @@ import type { UserProfile, Role, DatabaseRole } from "@/types";
 import { useNotifications } from "@/contexts/notification-context";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const dbRoleToUiRole: Record<DatabaseRole, Role> = {
     owner: 'Bifrost',
@@ -51,9 +52,11 @@ export default function Header() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isSheetOpen, setSheetOpen] = useState(false);
   const { notifications, unreadCount, markAsRead } = useNotifications();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
@@ -65,7 +68,6 @@ export default function Header() {
 
           if (error && error.code !== 'PGRST116') {
               console.error("Error fetching user profile, using fallback:", error);
-              // Fallback for user without a profile entry yet or on error
               const fallbackRole: DatabaseRole = 'staff';
               setCurrentUser({
                 id: user.id,
@@ -81,7 +83,6 @@ export default function Header() {
                   role: dbRoleToUiRole[dbRole]
               });
           } else {
-             // Profile not found, but auth user exists (e.g., just invited), create fallback
              const fallbackRole: DatabaseRole = 'staff';
              setCurrentUser({
                 id: user.id,
@@ -92,9 +93,10 @@ export default function Header() {
               });
           }
       }
+      setIsLoading(false);
     };
     fetchUser();
-  }, [pathname]); // Re-fetch user on route change to ensure data is fresh
+  }, [pathname]);
   
   useEffect(() => {
     if (isSheetOpen) {
@@ -104,10 +106,8 @@ export default function Header() {
 
   const hasPermission = (href: string) => {
     if (!currentUser) return false;
-    // Bifrost and Heimdall roles have all permissions
     if (currentUser.role === 'Bifrost' || currentUser.role === 'Heimdall') return true;
     
-    // For other roles, check the permissions object. Default to true if not specified for Asgard/Midgard.
     const defaultPermission = currentUser.role === 'Asgard' || currentUser.role === 'Midgard';
     return currentUser.permissions?.[href] ?? defaultPermission;
   };
@@ -130,8 +130,27 @@ export default function Header() {
     router.push('/');
   }
 
+  if (isLoading) {
+    return (
+        <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 px-4 md:px-6">
+             <div className="flex items-center gap-6">
+                <Skeleton className="h-8 w-28" />
+                <div className="hidden md:flex items-center gap-5">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-20" />
+                </div>
+            </div>
+             <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
+        </header>
+    );
+  }
 
   if (!currentUser) {
+    // This case should ideally not be hit if the layout is protected, but it's a safe fallback.
     return (
         <header className="sticky top-0 z-50 flex h-16 items-center justify-center gap-4 border-b bg-gradient-to-r from-cyan-400 to-purple-500 px-4 md:px-6">
              <div className="h-8 w-28 animate-pulse rounded-md bg-white/20" />
