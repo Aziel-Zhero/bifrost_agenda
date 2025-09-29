@@ -109,7 +109,7 @@ export default function UsuariosPage() {
             setUsers(users.map(u => u.id === selectedUser.id ? { ...u, role: selectedRole } : u));
             toast({
               title: "Sucesso!",
-              description: `O cargo de ${selectedUser.name} foi atualizado para ${selectedRole}.`,
+              description: `O cargo de ${selectedUser.full_name} foi atualizado para ${selectedRole}.`,
             });
         }
     }
@@ -127,7 +127,7 @@ export default function UsuariosPage() {
             toast({ title: "Erro ao Salvar Permissões", description: error.message, variant: "destructive" });
         } else {
             setUsers(users.map(u => u.id === selectedUser.id ? { ...u, permissions } : u));
-            toast({ title: "Permissões Salvas!", description: `As permissões de ${selectedUser.name} foram atualizadas.` });
+            toast({ title: "Permissões Salvas!", description: `As permissões de ${selectedUser.full_name} foram atualizadas.` });
         }
     }
     setPermissionsDialogOpen(false);
@@ -205,7 +205,7 @@ export default function UsuariosPage() {
       setUsers(users.filter(u => u.id !== selectedUser.id));
       toast({
         title: "Usuário removido",
-        description: `${selectedUser.name} foi removido do sistema.`,
+        description: `${selectedUser.full_name} foi removido do sistema.`,
       });
     }
 
@@ -274,7 +274,7 @@ export default function UsuariosPage() {
                 <DialogHeader>
                     <DialogTitle>Alterar Tipo de Acesso</DialogTitle>
                     <DialogDescription>
-                        Alterando o cargo de <span className="font-semibold">{selectedUser.name}</span>.
+                        Alterando o cargo de <span className="font-semibold">{selectedUser.full_name}</span>.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
@@ -285,6 +285,7 @@ export default function UsuariosPage() {
                       </SelectTrigger>
                       <SelectContent>
                           <SelectItem value="Asgard">Asgard (Padrão)</SelectItem>
+                          <SelectItem value="Midgard">Midgard (Padrão)</SelectItem>
                           <SelectItem value="Heimdall">Heimdall (Admin)</SelectItem>
                           <SelectItem value="Bifrost">Bifrost (Super Admin)</SelectItem>
                       </SelectContent>
@@ -313,7 +314,7 @@ export default function UsuariosPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação é irreversível. O usuário <span className="font-semibold">{selectedUser.name}</span> e todos os seus dados associados serão permanentemente removidos.
+                Esta ação é irreversível. O usuário <span className="font-semibold">{selectedUser.full_name}</span> e todos os seus dados associados serão permanentemente removidos.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

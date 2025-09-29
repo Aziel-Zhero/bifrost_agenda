@@ -61,8 +61,9 @@ export type Client = {
   email?: string;
   phone?: string;
   notes?: string;
-  whatsapp?: string; // Not in DB, but useful from old schema
-  telegram?: string; // Not in DB, but useful from old schema
+  whatsapp?: string; 
+  telegram?: string;
+  admin?: string;
 };
 
 
@@ -71,11 +72,11 @@ export type Client = {
 // ========================================
 export type Service = {
   id: string; // UUID
-  profile_id: string; // UUID of the owner
+  profile_id?: string; // UUID of the owner
   created_at?: string;
   name: string;
   description?: string;
-  duration_minutes: number;
+  duration: number; // duration in minutes
   price: number;
   icon?: string;
 };
@@ -83,7 +84,7 @@ export type Service = {
 // ========================================
 // AGENDAMENTOS
 // ========================================
-export type AppointmentStatus = 'Agendado' | 'Concluido' | 'Cancelado' | 'Reagendado' | 'Bloqueado';
+export type AppointmentStatus = 'Agendado' | 'Realizado' | 'Cancelado' | 'Reagendado' | 'Bloqueado';
 
 export type Appointment = {
   id: string; // UUID
@@ -113,7 +114,7 @@ export type AppointmentReport = {
 }
 
 export type RoleSettings = {
-  name: 'Bifrost' | 'Heimdall' | 'Asgard';
+  name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
   description: string;
   permissions: { [key: string]: boolean };
 };

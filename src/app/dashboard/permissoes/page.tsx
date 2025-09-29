@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Users, Star } from "lucide-react";
+import { Shield, Users, Star, User } from "lucide-react";
 import type { RoleSettings } from "@/types";
 import { menuItems as allMenuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
@@ -40,12 +40,21 @@ const initialRoles: RoleSettings[] = [
       [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
     }), {}),
   },
+   {
+    name: "Midgard",
+    description: "Representa os clientes finais, com acesso limitado ou gerenciado indiretamente.",
+    permissions: allMenuItems.reduce((acc, item) => ({
+      ...acc,
+      [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
+    }), {}),
+  },
 ];
 
 const roleIcons: { [key: string]: React.ElementType } = {
   Bifrost: Star,
   Heimdall: Shield,
   Asgard: Users,
+  Midgard: User,
 };
 
 
@@ -132,6 +141,7 @@ export default function PermissoesPage() {
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {roles.map((role) => {
             const Icon = roleIcons[role.name];
+            const isSuperAdmin = role.name === 'Bifrost' || role.name === 'Heimdall';
             return (
                 <Card key={role.name}>
                     <CardHeader>
@@ -157,15 +167,15 @@ export default function PermissoesPage() {
                                         id={`perm-${role.name}-${item.href}`}
                                         checked={!!role.permissions[item.href]}
                                         onCheckedChange={(value) => handlePermissionChange(role.name, item.href, value)}
-                                        disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}
+                                        disabled={isLoading || isSuperAdmin}
                                     />
                                 </div>
                             ))
                          }
                     </CardContent>
                     <CardFooter className="flex justify-end border-t pt-6">
-                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}>
-                            {isLoading ? 'Salvando...' : `Salvar Permissões de ${role.name}`}
+                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading || isSuperAdmin}>
+                            {isLoading ? 'Salvando...' : `Salvar Permissões`}
                         </Button>
                     </CardFooter>
                 </Card>

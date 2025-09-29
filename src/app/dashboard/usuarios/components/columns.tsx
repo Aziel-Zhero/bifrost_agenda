@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -33,7 +34,7 @@ type ColumnsProps = {
 
 export const columns = ({ onEditPermissions, onEditRole, onDelete, onReinvite }: ColumnsProps): ColumnDef<UserProfile>[] => [
   {
-    accessorKey: "name",
+    accessorKey: "full_name",
     header: ({ column }) => {
       return (
         <Button
