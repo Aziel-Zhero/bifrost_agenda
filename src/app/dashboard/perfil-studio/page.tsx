@@ -168,7 +168,7 @@ export default function PerfilStudioPage() {
         toast({title: "Usuário não encontrado", description: "Faça login novamente.", variant: "destructive"});
         return;
     }
-    
+
     const dataToSave = {
         profile_id: currentUser.id,
         studio_name: studioProfile.studio_name ?? 'Meu Estúdio',
@@ -180,16 +180,43 @@ export default function PerfilStudioPage() {
         address_city: studioProfile.address_city ?? null,
         address_state: studioProfile.address_state ?? null,
     };
-    
-    const { data, error } = await supabase
-        .from('studio_profile')
-        .upsert(dataToSave, { onConflict: 'profile_id' })
-        .select()
-        .single();
+
+    let error;
+    let data;
+
+    // Check if a profile already exists for this user
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('studio_profile')
+      .select('id')
+      .eq('profile_id', currentUser.id)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
+        error = fetchError;
+    } else if (existingProfile) {
+        // Update existing profile
+        const { data: updateData, error: updateError } = await supabase
+            .from('studio_profile')
+            .update(dataToSave)
+            .eq('profile_id', currentUser.id)
+            .select()
+            .single();
+        error = updateError;
+        data = updateData;
+    } else {
+        // Insert new profile
+        const { data: insertData, error: insertError } = await supabase
+            .from('studio_profile')
+            .insert(dataToSave)
+            .select()
+            .single();
+        error = insertError;
+        data = insertData;
+    }
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
-        console.error("Error upserting studio profile:", error);
+        console.error("Error saving studio profile:", error);
     } else {
         setStudioProfile(data); 
         toast({ title: "Perfil do Estúdio Salvo!", description: "As informações do seu negócio foram atualizadas." });
@@ -370,5 +397,3 @@ export default function PerfilStudioPage() {
     </>
   );
 }
-
-    
