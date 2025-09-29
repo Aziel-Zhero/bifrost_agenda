@@ -1,6 +1,16 @@
 
 
 // ========================================
+// PAPEIS (ROLES)
+// ========================================
+// The mythological roles used throughout the UI
+export type Role = 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
+
+// The technical roles stored in the database
+export type DatabaseRole = 'owner' | 'admin' | 'staff';
+
+
+// ========================================
 // PERFIS DE USUÁRIOS (profissionais/admins)
 // ========================================
 export type UserProfile = {
@@ -9,10 +19,9 @@ export type UserProfile = {
     full_name: string;
     email: string;
     phone?: string;
-    role: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
-    avatar?: string; // Not in DB schema but useful for UI
-    last_sign_in_at?: string; // From auth.users table
+    role: Role; // UI-facing role
     permissions?: { [key: string]: boolean };
+    last_sign_in_at?: string; // From auth.users table
 };
 
 
@@ -21,7 +30,7 @@ export type UserProfile = {
 // ========================================
 export type StudioProfile = {
     id: string; // UUID
-    profile_id: string; // UUID of the owner
+    profile_id: string; // Foreign key to profiles.id
     created_at?: string;
     studio_name: string;
     monthly_goal?: number;
@@ -43,7 +52,7 @@ export type StudioProfile = {
 // ========================================
 export type StudioHour = {
     id: string; // UUID
-    profile_id: string; // UUID of the owner
+    profile_id: string; // Foreign key to profiles.id
     created_at?: string;
     day_of_week: number; // 0-6
     start_time: string; // "HH:mm:ss"
@@ -61,9 +70,8 @@ export type Client = {
   email?: string;
   phone?: string;
   notes?: string;
-  whatsapp?: string; 
-  telegram?: string;
-  admin?: string;
+  // The 'admin' or 'whatsapp'/'telegram' fields from the old schema are removed
+  // as they are not in the new F3N schema for this table.
 };
 
 
@@ -72,11 +80,11 @@ export type Client = {
 // ========================================
 export type Service = {
   id: string; // UUID
-  profile_id?: string; // UUID of the owner
+  profile_id: string; // Foreign key to profiles.id
   created_at?: string;
   name: string;
   description?: string;
-  duration: number; // duration in minutes
+  duration: number; // Renamed from duration_minutes for consistency
   price: number;
   icon?: string;
 };
@@ -95,7 +103,7 @@ export type Appointment = {
   notes?: string;
   status: AppointmentStatus;
   // Joined data for UI
-  clients: { full_name: string, whatsapp?: string, telegram?: string } | null;
+  clients: { full_name: string } | null;
   services: { name: string; price: number } | null;
   profiles?: { full_name: string } | null;
 };
@@ -114,7 +122,7 @@ export type AppointmentReport = {
 }
 
 export type RoleSettings = {
-  name: 'Bifrost' | 'Heimdall' | 'Asgard' | 'Midgard';
+  name: Role;
   description: string;
   permissions: { [key: string]: boolean };
 };

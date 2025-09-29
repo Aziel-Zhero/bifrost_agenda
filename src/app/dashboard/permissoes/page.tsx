@@ -15,26 +15,34 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Shield, Users, Star, User } from "lucide-react";
-import type { RoleSettings } from "@/types";
+import type { Role, RoleSettings, UserProfile } from "@/types";
 import { menuItems as allMenuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
 import { updatePermissionsByRole } from "../usuarios/actions";
 import { supabase } from "@/lib/supabase/client";
 
+// This maps the UI-facing mythological roles to the database-level technical roles.
+const roleMapToDb: Record<Role, 'owner' | 'admin' | 'staff'> = {
+    Bifrost: 'owner',
+    Heimdall: 'admin',
+    Asgard: 'staff',
+    Midgard: 'staff',
+};
+
 const initialRoles: RoleSettings[] = [
   {
     name: "Bifrost",
-    description: "Superadministrador. Acesso total e irrestrito a todas as funcionalidades e configurações.",
+    description: "Superadministrador (Owner). Acesso total e irrestrito, não pode ser modificado.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
   },
   {
     name: "Heimdall",
-    description: "Administrador mestre do estúdio. Pode gerenciar usuários, relatórios e configurações gerais.",
+    description: "Administrador mestre (Admin). Acesso total e irrestrito, não pode ser modificado.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
   },
   {
     name: "Asgard",
-    description: "Profissional do estúdio. Gerencia seus próprios agendamentos e clientes.",
+    description: "Profissional do estúdio (Staff). Gerencia seus próprios agendamentos e clientes.",
     permissions: allMenuItems.reduce((acc, item) => ({
       ...acc,
       [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
@@ -42,7 +50,7 @@ const initialRoles: RoleSettings[] = [
   },
    {
     name: "Midgard",
-    description: "Representa os clientes finais, com acesso limitado ou gerenciado indiretamente.",
+    description: "Representa os clientes (Staff). Acesso limitado, com permissões idênticas a Asgard.",
     permissions: allMenuItems.reduce((acc, item) => ({
       ...acc,
       [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
@@ -64,8 +72,10 @@ export default function PermissoesPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchPermissionsFromUsers = async () => {
-            const { data: users, error } = await supabase.from('profiles').select('role, permissions');
+        const fetchPermissionsFromDB = async () => {
+            // Fetch a representative user for each role to get the stored permissions
+            const dbRoles: ('owner' | 'admin' | 'staff')[] = ['owner', 'admin', 'staff'];
+            const { data: users, error } = await supabase.from('profiles').select('role, permissions').in('role', dbRoles);
 
             if (error) {
                 toast({ title: 'Erro ao buscar permissões', description: 'Não foi possível carregar as configurações atuais.', variant: 'destructive' });
@@ -74,34 +84,51 @@ export default function PermissoesPage() {
             }
 
             if (users) {
-                const updatedRoles = [...initialRoles].map(role => {
-                    // Find a user with this role who has a non-empty permissions object
-                    const userWithPermissions = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
-                    
-                    // Use the permissions from the DB if available, otherwise use the initial (default) ones for that role
-                    const dbPermissions = userWithPermissions ? userWithPermissions.permissions : role.permissions;
-                    const completePermissions: { [key: string]: boolean } = {};
-                    
-                    // Ensure all menu items are present in the permissions object
-                    allMenuItems.forEach(item => {
-                        completePermissions[item.href] = dbPermissions[item.href] ?? role.permissions[item.href] ?? false;
-                    });
+                const dbPermissionsMap = new Map();
+                users.forEach(u => {
+                    // Store the first non-empty permission set found for each role
+                    if (u.role && !dbPermissionsMap.has(u.role) && u.permissions && Object.keys(u.permissions).length > 0) {
+                        dbPermissionsMap.set(u.role, u.permissions);
+                    }
+                });
 
-                    return { ...role, permissions: completePermissions };
+                const updatedRoles = initialRoles.map(role => {
+                    const dbRole = roleMapToDb[role.name];
+                    const dbPermissions = dbPermissionsMap.get(dbRole);
+                    
+                    const finalPermissions: { [key: string]: boolean } = {};
+                    allMenuItems.forEach(item => {
+                        // Use DB permission if available, otherwise fall back to the initial default for that role
+                        finalPermissions[item.href] = dbPermissions?.[item.href] ?? role.permissions[item.href] ?? false;
+                    });
+                    
+                    return { ...role, permissions: finalPermissions };
                 });
                 setRoles(updatedRoles);
             }
             setIsLoading(false);
         };
 
-        fetchPermissionsFromUsers();
+        fetchPermissionsFromDB();
     }, [toast]);
 
 
     const handlePermissionChange = (roleName: RoleSettings['name'], href: string, value: boolean) => {
-        setRoles(prevRoles => prevRoles.map(role => 
-            role.name === roleName ? { ...role, permissions: { ...role.permissions, [href]: value } } : role
-        ));
+        setRoles(prevRoles => prevRoles.map(role => {
+            if (role.name === roleName) {
+                const newPermissions = { ...role.permissions, [href]: value };
+                // If Midgard is being changed, Asgard should match, and vice-versa
+                if (roleName === 'Asgard') {
+                    const midgardRole = prevRoles.find(r => r.name === 'Midgard');
+                    if (midgardRole) midgardRole.permissions = newPermissions;
+                } else if (roleName === 'Midgard') {
+                     const asgardRole = prevRoles.find(r => r.name === 'Asgard');
+                    if (asgardRole) asgardRole.permissions = newPermissions;
+                }
+                return { ...role, permissions: newPermissions };
+            }
+            return role;
+        }));
     };
     
     const handleSaveChanges = async (roleName: RoleSettings['name']) => {
@@ -109,6 +136,7 @@ export default function PermissoesPage() {
         if (!roleToSave) return;
         
         setIsLoading(true);
+        // The server action handles the mapping from mythological to DB role
         const { error } = await updatePermissionsByRole(roleName, roleToSave.permissions);
         setIsLoading(false);
 
@@ -124,6 +152,8 @@ export default function PermissoesPage() {
                 description: `As permissões para o papel ${roleName} foram atualizadas. Os usuários afetados precisarão recarregar a página para ver as mudanças.`,
                 className: "bg-green-100 border-green-300 text-green-800"
             });
+             // Refetch to confirm changes
+             // await fetchPermissionsFromDB();
         }
     }
 
@@ -138,7 +168,7 @@ export default function PermissoesPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         {roles.map((role) => {
             const Icon = roleIcons[role.name];
             const isSuperAdmin = role.name === 'Bifrost' || role.name === 'Heimdall';

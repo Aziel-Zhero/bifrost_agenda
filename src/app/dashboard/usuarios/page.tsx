@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { UserProfile } from "@/types";
+import type { UserProfile, Role } from "@/types";
 import { columns } from "./components/columns";
 import { DataTable } from "./components/data-table";
 import {
@@ -45,6 +45,15 @@ import { useToast } from "@/hooks/use-toast";
 import { deleteUser, inviteUser, reinviteUser, getUsers } from "./actions";
 import EditPermissionsDialog from "./components/edit-permissions-dialog";
 
+
+// This maps the UI-facing mythological roles to the database-level technical roles.
+const roleMapToDb: Record<Role, 'owner' | 'admin' | 'staff'> = {
+    Bifrost: 'owner',
+    Heimdall: 'admin',
+    Asgard: 'staff',
+    Midgard: 'staff',
+};
+
 export default function UsuariosPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -57,7 +66,7 @@ export default function UsuariosPage() {
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   
-  const [selectedRole, setSelectedRole] = useState<UserProfile['role'] | ''>('');
+  const [selectedRole, setSelectedRole] = useState<Role | ''>('');
   
   const { toast } = useToast();
 
@@ -93,9 +102,12 @@ export default function UsuariosPage() {
   
   const handleRoleSave = async () => {
     if (selectedUser && selectedRole) {
+        // Map the UI role to the database role before saving
+        const dbRole = roleMapToDb[selectedRole];
+
         const { error } = await supabase
             .from('profiles')
-            .update({ role: selectedRole })
+            .update({ role: dbRole })
             .eq('id', selectedUser.id);
         
         if (error) {
@@ -279,7 +291,7 @@ export default function UsuariosPage() {
                 </DialogHeader>
                 <div className="py-4">
                      <Label htmlFor="edit-role">Cargo</Label>
-                     <Select value={selectedRole} onValueChange={(value: UserProfile['role']) => setSelectedRole(value)}>
+                     <Select value={selectedRole} onValueChange={(value: Role) => setSelectedRole(value)}>
                       <SelectTrigger id="edit-role">
                           <SelectValue placeholder="Selecione um cargo" />
                       </SelectTrigger>

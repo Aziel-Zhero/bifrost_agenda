@@ -2,7 +2,15 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import type { UserProfile, AuditLog } from '@/types';
+import type { UserProfile, AuditLog, Role } from '@/types';
+
+// This maps the UI-facing mythological roles to the database-level technical roles.
+const roleMap: Record<Role, 'owner' | 'admin' | 'staff'> = {
+    Bifrost: 'owner',
+    Heimdall: 'admin',
+    Asgard: 'staff',
+    Midgard: 'staff',
+};
 
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,12 +49,16 @@ export async function getUsers(): Promise<{ data: UserProfile[] | null, error: {
 
     const combinedUsers: UserProfile[] = authData.users.map((authUser: any) => {
       const profile = profileMap.get(authUser.id);
+      const dbRole = profile?.role || 'staff';
+      
+      // Reverse map the database role to the UI role for display
+      const uiRole: Role = (Object.keys(roleMap) as Role[]).find(key => roleMap[key] === dbRole) || 'Asgard';
+
       return {
         id: authUser.id,
         full_name: profile?.full_name || authUser.user_metadata?.full_name || 'Nome não definido',
         email: authUser.email || 'Email não encontrado',
-        role: profile?.role || 'Asgard',
-        avatar: profile?.avatar,
+        role: uiRole,
         permissions: profile?.permissions || {},
         last_sign_in_at: authUser.last_sign_in_at,
       };
@@ -81,7 +93,7 @@ export async function inviteUser({ email, name }: { email: string, name: string 
         id: data.user.id,
         full_name: name,
         email: email,
-        role: 'Asgard', // Default role for new users
+        role: 'staff', // Default role for new users is always 'staff'
       }, { onConflict: 'id' });
     
     if (profileError) {
@@ -134,17 +146,22 @@ export async function deleteUser(userId: string) {
 }
 
 
-export async function updatePermissionsByRole(role: UserProfile['role'], permissions: UserProfile['permissions']) {
+export async function updatePermissionsByRole(role: Role, permissions: UserProfile['permissions']) {
     const supabaseAdmin = getSupabaseAdmin();
+    
+    const dbRole = roleMap[role];
+    if (!dbRole) {
+        return { error: { message: `Papel mitológico '${role}' não reconhecido.` } };
+    }
 
-    // 1. Find all users with the specified role
+    // 1. Find all users with the specified database role
     const { data: profiles, error: fetchError } = await supabaseAdmin
         .from('profiles')
         .select('id')
-        .eq('role', role);
+        .eq('role', dbRole);
 
     if (fetchError) {
-        console.error(`Error fetching users with role ${role}:`, fetchError);
+        console.error(`Error fetching users with role ${role} (db: ${dbRole}):`, fetchError);
         return { error: { message: `Não foi possível buscar usuários para o papel ${role}.` } };
     }
 
