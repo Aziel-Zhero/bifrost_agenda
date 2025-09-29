@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
-import { Combine, Shield, Users, ArrowRight } from "lucide-react";
+import { Combine, Shield, Users, ArrowRight, ToyBrick } from "lucide-react";
 import { gsap } from "gsap";
 
 const features = [
@@ -68,6 +68,14 @@ export default function LandingPage() {
   return (
     <div ref={mainRef} className="invisible">
       <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <Button 
+          onClick={() => router.push("/dashboard")}
+          variant="outline"
+          className="bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300 backdrop-blur-sm"
+        >
+          <ToyBrick className="mr-2 h-4 w-4" />
+          Acesso Direto (Dev)
+        </Button>
         <Button 
           onClick={() => router.push("/login")}
           className="bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white/20"
