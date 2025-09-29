@@ -85,9 +85,8 @@ export default function Header() {
             id: 'dev-user',
             full_name: 'Dev User',
             email: 'dev@bifrost.local',
-            role: 'Bifrost',
+            role: 'Heimdall',
             permissions: allPermissions,
-            avatar: ''
         });
       }
     };
@@ -327,6 +326,8 @@ export default function Header() {
     </header>
   );
 }
+    
+
     
 
     
