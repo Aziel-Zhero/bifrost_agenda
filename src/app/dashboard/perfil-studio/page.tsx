@@ -172,7 +172,7 @@ export default function PerfilStudioPage() {
 
     const dataToSave = {
         profile_id: currentUser.id,
-        studio_name: studioProfile.studio_name ?? 'Meu Estúdio',
+        studio_name: studioProfile.studio_name || 'Meu Estúdio',
         google_maps_url: studioProfile.google_maps_url ?? null,
         address_street: studioProfile.address_street ?? null,
         address_number: studioProfile.address_number ?? null,
@@ -181,40 +181,16 @@ export default function PerfilStudioPage() {
         address_city: studioProfile.address_city ?? null,
         address_state: studioProfile.address_state ?? null,
     };
-
-    let error;
-    let data;
-
-    const { data: existingProfile, error: fetchError } = await supabase
-      .from('studio_profile')
-      .select('id')
-      .eq('profile_id', currentUser.id)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') {
-        error = fetchError;
-    } else if (existingProfile) {
-        const { data: updateData, error: updateError } = await supabase
-            .from('studio_profile')
-            .update(dataToSave)
-            .eq('profile_id', currentUser.id)
-            .select()
-            .single();
-        error = updateError;
-        data = updateData;
-    } else {
-        const { data: insertData, error: insertError } = await supabase
-            .from('studio_profile')
-            .insert(dataToSave)
-            .select()
-            .single();
-        error = insertError;
-        data = insertData;
-    }
+    
+    const { data, error } = await supabase
+        .from('studio_profile')
+        .upsert(dataToSave, { onConflict: 'profile_id' })
+        .select()
+        .single();
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
-        console.error("Error saving studio profile:", error);
+        console.error("Error saving studio profile:", JSON.stringify(error, null, 2));
     } else {
         setStudioProfile(data); 
         toast({ title: "Perfil do Estúdio Salvo!", description: "As informações do seu negócio foram atualizadas." });
@@ -249,7 +225,7 @@ export default function PerfilStudioPage() {
         .upsert(dataToUpsert, { onConflict: 'profile_id, day_of_week' });
 
     if (error) {
-        console.error("Error saving studio hours:", error);
+        console.error("Error saving studio hours:", JSON.stringify(error, null, 2));
         toast({
             title: "Erro ao salvar!",
             description: `Não foi possível atualizar os horários de funcionamento: ${error.message}`,
@@ -395,5 +371,3 @@ export default function PerfilStudioPage() {
     </>
   );
 }
-
-    
