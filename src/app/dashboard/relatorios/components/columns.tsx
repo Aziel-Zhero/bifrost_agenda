@@ -15,6 +15,7 @@ const statusVariant: Record<AppointmentStatus, string> = {
   Agendado: "status-agendado",
   Realizado: "status-realizado",
   Cancelado: "status-cancelado",
+  Reagendado: "status-reagendado",
   Bloqueado: "status-bloqueado",
 };
 
@@ -71,7 +72,7 @@ export const columns: ColumnDef<AppointmentReport>[] = [
     accessorKey: "dateTime",
     header: "Data Agendada",
      cell: ({ row }) => {
-      return row.original.dateTime.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+      return new Date(row.original.dateTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
     }
   },
   {
@@ -95,3 +96,5 @@ export const columns: ColumnDef<AppointmentReport>[] = [
     },
   },
 ];
+
+    

@@ -63,11 +63,11 @@ export default function AgendaPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
         if (profileError && profileError.code !== 'PGRST116') {
             console.error("Error fetching user name", profileError);
         } else {
-            setCurrentUserName(profile?.name || user.email || 'Admin');
+            setCurrentUserName(profile?.full_name || user.email || 'Admin');
         }
         
         // Fetch Appointments only for the current user
@@ -75,7 +75,7 @@ export default function AgendaPage() {
             .from('appointments')
             .select(`
                 *,
-                clients ( name ),
+                clients ( full_name ),
                 services ( name )
             `)
             .eq('admin_id', user.id);
@@ -86,14 +86,13 @@ export default function AgendaPage() {
             setAppointments(apptData as any[]);
         }
 
-        // Fetch Clients only for the current user (or all if admin - adjust if needed)
-        const clientQueryUser = profile?.name || user.email;
-        if (clientQueryUser) {
-          const { data: clientData, error: clientError } = await supabase.from('clients').select('*').eq('admin', clientQueryUser);
-          if (clientError) console.error("Error fetching clients", clientError);
-          else setClients(clientData || []);
+        // Fetch all clients, as they are not tied to a specific admin in the new schema
+        const { data: clientData, error: clientError } = await supabase.from('clients').select('*');
+        if (clientError) {
+            console.error("Error fetching clients", clientError);
+        } else {
+            setClients(clientData || []);
         }
-
 
        // Fetch Services
        const { data: serviceData, error: serviceError } = await supabase.from('services').select('*');
@@ -140,7 +139,7 @@ export default function AgendaPage() {
     const { data, error } = await supabase
         .from('appointments')
         .insert(newAppointmentData)
-        .select(`*, clients (name), services (name)`)
+        .select(`*, clients (full_name), services (name)`)
         .single();
     
     if (error) {
@@ -171,7 +170,7 @@ export default function AgendaPage() {
       .from('appointments')
       .update({ status: newStatus })
       .eq('id', appointmentId)
-      .select(`*, clients (name), services (name)`)
+      .select(`*, clients (full_name), services (name)`)
       .single();
 
     if (error) {
@@ -214,7 +213,7 @@ export default function AgendaPage() {
         date_time: rescheduledDateTime.toISOString() 
       })
       .eq('id', selectedAppointment.id)
-      .select(`*, clients (name), services (name)`)
+      .select(`*, clients (full_name), services (name)`)
       .single();
 
     if (error) {
@@ -297,7 +296,7 @@ export default function AgendaPage() {
                         <User className="h-5 w-5 text-muted-foreground" />
                        </div>
                       <div>
-                        <p className="font-semibold">{appt.clients?.name}</p>
+                        <p className="font-semibold">{appt.clients?.full_name}</p>
                         <p className="text-sm text-muted-foreground">{parseISO(appt.date_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {appt.services?.name}</p>
                       </div>
                     </div>
@@ -349,7 +348,7 @@ export default function AgendaPage() {
             <DialogHeader>
                 <DialogTitle>Reagendar Horário</DialogTitle>
                 <DialogDescription>
-                    Selecione a nova data e hora para o agendamento de <span className="font-semibold">{selectedAppointment?.clients?.name}</span>.
+                    Selecione a nova data e hora para o agendamento de <span className="font-semibold">{selectedAppointment?.clients?.full_name}</span>.
                 </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4">
@@ -381,3 +380,5 @@ export default function AgendaPage() {
     </>
   );
 }
+
+    

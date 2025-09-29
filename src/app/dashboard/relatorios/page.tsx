@@ -35,7 +35,7 @@ export default function RelatoriosPage() {
           *,
           clients (*),
           services (*),
-          profiles (name)
+          profiles (full_name)
         `);
 
       if (error) {
@@ -46,13 +46,13 @@ export default function RelatoriosPage() {
       const reports: AppointmentReport[] = data.map((appt: any) => ({
         ...appt,
         id: appt.id,
-        clientName: appt.clients?.name || 'N/A',
+        clientName: appt.clients?.full_name || 'N/A',
         dateTime: appt.date_time,
         notes: appt.services?.name || 'N/A',
         status: appt.status,
-        admin: appt.profiles?.name || 'N/A',
+        admin: appt.profiles?.full_name || 'N/A',
         serviceId: appt.service_id,
-        whatsapp: appt.clients?.whatsapp || 'N/A',
+        whatsapp: appt.clients?.phone || 'N/A',
         telegram: appt.clients?.telegram || 'N/A',
         clientAvatarUrl: '', // This field is not used currently
       }));
@@ -142,3 +142,5 @@ export default function RelatoriosPage() {
     </div>
   );
 }
+
+    

@@ -53,7 +53,7 @@ type OverviewData = {
 // Redefine the type to match the Supabase query result
 type AppointmentWithDetails = Appointment & {
     clients: {
-        name: string;
+        full_name: string;
     } | null;
     services: Service | null;
 }
@@ -91,7 +91,7 @@ export default function DashboardPage() {
         // Fetch Appointments only for the current user
         const { data: apptData, error: apptError } = await supabase
           .from('appointments')
-          .select(`*, clients ( name ), services ( * )`)
+          .select(`*, clients ( full_name ), services ( * )`)
           .eq('admin_id', user.id);
         
         if (apptError) {
@@ -133,7 +133,7 @@ export default function DashboardPage() {
     const cancelledInPeriod = filteredAppointments.filter(a => a.status === 'Cancelado');
     const totalGains = completedInPeriod.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
     const totalLosses = cancelledInPeriod.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
-    const totalClients = new Set(completedInPeriod.map(a => a.clients?.name)).size;
+    const totalClients = new Set(completedInPeriod.map(a => a.clients?.full_name)).size;
     
     // Previous period data for comparison
     const prevMonthDate = subMonths(from, 1);
@@ -147,7 +147,7 @@ export default function DashboardPage() {
     const prevMonthCancelled = prevMonthAppointments.filter(a => a.status === 'Cancelado');
     const prevMonthGains = prevMonthCompleted.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
     const prevMonthLosses = prevMonthCancelled.reduce((sum, appt) => sum + (appt.services?.price || 0), 0);
-    const prevMonthClients = new Set(prevMonthCompleted.map(a => a.clients?.name)).size;
+    const prevMonthClients = new Set(prevMonthCompleted.map(a => a.clients?.full_name)).size;
 
     // Logic to find new clients for the current user
     const allClientsEver = new Map<string, string>();
@@ -157,8 +157,8 @@ export default function DashboardPage() {
         return parseISO(a.date_time).getTime() - parseISO(b.date_time).getTime()
       })
       .forEach(appt => {
-        if(appt.clients?.name && !allClientsEver.has(appt.clients.name) && appt.date_time){
-          allClientsEver.set(appt.clients.name, appt.date_time);
+        if(appt.clients?.full_name && !allClientsEver.has(appt.clients.full_name) && appt.date_time){
+          allClientsEver.set(appt.clients.full_name, appt.date_time);
         }
     });
 
@@ -166,13 +166,13 @@ export default function DashboardPage() {
          return new Set(
             allUserAppointments
                 .filter(appt => {
-                    if (!appt.clients?.name) return false;
-                    const firstAppointmentDateString = allClientsEver.get(appt.clients.name);
+                    if (!appt.clients?.full_name) return false;
+                    const firstAppointmentDateString = allClientsEver.get(appt.clients.full_name);
                     if (!firstAppointmentDateString) return false;
                     const firstAppointmentDate = parseISO(firstAppointmentDateString);
                     return isWithinInterval(firstAppointmentDate, interval);
                 })
-                .map(appt => appt.clients?.name)
+                .map(appt => appt.clients?.full_name)
         ).size;
     }
     
@@ -222,9 +222,9 @@ export default function DashboardPage() {
 
   const getTopClients = (): ClientRanking[] => {
     const clientCounts = allUserAppointments
-      .filter(appt => appt.status === 'Realizado' && appt.clients?.name)
+      .filter(appt => appt.status === 'Realizado' && appt.clients?.full_name)
       .reduce((acc, appt) => {
-        const clientName = appt.clients!.name;
+        const clientName = appt.clients!.full_name;
         acc[clientName] = (acc[clientName] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -375,3 +375,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

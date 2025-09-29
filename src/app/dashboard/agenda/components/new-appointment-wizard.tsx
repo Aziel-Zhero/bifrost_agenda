@@ -116,7 +116,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
   
   const getSummary = () => {
       const client = formData.clientType === 'new' ? null : clients.find(c => c.id === formData.existingClientId);
-      const clientName = formData.clientType === 'new' ? formData.newClientName : client?.name;
+      const clientName = formData.clientType === 'new' ? formData.newClientName : client?.full_name;
       const clientId = client?.id;
 
       const service = services.find(s => s.id === formData.serviceId);
@@ -131,18 +131,17 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
   const handleSubmit = async () => {
     setIsSubmitting(true);
     let finalClientId = formData.existingClientId;
-    let finalClientName = clients.find(c => c.id === formData.existingClientId)?.name || '';
+    let finalClientName = clients.find(c => c.id === formData.existingClientId)?.full_name || '';
     
     // If it's a new client, create it first
     if (formData.clientType === 'new') {
-        const whatsappOnlyNumbers = formData.newClientWhatsapp.replace(/\D/g, '');
+        const phoneOnlyNumbers = formData.newClientWhatsapp.replace(/\D/g, '');
         const { data: newClient, error } = await supabase
             .from('clients')
             .insert({ 
-                name: formData.newClientName, 
-                whatsapp: whatsappOnlyNumbers,
+                full_name: formData.newClientName, 
+                phone: phoneOnlyNumbers,
                 telegram: formData.newClientTelegram || null,
-                admin: currentUserName, // Associate client with the current user
             })
             .select()
             .single();
@@ -154,7 +153,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
             return;
         }
         finalClientId = newClient.id;
-        finalClientName = newClient.name;
+        finalClientName = newClient.full_name;
     }
 
     const summary = getSummary();
@@ -271,7 +270,7 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
                       <SelectContent>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
-                            {client.name} - {client.whatsapp}
+                            {client.full_name} - {client.phone}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -396,3 +395,5 @@ export default function NewAppointmentWizard({ onFinish, clients, services, curr
     </div>
   );
 }
+
+    

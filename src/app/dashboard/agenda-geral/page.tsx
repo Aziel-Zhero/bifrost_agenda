@@ -46,18 +46,18 @@ export default function AgendaGeralPage() {
 
     const fetchData = async () => {
       // Fetch users to create a map of ID -> Name and assign colors
-      const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, name');
+      const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, full_name');
       if (profileError) {
         console.error("Error fetching profiles", profileError);
       } else {
         const newAdminMap = profiles.reduce((acc, profile) => {
-            acc[profile.id] = profile.name;
+            acc[profile.id] = profile.full_name;
             return acc;
         }, {} as AdminMap);
         setAdminMap(newAdminMap);
 
         const newAdminColorMap = profiles.reduce((acc, profile, index) => {
-            acc[profile.name] = colorPalette[index % colorPalette.length];
+            acc[profile.full_name] = colorPalette[index % colorPalette.length];
             return acc;
         }, {} as AdminColorMap);
         setAdminColorMap(newAdminColorMap);
@@ -182,3 +182,5 @@ export default function AgendaGeralPage() {
     </div>
   );
 }
+
+    

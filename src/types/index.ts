@@ -69,9 +69,8 @@ export type Client = {
   full_name: string;
   email?: string;
   phone?: string;
+  telegram?: string;
   notes?: string;
-  // The 'admin' or 'whatsapp'/'telegram' fields from the old schema are removed
-  // as they are not in the new F3N schema for this table.
 };
 
 
@@ -175,3 +174,5 @@ export type AuditLog = {
     payload: any;
     timestamp: Date;
 }
+
+    
