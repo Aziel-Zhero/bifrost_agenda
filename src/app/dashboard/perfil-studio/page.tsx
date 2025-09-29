@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { StudioHour, StudioProfile, UserProfile } from "@/types";
+import type { StudioHour, StudioProfile, UserProfile, Role, DatabaseRole } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
 const weekDays = [
@@ -53,6 +53,12 @@ const formatTime = (timeString: string) => {
     return timeString;
 }
 
+const dbRoleToUiRole: Record<DatabaseRole, Role> = {
+    owner: 'Bifrost',
+    admin: 'Heimdall',
+    staff: 'Asgard',
+};
+
 const initialHours: Omit<StudioHour, 'id' | 'created_at' | 'profile_id'>[] = [
     { day_of_week: 0, start_time: "09:00", end_time: "18:00", is_enabled: false },
     { day_of_week: 1, start_time: "09:00", end_time: "18:00", is_enabled: true },
@@ -73,12 +79,12 @@ export default function PerfilStudioPage() {
   const timeOptions = generateTimeOptions();
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchInitialData = async (user: UserProfile) => {
+  const fetchInitialData = async (userProfile: UserProfile) => {
         // Fetch studio profile based on user's profile_id
         const { data: studioData, error: studioError } = await supabase
             .from('studio_profile')
             .select('*')
-            .eq('profile_id', user.id)
+            .eq('profile_id', userProfile.id)
             .single();
         if (studioData) {
             setStudioProfile(studioData);
@@ -90,7 +96,7 @@ export default function PerfilStudioPage() {
         const { data: hoursData, error: hoursError } = await supabase
             .from('studio_hours')
             .select('*')
-            .eq('profile_id', user.id);
+            .eq('profile_id', userProfile.id);
             
         if (hoursError && hoursError.code !== 'PGRST116') {
              console.log("Could not fetch studio hours:", hoursError.message);
@@ -112,18 +118,38 @@ export default function PerfilStudioPage() {
   useEffect(() => {
     const initialize = async () => {
         setIsLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
 
-        if (user) {
-            const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if (profileError) {
+        if (authUser) {
+            const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
+            
+            if (profileError && profileError.code !== 'PGRST116') {
                 toast({ title: 'Erro ao buscar perfil', description: 'Não foi possível carregar seus dados. ' + profileError.message, variant: 'destructive'});
                 setIsLoading(false);
                 return;
             }
-            const userProfile = profileData as UserProfile;
-            setCurrentUser(userProfile);
-            await fetchInitialData(userProfile);
+
+            if (profileData) {
+                 const dbRole = (profileData.role || 'staff') as DatabaseRole;
+                 const userProfile: UserProfile = {
+                    ...profileData,
+                    role: dbRoleToUiRole[dbRole],
+                 };
+                 setCurrentUser(userProfile);
+                 await fetchInitialData(userProfile);
+            } else {
+                 // Create a fallback user profile if one doesn't exist in the DB yet
+                 const fallbackRole: DatabaseRole = 'staff';
+                 const fallbackProfile: UserProfile = {
+                    id: authUser.id,
+                    email: authUser.email || 'Não encontrado',
+                    role: dbRoleToUiRole[fallbackRole],
+                    full_name: authUser.user_metadata.full_name || authUser.email?.split('@')[0] || 'Usuário',
+                    permissions: {}
+                 }
+                 setCurrentUser(fallbackProfile);
+                 await fetchInitialData(fallbackProfile);
+            }
         }
         setIsLoading(false);
     };
@@ -156,8 +182,8 @@ export default function PerfilStudioPage() {
 
     let error, data;
     
+    // Use the existing ID if we have one (for updating)
     if (studioProfile.id) {
-        // UPDATE existing record
         ({data, error} = await supabase
             .from('studio_profile')
             .update(dataToSave)
@@ -166,7 +192,7 @@ export default function PerfilStudioPage() {
             .single()
         );
     } else {
-        // INSERT new record
+        // Otherwise, insert a new record
         ({data, error} = await supabase
             .from('studio_profile')
             .insert(dataToSave)
