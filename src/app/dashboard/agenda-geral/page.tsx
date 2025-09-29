@@ -2,14 +2,18 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { isSameDay, format, isBefore, startOfToday, parseISO } from 'date-fns';
+import { format, isBefore, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
-import type { Appointment, UserProfile } from '@/types';
+import type { Appointment } from '@/types';
 import { supabase } from '@/lib/supabase/client';
 import { sendAppointmentReminders } from '@/app/actions';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
 
 type AppointmentsByDay = {
   [day: string]: {
@@ -35,43 +39,50 @@ const colorPalette = [
 ];
 
 export default function AgendaGeralPage() {
+  const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [appointments, setAppointments] = useState<any[]>([]);
   const [adminMap, setAdminMap] = useState<AdminMap>({});
   const [adminColorMap, setAdminColorMap] = useState<AdminColorMap>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    // Fetch users to create a map of ID -> Name and assign colors
+    const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, full_name');
+    if (profileError) {
+      console.error("Error fetching profiles", profileError);
+      toast({title: "Erro ao buscar usuários", description: "Não foi possível carregar os nomes dos profissionais.", variant: 'destructive'});
+    } else {
+      const newAdminMap = profiles.reduce((acc, profile) => {
+          acc[profile.id] = profile.full_name;
+          return acc;
+      }, {} as AdminMap);
+      setAdminMap(newAdminMap);
+
+      const newAdminColorMap = profiles.reduce((acc, profile, index) => {
+          acc[profile.full_name] = colorPalette[index % colorPalette.length];
+          return acc;
+      }, {} as AdminColorMap);
+      setAdminColorMap(newAdminColorMap);
+    }
+    
+    const { data, error } = await supabase.from('appointments').select('id, date_time, admin_id');
+      if (error) {
+      console.error("Error fetching appointments", error);
+      toast({title: "Erro ao buscar agendamentos", description: "Não foi possível carregar os agendamentos na agenda.", variant: 'destructive'});
+    } else {
+      setAppointments(data || []);
+    }
+    setIsLoading(false);
+  };
+
 
   useEffect(() => {
-    // Fire-and-forget the reminder check
+    // Fire-and-forget the reminder check on initial load
     sendAppointmentReminders();
-
-    const fetchData = async () => {
-      // Fetch users to create a map of ID -> Name and assign colors
-      const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, full_name');
-      if (profileError) {
-        console.error("Error fetching profiles", profileError);
-      } else {
-        const newAdminMap = profiles.reduce((acc, profile) => {
-            acc[profile.id] = profile.full_name;
-            return acc;
-        }, {} as AdminMap);
-        setAdminMap(newAdminMap);
-
-        const newAdminColorMap = profiles.reduce((acc, profile, index) => {
-            acc[profile.full_name] = colorPalette[index % colorPalette.length];
-            return acc;
-        }, {} as AdminColorMap);
-        setAdminColorMap(newAdminColorMap);
-      }
-      
-      const { data, error } = await supabase.from('appointments').select('id, date_time, admin_id');
-       if (error) {
-        console.error("Error fetching appointments", error);
-      } else {
-        setAppointments(data || []);
-      }
-    };
     fetchData();
-  }, []);
+  }, [toast]);
 
   const appointmentsByDay = useMemo(() => {
     return appointments.reduce((acc, appt) => {
@@ -143,11 +154,17 @@ export default function AgendaGeralPage() {
   return (
     <div className="flex flex-col gap-8">
        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Agenda Geral</h1>
-          <p className="text-muted-foreground">
-            Visão geral de todos os agendamentos do estúdio.
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Agenda Geral</h1>
+            <p className="text-muted-foreground">
+              Visão geral de todos os agendamentos do estúdio.
+            </p>
+          </div>
+           <Button variant="outline" size="icon" onClick={fetchData} disabled={isLoading}>
+              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+              <span className="sr-only">Atualizar Agenda</span>
+            </Button>
         </div>
       </div>
 
@@ -182,5 +199,3 @@ export default function AgendaGeralPage() {
     </div>
   );
 }
-
-    
