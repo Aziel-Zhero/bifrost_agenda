@@ -143,7 +143,7 @@ export default function PerfilStudioPage() {
 
     const { error } = await supabase
         .from('studio_profile')
-        .upsert(dataToSave, { onConflict: 'profile_id' });
+        .upsert(dataToSave, { onConflict: 'id' });
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
