@@ -166,7 +166,6 @@ export default function PerfilStudioPage() {
     }
 
     const dataToSave = {
-        // We never update profile_id, but it's needed for insert
         profile_id: currentUser.id,
         studio_name: studioProfile.studio_name,
         google_maps_url: studioProfile.google_maps_url,
@@ -178,25 +177,11 @@ export default function PerfilStudioPage() {
         address_state: studioProfile.address_state,
     };
     
-    // RLS policy requires us to use the profile_id for updates.
-    // If a studioProfile.id exists, we update, otherwise we insert.
-    let error, data;
-    if (studioProfile.id) {
-        ({data, error} = await supabase
-            .from('studio_profile')
-            .update(dataToSave)
-            .eq('profile_id', currentUser.id) // Use profile_id to satisfy RLS
-            .select()
-            .single()
-        );
-    } else {
-        ({data, error} = await supabase
-            .from('studio_profile')
-            .insert(dataToSave)
-            .select()
-            .single()
-        );
-    }
+    const { data, error } = await supabase
+        .from('studio_profile')
+        .upsert(dataToSave, { onConflict: 'profile_id' })
+        .select()
+        .single();
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
@@ -380,3 +365,5 @@ export default function PerfilStudioPage() {
     </>
   );
 }
+
+    
