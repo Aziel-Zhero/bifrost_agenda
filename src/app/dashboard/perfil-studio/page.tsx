@@ -53,6 +53,13 @@ const formatTime = (timeString: string) => {
     return timeString;
 }
 
+const normalizeTime = (time: string | undefined): string | undefined => {
+    if (!time) return undefined;
+    if (time.length === 5) return `${time}:00`;
+    return time;
+};
+
+
 const dbRoleToUiRole: Record<DatabaseRole, Role> = {
     owner: 'Bifrost',
     admin: 'Heimdall',
@@ -73,14 +80,13 @@ export default function PerfilStudioPage() {
   const { toast } = useToast();
   
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [studioProfile, setStudioProfile] = useState<Partial<StudioProfile>>({ studio_name: "Meu Estúdio" });
+  const [studioProfile, setStudioProfile] = useState<Partial<StudioProfile>>({});
   const [studioHours, setStudioHours] = useState<Omit<StudioHour, 'id' | 'created_at' | 'profile_id'>[]>(initialHours);
   
   const timeOptions = generateTimeOptions();
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchInitialData = async (userProfile: UserProfile) => {
-        // Fetch studio profile based on user's profile_id
         const { data: studioData, error: studioError } = await supabase
             .from('studio_profile')
             .select('*')
@@ -88,18 +94,17 @@ export default function PerfilStudioPage() {
             .single();
         if (studioData) {
             setStudioProfile(studioData);
-        } else if(studioError && studioError.code !== 'PGRST116') { // Ignore "no rows found"
-            console.log("Error fetching studio profile:", studioError.message);
+        } else if(studioError && studioError.code !== 'PGRST116') {
+            console.error("Error fetching studio profile:", studioError.message);
         }
 
-        // Fetch studio hours based on user's profile_id
         const { data: hoursData, error: hoursError } = await supabase
             .from('studio_hours')
             .select('*')
             .eq('profile_id', userProfile.id);
             
         if (hoursError && hoursError.code !== 'PGRST116') {
-             console.log("Could not fetch studio hours:", hoursError.message);
+             console.error("Could not fetch studio hours:", hoursError.message);
         } else if (hoursData && hoursData.length > 0) {
             const dayMap = new Map(hoursData.map(h => [h.day_of_week, h]));
             const mergedHours = initialHours.map(initial => {
@@ -132,7 +137,6 @@ export default function PerfilStudioPage() {
                     role: dbRoleToUiRole[dbRole],
                  };
             } else {
-                 // Create a fallback user profile if one doesn't exist in the DB yet
                  const fallbackRole: DatabaseRole = 'staff';
                  userProfileToSet = {
                     id: authUser.id,
@@ -164,17 +168,17 @@ export default function PerfilStudioPage() {
         toast({title: "Usuário não encontrado", description: "Faça login novamente.", variant: "destructive"});
         return;
     }
-
+    
     const dataToSave = {
         profile_id: currentUser.id,
-        studio_name: studioProfile.studio_name,
-        google_maps_url: studioProfile.google_maps_url,
-        address_street: studioProfile.address_street,
-        address_number: studioProfile.address_number,
-        address_complement: studioProfile.address_complement,
-        address_neighborhood: studioProfile.address_neighborhood,
-        address_city: studioProfile.address_city,
-        address_state: studioProfile.address_state,
+        studio_name: studioProfile.studio_name ?? 'Meu Estúdio',
+        google_maps_url: studioProfile.google_maps_url ?? null,
+        address_street: studioProfile.address_street ?? null,
+        address_number: studioProfile.address_number ?? null,
+        address_complement: studioProfile.address_complement ?? null,
+        address_neighborhood: studioProfile.address_neighborhood ?? null,
+        address_city: studioProfile.address_city ?? null,
+        address_state: studioProfile.address_state ?? null,
     };
     
     const { data, error } = await supabase
@@ -185,6 +189,7 @@ export default function PerfilStudioPage() {
     
     if (error) {
         toast({ title: "Erro ao salvar", description: `Não foi possível salvar o perfil do estúdio: ${error.message}`, variant: "destructive" });
+        console.error("Error upserting studio profile:", error);
     } else {
         setStudioProfile(data); 
         toast({ title: "Perfil do Estúdio Salvo!", description: "As informações do seu negócio foram atualizadas." });
@@ -209,8 +214,8 @@ export default function PerfilStudioPage() {
     const dataToUpsert = studioHours.map(hour => ({
         profile_id: currentUser.id,
         day_of_week: hour.day_of_week,
-        start_time: hour.start_time,
-        end_time: hour.end_time,
+        start_time: normalizeTime(hour.start_time),
+        end_time: normalizeTime(hour.end_time),
         is_enabled: hour.is_enabled,
     }));
 
