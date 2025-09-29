@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Combine, User, Users } from "lucide-react";
+import { Shield, User, Users, Star } from "lucide-react";
 import type { RoleSettings } from "@/types";
 import { menuItems as allMenuItems } from "@/components/dashboard/nav";
 import { useToast } from "@/hooks/use-toast";
@@ -23,35 +23,29 @@ import { supabase } from "@/lib/supabase/client";
 
 const initialRoles: RoleSettings[] = [
   {
-    name: "Bifrost",
-    description: "Superadministrador com acesso total e irrestrito a todas as funcionalidades e configurações do sistema.",
+    name: "owner",
+    description: "Proprietário do estúdio. Acesso total, incluindo configurações de faturamento e sistema.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
   },
   {
-    name: "Heimdall",
-    description: "Administrador mestre do estúdio, com visão ampla e privilegiada, podendo gerenciar todos os usuários e relatórios.",
+    name: "admin",
+    description: "Administrador do estúdio. Pode gerenciar usuários, agendamentos e relatórios.",
     permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: true }), {}),
   },
   {
-    name: "Asgard",
-    description: "Administradores ou profissionais do estúdio. Têm acesso às ferramentas para gerenciar seus próprios clientes e agendamentos.",
+    name: "staff",
+    description: "Membro da equipe/Profissional. Gerencia seus próprios agendamentos e clientes.",
     permissions: allMenuItems.reduce((acc, item) => ({
       ...acc,
       [item.href]: !['/dashboard/usuarios', '/dashboard/permissoes', '/dashboard/perfil-studio', '/dashboard/bots', '/dashboard/relatorios', '/dashboard/agenda-geral'].includes(item.href)
     }), {}),
   },
-  {
-    name: "Midgard",
-    description: "Representa a esfera dos clientes finais. Não possuem acesso ao painel de administração.",
-    permissions: allMenuItems.reduce((acc, item) => ({ ...acc, [item.href]: false }), {}),
-  },
 ];
 
 const roleIcons: { [key: string]: React.ElementType } = {
-  Bifrost: Combine,
-  Heimdall: Shield,
-  Asgard: Users,
-  Midgard: User,
+  owner: Star,
+  admin: Shield,
+  staff: Users,
 };
 
 
@@ -72,11 +66,14 @@ export default function PermissoesPage() {
 
             if (users) {
                 const updatedRoles = [...initialRoles].map(role => {
+                    // Find a user with this role who has a non-empty permissions object
                     const userWithPermissions = users.find(u => u.role === role.name && u.permissions && Object.keys(u.permissions).length > 0);
                     
+                    // Use the permissions from the DB if available, otherwise use the initial (default) ones for that role
                     const dbPermissions = userWithPermissions ? userWithPermissions.permissions : role.permissions;
                     const completePermissions: { [key: string]: boolean } = {};
                     
+                    // Ensure all menu items are present in the permissions object
                     allMenuItems.forEach(item => {
                         completePermissions[item.href] = dbPermissions[item.href] ?? role.permissions[item.href] ?? false;
                     });
@@ -132,7 +129,7 @@ export default function PermissoesPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {roles.map((role) => {
             const Icon = roleIcons[role.name];
             return (
@@ -140,7 +137,7 @@ export default function PermissoesPage() {
                     <CardHeader>
                         <div className="flex items-center gap-3">
                             <Icon className="h-7 w-7 text-primary" />
-                            <CardTitle className="text-2xl">{role.name}</CardTitle>
+                            <CardTitle className="text-2xl capitalize">{role.name}</CardTitle>
                         </div>
                         <CardDescription>{role.description}</CardDescription>
                     </CardHeader>
@@ -160,14 +157,14 @@ export default function PermissoesPage() {
                                         id={`perm-${role.name}-${item.href}`}
                                         checked={!!role.permissions[item.href]}
                                         onCheckedChange={(value) => handlePermissionChange(role.name, item.href, value)}
-                                        disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}
+                                        disabled={isLoading || role.name === 'owner' || role.name === 'admin'}
                                     />
                                 </div>
                             ))
                          }
                     </CardContent>
                     <CardFooter className="flex justify-end border-t pt-6">
-                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading || role.name === 'Bifrost' || role.name === 'Heimdall'}>
+                        <Button onClick={() => handleSaveChanges(role.name)} disabled={isLoading || role.name === 'owner' || role.name === 'admin'}>
                             {isLoading ? 'Salvando...' : `Salvar Permissões de ${role.name}`}
                         </Button>
                     </CardFooter>

@@ -18,10 +18,9 @@ import type { UserProfile } from "@/types";
 import { cn } from "@/lib/utils";
 
 const roleVariant: Record<string, string> = {
-  Bifrost: "bg-gradient-to-r from-cyan-400 to-purple-500 text-white",
-  Heimdall: "bg-yellow-400 text-yellow-900",
-  Asgard: "bg-blue-500 text-white",
-  Midgard: "bg-green-500 text-white",
+  owner: "bg-gradient-to-r from-cyan-400 to-purple-500 text-white",
+  admin: "bg-yellow-400 text-yellow-900",
+  staff: "bg-blue-500 text-white",
 };
 
 type ColumnsProps = {
@@ -64,7 +63,7 @@ export const columns = ({ onEditPermissions, onEditRole, onDelete, onReinvite }:
     cell: ({ row }) => {
         const role = row.original.role;
         return (
-            <Badge variant="outline" className={cn("border-none text-xs", roleVariant[role])}>
+            <Badge variant="outline" className={cn("border-none text-xs capitalize", roleVariant[role])}>
                  <Shield className="mr-1 h-3 w-3"/>
                  {role}
             </Badge>

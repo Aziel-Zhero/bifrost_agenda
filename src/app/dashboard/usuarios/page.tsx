@@ -284,10 +284,9 @@ export default function UsuariosPage() {
                           <SelectValue placeholder="Selecione um cargo" />
                       </SelectTrigger>
                       <SelectContent>
-                          <SelectItem value="Midgard">Midgard</SelectItem>
-                          <SelectItem value="Asgard">Asgard</SelectItem>
-                          <SelectItem value="Heimdall">Heimdall</SelectItem>
-                          <SelectItem value="Bifrost">Bifrost</SelectItem>
+                          <SelectItem value="staff">Staff (Padrão)</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="owner">Owner</SelectItem>
                       </SelectContent>
                   </Select>
                 </div>
