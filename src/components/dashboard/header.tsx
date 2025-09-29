@@ -34,10 +34,16 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Nav, { menuItems } from "./nav";
 import { supabase } from "@/lib/supabase/client";
-import type { UserProfile } from "@/types";
+import type { UserProfile, Role, DatabaseRole } from "@/types";
 import { useNotifications } from "@/contexts/notification-context";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const dbRoleToUiRole: Record<DatabaseRole, Role> = {
+    owner: 'Bifrost',
+    admin: 'Heimdall',
+    staff: 'Asgard',
+};
 
 export default function Header() {
   const pathname = usePathname();
@@ -57,25 +63,31 @@ export default function Header() {
               .eq('id', user.id)
               .single();
 
-          if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+          if (error && error.code !== 'PGRST116') {
               console.error("Error fetching user profile:", error);
               // Fallback for user without a profile entry yet
+              const fallbackRole: DatabaseRole = 'staff';
               setCurrentUser({
                 id: user.id,
                 email: user.email || 'Não encontrado',
-                role: 'Asgard', // Default role for safety
+                role: dbRoleToUiRole[fallbackRole],
                 full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
                 permissions: {}
               });
           } else if (profile) {
-              setCurrentUser(profile);
+              const dbRole = (profile.role || 'staff') as DatabaseRole;
+              setCurrentUser({
+                  ...profile,
+                  role: dbRoleToUiRole[dbRole]
+              });
           } else {
              // Profile not found, but auth user exists (e.g., just invited)
+             const fallbackRole: DatabaseRole = 'staff';
              setCurrentUser({
                 id: user.id,
                 email: user.email || 'Não encontrado',
                 full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'Usuário',
-                role: 'Asgard', // Default role
+                role: dbRoleToUiRole[fallbackRole],
                 permissions: {},
               });
           }
@@ -313,3 +325,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
